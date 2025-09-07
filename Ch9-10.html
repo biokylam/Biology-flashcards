@@ -53,16 +53,41 @@
     transition: background 0.5s ease;
   }
   header {
-    background: linear-gradient(90deg, var(--primary), var(--primary-2));
-    width: 100%;
-    padding: 1.1rem 1rem;
-    font-size: 1.2rem;
-    font-weight: 700;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    position: sticky; top: 0; z-index: 10;
-    transition: background 0.5s ease;
-  }
+  /* 大部分樣式不變，主要是修改排版方式 */
+  background: linear-gradient(90deg, var(--primary), var(--primary-2));
+  width: 100%;
+  padding: 1.1rem 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  position: sticky; top: 0; z-index: 10;
+  transition: background 0.5s ease;
+
+  /* 以下是修改和新增的部分 */
+  display: flex;
+  justify-content: center; /* 讓內容水平置中 */
+  align-items: center;    /* 讓內容垂直置中 */
+  position: relative;     /* 為了讓返回按鈕能定位 */
+}
+.back-link {
+  position: absolute; /* 絕對定位，讓它脫離正常的排版流 */
+  left: 15px;         /* 定位在 header 左邊 15px 的位置 */
+  top: 50%;           /* 垂直置中 */
+  transform: translateY(-50%); /* 確保精確垂直置中 */
+
+  color: var(--text-inv);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.back-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
   main {
     flex: 1; width: 100%; max-width: 520px;
     padding: 1rem 1rem 1.5rem;
@@ -149,7 +174,10 @@
 </style>
 </head>
 <body>
-<header id="headerTitle">CH1 生物學入門</header>
+<header>
+  <a href="index.html" class="back-link">🔙 返回目錄</a>
+  <span id="headerTitle">CH1 生物學入門</span>
+</header>
 <main>
   <nav class="chapters" aria-label="章節切換">
     <button class="tab active" data-chapter="CH9" aria-pressed="true">CH9</button>
