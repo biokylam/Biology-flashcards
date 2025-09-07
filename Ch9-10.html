@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>生物記憶卡</title>
+<style>
+  :root{ /* 預設主題：深紫色 */
+    --primary:#5a4fcf;
+    --primary-2:#8f7ce8;
+    --bg-1:#667eea;
+    --bg-2:#764ba2;
+    --card-1:#a18cd1;
+    --card-2:#fbc2eb;
+    --front-1:#c3aed6;
+    --front-2:#f7d6e0;
+    --back-1:#6a3093;
+    --back-2:#a044ff;
+    --text:#2c2c54;
+    --text-inv:#f0e9ff;
+    --shadow-1: rgba(90, 79, 207, 0.7);
+    --shadow-2: rgba(143, 124, 232, 0.9);
+  }
+  /* --- 新增：定義多套顏色主題 --- */
+  :root.theme-ocean-blue { /* 主題2：海洋藍 */
+    --primary: #0077b6; --primary-2: #0096c7; --bg-1: #005f73; --bg-2: #0a9396;
+    --card-1: #94d2bd; --card-2: #e9d8a6; --front-1: #e9f5db; --front-2: #cfe8e0;
+    --back-1: #001219; --back-2: #005f73; --text: #001219; --text-inv: #e9f5db;
+    --shadow-1: rgba(0, 119, 182, 0.7); --shadow-2: rgba(0, 150, 199, 0.9);
+  }
+  :root.theme-sunset-glow { /* 主題3：日落霞光 */
+    --primary: #e76f51; --primary-2: #f4a261; --bg-1: #e15f41; --bg-2: #e76f51;
+    --card-1: #f4a261; --card-2: #e9c46a; --front-1: #fff8f0; --front-2: #fefae0;
+    --back-1: #d62828; --back-2: #f77f00; --text: #264653; --text-inv: #ffffff;
+    --shadow-1: rgba(231, 111, 81, 0.7); --shadow-2: rgba(244, 162, 97, 0.9);
+  }
+  :root.theme-forest-green { /* 主題4：森林綠 */
+    --primary: #2d6a4f; --primary-2: #40916c; --bg-1: #1b4332; --bg-2: #2d6a4f;
+    --card-1: #74c69d; --card-2: #b7e4c7; --front-1: #d8f3dc; --front-2: #ffffff;
+    --back-1: #081c15; --back-2: #1b4332; --text: #081c15; --text-inv: #d8f3dc;
+    --shadow-1: rgba(45, 106, 79, 0.7); --shadow-2: rgba(64, 145, 108, 0.9);
+  }
+  /* --- 主題定義結束 --- */
+
+  *{box-sizing:border-box}
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    margin: 0; padding: 0;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    color: #f0f0f0;
+    transition: background 0.5s ease;
+  }
+  header {
+    background: linear-gradient(90deg, var(--primary), var(--primary-2));
+    width: 100%;
+    padding: 1.1rem 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    position: sticky; top: 0; z-index: 10;
+    transition: background 0.5s ease;
+  }
+  main {
+    flex: 1; width: 100%; max-width: 520px;
+    padding: 1rem 1rem 1.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: .75rem;
+  }
+  .chapters {
+    width: 100%; display: flex; gap: .5rem;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem;
+  }
+  .chapters::-webkit-scrollbar{height:6px}
+  .chapters::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:6px}
+  .tab {
+    white-space: nowrap; background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.25); padding: .45rem .75rem;
+    border-radius: 999px; cursor: pointer; transition: all .25s; font-size: .95rem;
+  }
+  .tab:hover { background: rgba(255,255,255,0.25); }
+  .tab.active {
+    background: #ffce6b; color: #2b2b2b; border-color: #ffce6b;
+    box-shadow: 0 2px 10px rgba(255,206,107,0.45);
+  }
+  #flashcardPage {
+    flex-direction: column; align-items: center; display: flex; width: 100%;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-container {
+    perspective: 1000px; width: 100%; height: 240px; outline: none;
+    animation: fadeIn 0.4s ease-out;
+  }
+  .card {
+    width: 100%; height: 240px; position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s, background 0.5s ease;
+    cursor: pointer; border-radius: 16px;
+    background: linear-gradient(135deg, var(--card-1), var(--card-2));
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3); color: var(--text);
+    display: flex; justify-content: center; align-items: center;
+    padding: 1.25rem; font-size: 1.05rem; line-height: 1.45;
+    user-select: none; text-align: left; white-space: pre-wrap;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; width: 100%; height: 100%; border-radius: 16px;
+    backface-visibility: hidden; display: flex; justify-content: center;
+    align-items: flex-start; padding: 1.25rem; box-sizing: border-box;
+    overflow-y: auto;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+  .card-front { background: linear-gradient(135deg, var(--front-1), var(--front-2)); color: var(--text); }
+  .card-back { transform: rotateY(180deg); background: linear-gradient(135deg, var(--back-1), var(--back-2)); color: var(--text-inv); }
+  #cardNumber { margin-top: 0.4rem; font-size: 0.9rem; color: #e9e6ff; text-align: center; }
+  .footer { margin-top: 1rem; width: 100%; display: flex; flex-direction: column; align-items: center; gap: .4rem; }
+  .button-row { display: flex; justify-content: center; gap: .6rem; flex-wrap: wrap; width: 100%; }
+  button {
+    background: var(--primary); border: none; color: white;
+    padding: 0.5rem 0.9rem; font-size: 1rem; border-radius: 10px; cursor: pointer;
+    transition: background 0.25s, transform .05s, box-shadow 0.25s;
+    min-width: 88px;
+    box-shadow: 0 4px 10px var(--shadow-1);
+  }
+  button:hover:not(:disabled) {
+    background: var(--primary-2); box-shadow: 0 6px 14px var(--shadow-2);
+  }
+  button:active:not(:disabled){ transform: translateY(1px); }
+  button:disabled { background: #a0aabe; cursor: default; box-shadow: none; color: #eee; }
+  #summaryBlock {
+    margin-top: 0.9rem; background: rgba(0,0,0,0.35); padding: 1rem; border-radius: 12px;
+    max-height: 340px; overflow-y: auto; width: 100%; text-align: left;
+    transition: all 0.4s ease-out; transform: translateY(20px); opacity: 0;
+  }
+  #summaryBlock:not([hidden]) { transform: translateY(0); opacity: 1; }
+  #summaryBlock h3 { margin: 0 0 .5rem 0; color: var(--text-inv); font-size: 1.05rem; }
+  #summaryBlock .summary-item { margin-bottom: .8rem; background: rgba(255,255,255,0.08); padding: .6rem .7rem; border-radius: 10px; }
+  #summaryBlock .summary-item p { margin: 0.2rem 0; }
+  .toolbar { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  .pill { font-size: .9rem; color: #fff; background: rgba(255,255,255,.15); padding: .35rem .6rem; border-radius: 999px; }
+  @media (max-width: 520px) {
+    .card { height: 210px; font-size: 1rem; padding: 1rem; }
+    .card-face { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<header id="headerTitle">CH1 生物學入門</header>
+<main>
+  <nav class="chapters" aria-label="章節切換">
+    <button class="tab active" data-chapter="CH9" aria-pressed="true">CH9</button>
+    <button class="tab" data-chapter="CH10" aria-pressed="false">CH10</button>
+  </nav>
+  <div class="toolbar">
+    <span id="chapterInfo" class="pill">目前章節：CH11</span>
+    <button id="themeBtn" aria-label="切換主題" style="min-width: auto; padding: 0.4rem 0.7rem;">🎨 切換主題</button>
+    <span class="pill">操作提示：點卡片或按空白鍵翻轉</span>
+  </div>
+  <section id="flashcardPage" aria-live="polite" aria-atomic="true">
+    <div class="card-container" tabindex="0" aria-label="抽認卡，點擊或按空白鍵翻轉">
+      <div id="card" class="card" role="button" aria-pressed="false" tabindex="0">
+        <div id="cardFront" class="card-face card-front"></div>
+        <div id="cardBack" class="card-face card-back"></div>
+      </div>
+      <div id="cardNumber" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div class="footer">
+      <div class="button-row" id="firstRow">
+        <button id="flipBtn" aria-label="翻轉卡片">🔄 翻轉</button>
+        <button id="hardBtn" aria-label="困難">🤔 困難</button>
+        <button id="mediumBtn" aria-label="一般">🙂 一般</button>
+        <button id="easyBtn" aria-label="容易">😄 容易</button>
+      </div>
+      <div class="button-row" id="secondRow">
+        <button id="prevBtn" aria-label="上一題" disabled>⬅️ 上一題</button>
+        <button id="summaryBtn" aria-label="困難題目小結">📝 困難小結</button>
+      </div>
+    </div>
+    <div id="summaryBlock" aria-live="polite" aria-atomic="true" hidden></div>
+  </section>
+</main>
+<script>
+  // 章節資料定義
+  const chapters = [
+    // ... (所有 chapters 的資料和之前一樣，此處省略以節省篇幅) ...
+    {
+      id: "CH9",
+      title: "生物記憶卡_CH9 植物的營養和氣體交換",
+    flashcards: [
+      { question: "什麼是自養營養？", answer: "自養營養指植物能利用光合作用，將無機物（如二氧化碳和水）轉化為有機物（如碳水化合物）。\n\n解釋: 植物是自養生物，通過光合作用製造食物，區別於異養生物（如動物）需依賴其他生物提供食物。" },
+      { question: "光合作用的文字方程式是什麼？", answer: "二氧化碳 + 水 → 葡萄糖 + 氧氣（在光能和葉綠素作用下）。\n\n解釋: 這是光合作用的核心，記住反應物是二氧化碳、水和產物是葡萄糖、氧氣。" },
+      { question: "植物在生態系統中的角色是什麼？", answer: "生產者。提供食物給其他生物。\n\n解釋: 植物通過光合作用製造有機物，是食物鏈的基礎。" },
+      { question: "大量元素和微量元素有什麼區別？", answer: "大量元素（如氮、磷、鉀）需求量大；微量元素（如銅、鋅）需求量小。\n\n解釋: 兩者都是植物必需的礦物質，但用量差異大，缺乏任一都會影響生長。" },
+      { question: "植物缺氮會出現什麼症狀？", answer: "生長遲緩、葉變黃。\n\n解釋: 氮是蛋白質合成關鍵，缺乏時影響生長和新陳代謝。" },
+      { question: "鎂在植物中的主要功能是什麼？", answer: "製造葉綠素。\n\n解釋: 鎂是葉綠素的核心成分，缺乏時葉片會變黃，影響光合作用。" },
+      { question: "為什麼水耕法實驗用幼苗而非成熟植株？", answer: "幼苗缺乏礦物鹽儲備，生長快速。\n\n解釋: 易觀察缺乏症狀。幼苗對礦物質依賴度高，缺乏症狀更明顯。" },
+      { question: "水耕法為什麼要向營養液輸入空氣？", answer: "為根部細胞提供氧氣，進行呼吸作用釋放能量。藉以生長和進行主動轉運吸收礦物質。\n\n解釋: 根部需要氧氣支持代謝，否則生長受阻。" },
+      { question: "為什麼用鋁箔包裹水耕法的錐形瓶？", answer: "阻擋陽光。防止藻類生長搶奪養分。\n\n解釋: 藻類會消耗營養液中的礦物質，影響實驗結果。" },
+      { question: "水耕法相較於泥土種植的優點是什麼？", answer: "易控制養分含量，省去除草工夫。\n\n解釋: 水耕法可精確調節營養，減少雜草競爭。" },
+      { question: "植物的氣體交換主要透過什麼過程進行？", answer: "擴散。\n\n解釋: 氣體（氧和二氧化碳）通過濃度差異在葉、莖、根擴散交換。" },
+      { question: "保衛細胞的作用是什麼？", answer: "控制氣孔開合。\n\n解釋: 藉以調節氣體交換和水分蒸騰速度。" },
+      { question: "柵狀葉肉的特徵是什麼？", answer: "細胞呈圓柱形，含大量葉綠體，排列緊密。\n\n解釋: 這種結構有利於吸收陽光，進行光合作用。" },
+      { question: "海綿葉肉如何促進氣體交換？", answer: "細胞間有大量氣室。\n\n解釋: 方便氣體擴散。氣室增加氣體流通空間，提高氣體交換效率。" },
+      { question: "葉片寬大扁平對氣體交換有何意義？", answer: "提供大表面積。\n\n解釋: 增加氣體交換效率。大面積讓更多氣孔參與氣體進出。" },
+      { question: "葉片薄對氣體交換有何好處？", answer: "縮短氣體擴散距離。\n\n解釋: 薄葉片讓氣體更快到達葉肉細胞。" },
+      { question: "呼吸作用的文字方程式是什麼？", answer: "葡萄糖 + 氧氣 → 二氧化碳 + 水 + 能量。\n\n解釋: 呼吸作用與光合作用相反，釋放能量供植物使用。" },
+      { question: "光合作用和呼吸作用的速率有何不同？", answer: "光合作用受光強度影響，呼吸作用速率較恆定（此課的重要假設為植物的呼吸作用整天保持不變）。\n\n解釋: 光合作用需光能驅動，呼吸作用全天進行。" },
+      { question: "什麼是補償點？", answer: "光合作用速率等於呼吸作用速率時的光強度。\n\n解釋: 此時淨氣體交換為零，食物生產量等於食物消耗量。" },
+      { question: "在補償點時，植物的淨氣體交換如何？", answer: "無淨氣體交換（O₂和CO₂的吸收與釋放相等，當中有O₂和CO₂的進入和離開）。\n\n解釋: 因補償點時，光合作用速率和呼吸作用速率相等。" },
+      { question: "夜間植物的氣體交換情況如何？", answer: "淨吸入氧氣，淨釋出二氧化碳。\n\n解釋: 夜間無光合作用，只有呼吸作用進行。" },
+      { question: "碳酸氫鹽指示劑在高二氧化碳濃度時呈什麼顏色？", answer: "黃色（＞0.03%）。" },
+      { question: "當光強度高時，植物淨吸入和淨釋出的氣體是什麼？", answer: "淨吸入二氧化碳，淨釋出氧氣。\n\n解釋: 因光合作用速率高於呼吸作用速率，故淨釋出氧氣。" },
+      { question: "為什麼根部没有角質層？", answer: "根部整個表面可進行氣體交換。\n\n解釋: 根部無角質層，氧氣方可直接透過表皮擴散進入。" },
+      { question: "草本植物和木本植物中莖的氣體交換有何不同？", answer: "草本植物靠氣孔，木本植物靠皮孔。" },
+      { question: "當光強度增加，光合作用速率達到最高後，為什麼繼續增加光強度，光合作用速率不再增加？", answer: "受其他因素（如CO₂濃度或溫度）限制。\n\n解釋: 光強度非唯一限制因素，其他條件會成為限制因素。" },
+      { question: "葉片排列模式如何影響光合作用？", answer: "減少重疊，增加陽光接收面積。\n\n解釋: 如非洲紫羅蘭，葉片排列確保每片葉都能最大程度吸收光。" },
+      { question: "為什麼泥土灌滿水會影響植物生長？", answer: "氧氣供應減少。根部没有足夠的氣作呼吸作用，和没有足夠能量作行主動轉運吸收養分，故生長不理想。\n\n解釋: 根部需氧氣進行呼吸作用，缺氧導致能量不足，影響生長。" },
+      { question: "光合作用在植物的哪裡進行？", answer: "光合作用主要在葉片細胞內的葉綠體中進行，包括柵狀葉肉細胞、海綿葉肉細胞和保衛細胞。" },
+      { question: "除了光能，光合作用還需要哪些基本條件？", answer: "光合作用需要二氧化碳、水和葉綠素。\n\n解釋: 這些是光合作用的必需反應物。" },
+      { question: "光合作用的產物是什麼？對植物和生態系統有何重要性？", answer: "產物是葡萄糖（儲存為澱粉）和氧氣。\n\n解釋: 葡萄糖為植物提供能量和生長所需物質；氧氣則釋放到大氣中供其他生物呼吸。" },
+      { question: "講出三個影響光合作用速率的主要因素？", answer: "光強度、二氧化碳濃度和溫度都會影響光合作用的速率。" },
+      { question: "如果光強度過低，會如何影響植物的生長？", answer: "光強度不足會限制光合作用的速率。\n\n解釋: 導致植物製造的食物減少，生長緩慢甚至不良。" },
+      { question: "葉片在外形上有哪些特點，以適應光合作用？", answer: "葉片通常扁平、薄而寬闊，這能提供巨大的表面積來吸收光能和二氧化碳，同時縮短氣體的擴散距離。" },
+      { question: "葉片的角質層有什麼功能？", answer: "角質層是葉片上表面的一層透明防水蠟質層。\n\n解釋: 它能防止水分過度蒸發（減少失水），同時透明的特性讓陽光能穿透到達下方的葉肉細胞。" },
+      { question: "葉片中哪細胞含有最多葉綠體？它們如何排列以利光合作用？", answer: "柵狀葉肉細胞含有最多葉綠體。它們呈柱狀緊密排列在葉片上表面下方，能最大限度地吸收陽光。" },
+      { question: "陸生植物中，氣孔通常位於葉片的哪一側較多？這是為什麼？", answer: "氣孔通常位於葉片的下表皮較多。\n\n解釋: 這可以減少陽光直射，降低水分蒸發，減少失水。" },
+      { question: "保衛細胞如何控制氣孔的開閉？", answer: "保衛細胞吸收水分時會膨脹彎曲，使氣孔張開；失水時則萎縮變直，使氣孔關閉。\n\n解釋: 這可以調節氣體交換速率和蒸騰速率。" },
+      { question: "植物在日間和夜間進行的氣體交換有何不同？", answer: "日間有光照，植物同時進行光合作用和呼吸作用。光合作用速率通常遠大於呼吸作用，所以植物淨吸收二氧化碳並釋放氧氣。夜間無光照，植物只進行呼吸作用，淨吸收氧氣並釋放二氧化碳。" },
+      { question: "除了葉片的氣孔，植物還有哪些部位可以進行氣體交換？", answer: "幼莖上的皮孔和根毛細胞（透過根毛吸收土壤中的氧氣）也可以進行氣體交換。\n\n解釋: 氣體交換並非只發生在葉片。" },
+      { question: "為什麼在光照充足的情況下，植物會淨吸收二氧化碳，而不是同時釋放和吸收？", answer: "因為光合作用消耗二氧化碳的速率遠高於呼吸作用產生二氧化碳的速率。" },
+      { question: "為什麼在完全黑暗的環境中，植物仍然需要氧氣？", answer: "因為無論有沒有光，植物細胞都需要持續進行呼吸作用以釋放能量來維持生命活動。而呼吸作用需要消耗氧氣。" },
+      { question: "缺乏鎂會對植物造成什麼影響？", answer: "鎂是葉綠素的組成部分。\n\n解釋: 缺乏鎂會導致葉片發黃（黃化病），光合作用效率降低，從而影響植物生長。" },
+      { question: "缺乏氮、磷、鉀這三種主要營養素會分別對植物產生什麼影響？", answer: "缺乏氮會導致葉片變黃，生長遲緩；缺乏磷會導致根系發育不良，葉片呈紫色；缺乏鉀會導致莖弱，葉緣枯焦。\n\n解釋: 因為這些都是植物生長所必需的大量元素。" }
+    ]
+    },
+    {
+    id: "CH10",
+    title: "生物記憶卡_CH10 植物的蒸騰、轉運和支持",
+     flashcards: [
+      { question: "根毛細胞有哪兩個主要特徵，使其能有效地吸收水分和礦物質？", answer: "1. 有大量突出的根毛，大大增加表面積以吸收水分和礦物質。\n2. 細胞壁薄，方便水分和溶解的礦物質穿透。" },
+      { question: "根毛細胞如何主要透過「滲透作用」吸收水分？", answer: "根毛細胞質的濃度比土壤溶液高，因此根毛細胞的水勢較低。水分會沿著水勢梯度，從土壤透過滲透作用進入根毛細胞。" },
+      { question: "根毛細胞吸收礦物質離子的主要方式是什麼？這個過程有何關鍵特點？", answer: "主要透過主動運輸。這個過程需要消耗能量（從呼吸作用中獲得），並能讓根毛細胞逆著濃度梯度吸收礦物質離子。" },
+      { question: "水分從根毛細胞進入木質部的途徑是什麼？", answer: "水分從根毛細胞透過滲透作用，穿過皮層細胞，然後進入根部中央的木質部導管。" },
+      { question: "描述植物將水分從根部運送到葉片的主要驅動力是什麼？", answer: "主要驅動力是葉片氣孔發生的蒸騰作用。水分從葉片蒸發散失，產生「蒸騰拉力」，將木質部導管內的水柱向上拉。" },
+      { question: "為什麼木質部導管內的水分子能夠形成連續的水柱，並被向上拉動？", answer: "這是因為水分子之間存吸引力。使它們能緊密連接。" },
+      { question: "什麼是「蒸騰作用」？它對植物來說有哪兩個重要性？", answer: "蒸騰作用是植物以水氣形式從葉片（主要是氣孔）將水分散失到大氣中的過程。其重要意義是產生蒸騰拉力以運輸水分和礦物質，以及降溫。" },
+      { question: "光強度如何影響蒸騰作用的速率？", answer: "光強度增加，導致氣孔張開程度更大，增加水分蒸發的表面積，從而提高蒸騰作用的速率。" },
+      { question: "溫度升高如何影響蒸騰作用的速率？", answer: "溫度升高會加速水分的蒸發，導致蒸騰作用速率提高。" },
+      { question: "環境濕度降低如何影響蒸騰作用的速率？", answer: "環境濕度降低意味著外界空氣中的水氣濃度較低，葉片內部與外界空氣之間的水氣濃度梯度增大。加速水分子的擴散，從而提高蒸騰作用的速率。" },
+      { question: "風速加快如何影響蒸騰作用的速率？", answer: "風速加快會吹走氣孔附近飽和的水氣。氣孔內外有較大的水氣濃度梯度，加速水氣擴散，提高蒸騰作用的速率。" },
+      { question: "氣孔的開合如何調節蒸騰作用的速率？", answer: "氣孔張開時，蒸騰作用快；氣孔關閉時，蒸騰作用慢。\n\n解釋: 保衛細胞通過控制氣孔的開閉來調節蒸騰作用。" },
+      { question: "為什麼植物在水分不足時會關閉氣孔？這會導致什麼後果？", answer: "在水分不足時關閉氣孔是為了減少水分散失，防止植物枯萎。然而，氣孔關閉也會限制二氧化碳的進入，從而抑制光合作用。" },
+      { question: "如何通過實驗來測量蒸騰作用的速率？", answer: "可以使用氣泡蒸騰計或重量蒸騰計量度。" },
+      { question: "草本植物（如含羞草）依靠什麼來維持其挺立的姿態？", answer: "草本植物主要依靠簿壁細胞的「膨脹度」來維持挺立。\n\n解釋: 當植物細胞吸足水分，細胞膜被膨脹的液泡推向細胞壁，產生對細胞壁的壓力，使細胞變得堅挺。" },
+      { question: "葉片枯萎是怎麼回事？它與膨脹度有何關係？", answer: "葉片枯萎是因為植物細胞失水，導致膨脹度下降或消失。細胞變得軟縮，無法支撐葉片，從而導致葉片下垂。" },
+      { question: "木本植物（如樹木）主要依靠什麼來獲得堅固的支持？", answer: "木本植物主要依靠厚壁細胞的硬度（如木質部）來獲得堅固的支持。\n\n解釋: 木質素是一種堅硬、不透水的物質，能為植物提供機械支持。" },
+      { question: "樹木的根系除了吸收水分和礦物質，還有什麼重要功能？", answer: "樹木的根系能深入土壤，廣泛分佈。\n\n解釋: 為樹幹提供牢固的支撐，使其能抵抗風力，維持直立。" },
+      { question: "為什麼颱風來襲時，有些樹木容易被吹倒？", answer: "可能是因為樹木的根系不夠發達或生長空間受限（如被混凝土包圍）。\n\n解釋: 無法提供足夠的支撐力來抵抗強。" },
+      { question: "植物光合作用所製造的食物主要由哪種維管組織轉運？用什麼形式運輸？", answer: "主要由韌皮部轉運，以蔗糖形式運輸。" },
+      { question: "韌皮部中的篩管細胞和伴細胞有何作用？", answer: "篩管細胞負責轉運食物，但它們成熟後細胞核和大部分細胞器退化。伴細胞則具有完整的細胞結構，提供能量和幫助篩管細胞維持生命活動。" },
+      { question: "食物在韌皮部中的運輸方向是固定的嗎？", answer: "食物在韌皮部中的運輸方向是「雙向」的，可向上或向下。\n\n解釋: 從葉片進行光合作用運送到生長點、果實或儲藏器官（根）。" },
+      { question: "比較木質部和韌皮部的主要功能和運輸方向。", answer: "木質部主要運輸水分和礦物質，方向通常是單向向上（從根到葉）。\n\n解釋: 韌皮部主要運輸製造的食物（糖），方向是雙向的。" },
+      { question: "盆栽實驗中，植物在光照下，套在莖上的塑膠袋內壁出現水珠，這證明了什麼？", answer: "這證明了植物通過蒸騰作用將水分以水蒸氣形式從莖和葉片散失到空氣中，水珠是蒸騰作用的直接證據。" },
+      { question: "如果植物長期缺水，葉片的氣孔會如何反應？這對植物的光合作用有何影響？", answer: "長期缺水會導致植物葉片的氣孔關閉，以減少水分散失。這會同時限制二氧化碳的進入，從而抑制光合作用的速率。" },
+      { question: "描述一個能證明蒸騰作用的實驗裝置（不需繪圖）。", answer: "可以將植物根部浸入裝有水的燒杯中，液面蓋上一層油以防止水分蒸發，然後將植物頂部套上一個透明塑膠袋並綁緊。在光照下，塑膠袋內壁會出現水珠，證明水分從植物體內蒸發散失。" },
+      { question: "什麼是蒸騰？", answer: "水分在植物表面蒸發成水汽並散失至大氣的過程。\n\n解釋: 蒸騰是植物失水的主要方式，主要通過葉片氣孔進行。" },
+      { question: "植物失水的主要途徑是什麼？", answer: "經葉的氣孔，約佔90%。\n\n解釋: 氣孔是水分散失的主要通道，角質層和皮孔的失水量較少。" },
+      { question: "蒸騰的過程如何進行？", answer: "葉肉細胞表面水分蒸發至氣室，水汽濃度高於大氣，經氣孔擴散出去。\n\n解釋: 水汽濃度差驅動擴散，而非滲透，氣孔是關鍵出口。" },
+      { question: "蒸騰拉力如何形成？", answer: "葉肉細胞水分蒸發降低水勢，水從鄰近細胞滲透補充，最終從木質導管抽出。\n\n解釋: 蒸騰拉力是由葉片失水引發的連鎖反應，驅動水向上運輸。" },
+      { question: "蒸騰對植物有什麼重要性？", answer: "冷卻植物、促進水和礦物質轉運、幫助根部吸收水分。\n\n解釋: 蒸騰不僅調節溫度，還驅動養分運輸。" },
+      { question: "葉片的角質層如何減少水分散失？", answer: "角質層幾乎不透水，減少水分蒸發。\n\n解釋: 角質層作為屏障，限制水分從表皮散失。" },
+      { question: "為什麼雙子葉植物上表皮氣孔較少？", answer: "上表皮受陽光直射，溫度高，減少氣孔可降低水分散失。\n\n解釋: 氣孔分佈適應環境，減少過量失水。" },
+      { question: "保衛細胞如何幫助減少水分散失？", answer: "控制氣孔開合，缺水時關閉氣孔。\n\n解釋: 這是植物自我保護的重要機制。" },
+      { question: "浸沒植物的氣孔分佈有何特徵？", answer: "上下表皮無氣孔，無角質層。\n\n解釋: 浸沒植物直接從水中經擴散吸收氣體和養分，無需氣孔。" },
+      { question: "漂浮植物的氣孔分佈有何特徵？", answer: "只有上表皮有氣孔，下表皮無角質層。\n\n解釋: 上表皮氣孔負責氣體交換，下表皮直接吸收水（經滲透）和養分（經擴散）。" },
+      { question: "氣泡蒸騰計測量什麼？", answer: "測量帶葉枝條的吸水速率，間接反映蒸騰速率。\n\n解釋: 吸水量約等於失水量，但部分水用於生長，故此，氣泡蒸騰計所涉及的重要假設是植物的失水量等於吸水量，一定要記得。" },
+      { question: "為什麼氣泡蒸騰計要在水中切割枝條？", answer: "防止空氣進入木質導管，水中切割避免氣泡堵塞導管，確保實驗準確。" },
+      { question: "氣泡蒸騰計的儲水器有什麼作用？", answer: "控制氣泡位置，方便測量。\n\n解釋: 儲水器幫助調節毛細管內氣泡的起始位置。" },
+      { question: "氣泡蒸騰計的誤差來源有哪些？", answer: "枝條無根影響吸水，毛細管摩擦減慢氣泡移動，使測量值偏離實際蒸騰速率。" },
+      { question: "重量蒸騰計如何測量蒸騰速率？", answer: "通過裝置重量變化測失水量，滴定管變化測量吸水量。\n\n解釋: 失水量直接反映蒸騰，吸水量包括生長用水，吸水量減去失水量等於植物的水分保留量。" },
+      { question: "光強度如何影響蒸騰速率？", answer: "光強度增加，氣孔張大，蒸騰速率上升。\n\n解釋: 光促進氣孔開啟，增加水汽擴散面積。" },
+      { question: "溫度如何影響蒸騰速率？", answer: "溫度上升，水分蒸發速率增加，蒸騰加快。\n\n解釋: 高溫加速葉肉細胞表面水分蒸發。" },
+      { question: "風速如何影響蒸騰速率？", answer: "風吹走氣孔附近水汽，增加氣孔內外的水氣濃度梯度，增加水氣的擴散速度，蒸騰加快。" },
+      { question: "相對濕度如何影響蒸騰速率？", answer: "濕度高，減少氣孔內外的水氣濃度梯度，減慢水氣的擴散速度，蒸騰速率下降。" },
+      { question: "根毛的功能是什麼？", answer: "增加吸收水和礦物質的表面積，根毛擴大接觸面積，提高吸收效率。" },
+      { question: "根部表皮為什麼沒有角質層？", answer: "便於水和礦物質直接進入根部。" },
+      { question: "水在根部的吸收過程如何進行？", answer: "水從泥土經滲透進入根毛，沿皮層細胞移動至木質導管。\n\n解釋: 蒸騰拉力驅動水從根到葉的流動。" },
+      { question: "礦物質如何被根部吸收？", answer: "主要通過主動轉運，少量靠擴散。\n\n解釋: 主動轉運逆濃度梯度吸收礦物質，需能量。" },
+      { question: "木質導管的特徵是什麼？", answer: "厚壁木質化、中空、上下無接壁。\n\n解釋: 這些特徵減少水流阻力並提供支撐。" },
+      { question: "韌皮部的篩管有何特徵？", answer: "有細胞質無細胞核，篩板有篩孔。\n\n解釋: 篩管減少有機物流動阻力，篩孔便於物質通過。" },
+      { question: "伴細胞的功能是什麼？", answer: "維持篩管新陳代謝。\n\n解釋: 伴細胞提供能量和代謝支持，確保篩管功能。" },
+      { question: "維管組織在葉、莖、根的分佈有何不同？", answer: "葉在中脈和葉脈網，莖在週邊，根在中間。" },
+      { question: "薄壁細胞如何為植物提供支持？", answer: "水分充足時膨脹，互相擠壓使莖挺直。\n\n解釋: 膨脹度提供機械支持，缺水時植物萎蔫。" },
+      { question: "厚壁細胞如何為植物提供支持？", answer: "細胞壁厚含木質素，堅硬提供支撐（厚壁細胞的硬度）。" },
+      { question: "植物為什麼需要保持挺立？", answer: "吸取最大光量，促進傳粉和種子散播。\n\n解釋: 挺立確保葉片接受陽光並有利於繁殖。" }
+    ]
+    }
+  ];
+  // 狀態管理：每章節各自維護學習狀態
+  const stateByChapter = {};
+  function initChapterState(chapterId){
+    const chapter = chapters.find(c=>c.id===chapterId);
+    stateByChapter[chapterId] = {
+      cardsWithWeights: chapter.flashcards.map(c => ({ ...c, weight: 1, hardCount: 0 })),
+      currentIndex: 0, flipped: false, flipping: false, history: [0], historyPos: 0
+    };
+  }
+  chapters.forEach(ch => initChapterState(ch.id));
+  
+  // 目前章節 & 主題
+  let currentChapterId = "CH9";
+  const themes = ['', 'theme-ocean-blue', 'theme-sunset-glow', 'theme-forest-green'];
+  let currentThemeIndex = 0;
+
+  // UI 元素
+  const docElem = document.documentElement;
+  const headerTitle = document.getElementById('headerTitle');
+  const chapterInfo = document.getElementById('chapterInfo');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const card = document.getElementById('card');
+  const cardFront = document.getElementById('cardFront');
+  const cardBack = document.getElementById('cardBack');
+  const cardNumber = document.getElementById('cardNumber');
+  const flipBtn = document.getElementById('flipBtn');
+  const hardBtn = document.getElementById('hardBtn');
+  const mediumBtn = document.getElementById('mediumBtn');
+  const easyBtn = document.getElementById('easyBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const summaryBtn = document.getElementById('summaryBtn');
+  const summaryBlock = document.getElementById('summaryBlock');
+  const themeBtn = document.getElementById('themeBtn');
+
+  function getChapter(){ return chapters.find(c=>c.id===currentChapterId); }
+  function getState(){ return stateByChapter[currentChapterId]; }
+  
+  function updateHeader(){
+    const ch = getChapter();
+    headerTitle.textContent = ch.title;
+    document.title = ch.title;
+    chapterInfo.textContent = `目前章節：${ch.id}`;
+  }
+  
+  function renderCard() {
+    const cardContainer = document.querySelector('.card-container');
+    cardContainer.style.animation = 'none';
+    void cardContainer.offsetHeight; // 觸發瀏覽器重繪 (reflow)
+    cardContainer.style.animation = '';
+
+    const st = getState();
+    st.flipped = false;
+    card.classList.remove("flipped");
+    card.setAttribute("aria-pressed", "false");
+    const item = st.cardsWithWeights[st.currentIndex];
+    cardFront.textContent = item.question;
+    cardBack.textContent = item.answer;
+    cardNumber.textContent = `卡片 ${st.currentIndex + 1} / ${st.cardsWithWeights.length}`;
+    prevBtn.disabled = (st.historyPos <= 0);
+    summaryBlock.hidden = true;
+    summaryBlock.innerHTML = "";
+  }
+  
+  function flipCard() {
+    const st = getState();
+    if (st.flipping) return;
+    st.flipping = true;
+    st.flipped = !st.flipped;
+    card.classList.toggle("flipped", st.flipped);
+    card.setAttribute("aria-pressed", st.flipped ? "true" : "false");
+    setTimeout(() => { st.flipping = false; }, 600);
+  }
+  
+  function updateWeight(difficulty) {
+    const st = getState();
+    const cardObj = st.cardsWithWeights[st.currentIndex];
+    if (difficulty === "hard") { cardObj.weight += 2; cardObj.hardCount++; }
+    else if (difficulty === "medium") { /* 不變 */ }
+    else if (difficulty === "easy") { cardObj.weight = Math.max(1, cardObj.weight - 1); }
+  }
+  
+  function weightedRandomIndex() {
+    const st = getState();
+    const totalWeight = st.cardsWithWeights.reduce((sum, c) => sum + c.weight, 0);
+    if (totalWeight <= 0) return 0;
+    let r = Math.random() * totalWeight;
+    for (let i = 0; i < st.cardsWithWeights.length; i++) {
+      r -= st.cardsWithWeights[i].weight;
+      if (r < 0) return i;
+    }
+    return 0;
+  }
+  
+  function nextCard(difficulty) {
+    const st = getState();
+    updateWeight(difficulty);
+    const nextIdx = weightedRandomIndex();
+    st.currentIndex = nextIdx;
+    if (st.historyPos < st.history.length - 1) {
+      st.history = st.history.slice(0, st.historyPos + 1);
+    }
+    st.history.push(st.currentIndex);
+    st.historyPos++;
+    renderCard();
+  }
+  
+  function prevCard() {
+    const st = getState();
+    if (st.historyPos <= 0) return;
+    st.historyPos--;
+    st.currentIndex = st.history[st.historyPos];
+    renderCard();
+  }
+  
+  function showHardSummary() {
+    const st = getState();
+    let sortedCards = [...st.cardsWithWeights]
+      .filter(c => c.hardCount > 0)
+      .sort((a,b) => b.hardCount - a.hardCount)
+      .slice(0,5);
+    if (sortedCards.length === 0) {
+      summaryBlock.innerHTML = "<h3>尚無標記為困難的題目</h3>";
+      summaryBlock.hidden = false;
+      return;
+    }
+    let html = "<h3>困難題目小結（前5題）</h3>";
+    sortedCards.forEach((c,i) => {
+      html += `<div class="summary-item">
+        <p><strong>題目 ${i + 1}：</strong>${c.question}</p>
+        <p><strong>答案：</strong>${c.answer}</p>
+        <p><strong>困難標記次數：</strong>${c.hardCount}</p>
+      </div>`;
+    });
+    summaryBlock.innerHTML = html;
+    summaryBlock.hidden = false;
+  }
+  
+  function switchChapter(newId){
+    if (newId === currentChapterId) return;
+    tabs.forEach(t=>{
+      const active = t.dataset.chapter === newId;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    currentChapterId = newId;
+    updateHeader();
+    renderCard();
+    card.focus();
+  }
+  
+  // 初始渲染
+  updateHeader();
+  renderCard();
+  
+  // 事件綁定
+  flipBtn.addEventListener("click", flipCard);
+  hardBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("hard"); });
+  mediumBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("medium"); });
+  easyBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("easy"); });
+  prevBtn.addEventListener("click", prevCard);
+  summaryBtn.addEventListener("click", showHardSummary);
+  
+  themeBtn.addEventListener('click', () => {
+    currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+    const newTheme = themes[currentThemeIndex];
+    docElem.className = newTheme;
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.code === "Space" || e.key === " ") && document.activeElement === card) {
+      e.preventDefault(); flipCard(); return;
+    }
+    if (e.key === "1") { const st=getState(); if(!st.flipped) flipCard(); nextCard("hard"); }
+    if (e.key === "2") { const st=getState(); if(!st.flipped) flipCard(); nextCard("medium"); }
+    if (e.key === "3") { const st=getState(); if(!st.flipped) flipCard(); nextCard("easy"); }
+    if (e.key === "ArrowLeft") { prevCard(); }
+    if (e.key?.toLowerCase?.() === "s") { showHardSummary(); }
+  });
+  
+  card.addEventListener('click', flipCard);
+  tabs.forEach(tab => tab.addEventListener('click', () => switchChapter(tab.dataset.chapter)));
+  
+  // 為了簡化，我移除了之前版本中 chapters 資料的省略部分，將完整的資料放入
+  // 這確保了程式碼的完整性和可運行性
+</script>
+</body>
+</html>

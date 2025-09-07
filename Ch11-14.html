@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>生物記憶卡_CH11 細胞週期和分裂</title>
+<style>
+  :root{ /* 預設主題：深紫色 */
+    --primary:#5a4fcf;
+    --primary-2:#8f7ce8;
+    --bg-1:#667eea;
+    --bg-2:#764ba2;
+    --card-1:#a18cd1;
+    --card-2:#fbc2eb;
+    --front-1:#c3aed6;
+    --front-2:#f7d6e0;
+    --back-1:#6a3093;
+    --back-2:#a044ff;
+    --text:#2c2c54;
+    --text-inv:#f0e9ff;
+    --shadow-1: rgba(90, 79, 207, 0.7);
+    --shadow-2: rgba(143, 124, 232, 0.9);
+  }
+  /* --- 新增：定義多套顏色主題 --- */
+  :root.theme-ocean-blue { /* 主題2：海洋藍 */
+    --primary: #0077b6; --primary-2: #0096c7; --bg-1: #005f73; --bg-2: #0a9396;
+    --card-1: #94d2bd; --card-2: #e9d8a6; --front-1: #e9f5db; --front-2: #cfe8e0;
+    --back-1: #001219; --back-2: #005f73; --text: #001219; --text-inv: #e9f5db;
+    --shadow-1: rgba(0, 119, 182, 0.7); --shadow-2: rgba(0, 150, 199, 0.9);
+  }
+  :root.theme-sunset-glow { /* 主題3：日落霞光 */
+    --primary: #e76f51; --primary-2: #f4a261; --bg-1: #e15f41; --bg-2: #e76f51;
+    --card-1: #f4a261; --card-2: #e9c46a; --front-1: #fff8f0; --front-2: #fefae0;
+    --back-1: #d62828; --back-2: #f77f00; --text: #264653; --text-inv: #ffffff;
+    --shadow-1: rgba(231, 111, 81, 0.7); --shadow-2: rgba(244, 162, 97, 0.9);
+  }
+  :root.theme-forest-green { /* 主題4：森林綠 */
+    --primary: #2d6a4f; --primary-2: #40916c; --bg-1: #1b4332; --bg-2: #2d6a4f;
+    --card-1: #74c69d; --card-2: #b7e4c7; --front-1: #d8f3dc; --front-2: #ffffff;
+    --back-1: #081c15; --back-2: #1b4332; --text: #081c15; --text-inv: #d8f3dc;
+    --shadow-1: rgba(45, 106, 79, 0.7); --shadow-2: rgba(64, 145, 108, 0.9);
+  }
+  /* --- 主題定義結束 --- */
+
+  *{box-sizing:border-box}
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    margin: 0; padding: 0;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    color: #f0f0f0;
+    transition: background 0.5s ease;
+  }
+  header {
+    background: linear-gradient(90deg, var(--primary), var(--primary-2));
+    width: 100%;
+    padding: 1.1rem 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    position: sticky; top: 0; z-index: 10;
+    transition: background 0.5s ease;
+  }
+  main {
+    flex: 1; width: 100%; max-width: 520px;
+    padding: 1rem 1rem 1.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: .75rem;
+  }
+  .chapters {
+    width: 100%; display: flex; gap: .5rem;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem;
+  }
+  .chapters::-webkit-scrollbar{height:6px}
+  .chapters::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:6px}
+  .tab {
+    white-space: nowrap; background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.25); padding: .45rem .75rem;
+    border-radius: 999px; cursor: pointer; transition: all .25s; font-size: .95rem;
+  }
+  .tab:hover { background: rgba(255,255,255,0.25); }
+  .tab.active {
+    background: #ffce6b; color: #2b2b2b; border-color: #ffce6b;
+    box-shadow: 0 2px 10px rgba(255,206,107,0.45);
+  }
+  #flashcardPage {
+    flex-direction: column; align-items: center; display: flex; width: 100%;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-container {
+    perspective: 1000px; width: 100%; height: 240px; outline: none;
+    animation: fadeIn 0.4s ease-out;
+  }
+  .card {
+    width: 100%; height: 240px; position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s, background 0.5s ease;
+    cursor: pointer; border-radius: 16px;
+    background: linear-gradient(135deg, var(--card-1), var(--card-2));
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3); color: var(--text);
+    display: flex; justify-content: center; align-items: center;
+    padding: 1.25rem; font-size: 1.05rem; line-height: 1.45;
+    user-select: none; text-align: left; white-space: pre-wrap;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; width: 100%; height: 100%; border-radius: 16px;
+    backface-visibility: hidden; display: flex; justify-content: center;
+    align-items: flex-start; padding: 1.25rem; box-sizing: border-box;
+    overflow-y: auto;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+  .card-front { background: linear-gradient(135deg, var(--front-1), var(--front-2)); color: var(--text); }
+  .card-back { transform: rotateY(180deg); background: linear-gradient(135deg, var(--back-1), var(--back-2)); color: var(--text-inv); }
+  #cardNumber { margin-top: 0.4rem; font-size: 0.9rem; color: #e9e6ff; text-align: center; }
+  .footer { margin-top: 1rem; width: 100%; display: flex; flex-direction: column; align-items: center; gap: .4rem; }
+  .button-row { display: flex; justify-content: center; gap: .6rem; flex-wrap: wrap; width: 100%; }
+  button {
+    background: var(--primary); border: none; color: white;
+    padding: 0.5rem 0.9rem; font-size: 1rem; border-radius: 10px; cursor: pointer;
+    transition: background 0.25s, transform .05s, box-shadow 0.25s;
+    min-width: 88px;
+    box-shadow: 0 4px 10px var(--shadow-1);
+  }
+  button:hover:not(:disabled) {
+    background: var(--primary-2); box-shadow: 0 6px 14px var(--shadow-2);
+  }
+  button:active:not(:disabled){ transform: translateY(1px); }
+  button:disabled { background: #a0aabe; cursor: default; box-shadow: none; color: #eee; }
+  #summaryBlock {
+    margin-top: 0.9rem; background: rgba(0,0,0,0.35); padding: 1rem; border-radius: 12px;
+    max-height: 340px; overflow-y: auto; width: 100%; text-align: left;
+    transition: all 0.4s ease-out; transform: translateY(20px); opacity: 0;
+  }
+  #summaryBlock:not([hidden]) { transform: translateY(0); opacity: 1; }
+  #summaryBlock h3 { margin: 0 0 .5rem 0; color: var(--text-inv); font-size: 1.05rem; }
+  #summaryBlock .summary-item { margin-bottom: .8rem; background: rgba(255,255,255,0.08); padding: .6rem .7rem; border-radius: 10px; }
+  #summaryBlock .summary-item p { margin: 0.2rem 0; }
+  .toolbar { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  .pill { font-size: .9rem; color: #fff; background: rgba(255,255,255,.15); padding: .35rem .6rem; border-radius: 999px; }
+  @media (max-width: 520px) {
+    .card { height: 210px; font-size: 1rem; padding: 1rem; }
+    .card-face { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<header id="headerTitle">生物記憶卡_CH11 細胞週期和分裂</header>
+<main>
+  <nav class="chapters" aria-label="章節切換">
+    <button class="tab active" data-chapter="CH11" aria-pressed="true">CH11</button>
+    <button class="tab" data-chapter="CH12" aria-pressed="false">CH12</button>
+    <button class="tab" data-chapter="CH13" aria-pressed="false">CH13</button>
+    <button class="tab" data-chapter="CH14" aria-pressed="false">CH14</button>
+  </nav>
+  <div class="toolbar">
+    <span id="chapterInfo" class="pill">目前章節：CH11</span>
+    <button id="themeBtn" aria-label="切換主題" style="min-width: auto; padding: 0.4rem 0.7rem;">🎨 切換主題</button>
+    <span class="pill">操作提示：點卡片或按空白鍵翻轉</span>
+  </div>
+  <section id="flashcardPage" aria-live="polite" aria-atomic="true">
+    <div class="card-container" tabindex="0" aria-label="抽認卡，點擊或按空白鍵翻轉">
+      <div id="card" class="card" role="button" aria-pressed="false" tabindex="0">
+        <div id="cardFront" class="card-face card-front"></div>
+        <div id="cardBack" class="card-face card-back"></div>
+      </div>
+      <div id="cardNumber" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div class="footer">
+      <div class="button-row" id="firstRow">
+        <button id="flipBtn" aria-label="翻轉卡片">🔄 翻轉</button>
+        <button id="hardBtn" aria-label="困難">🤔 困難</button>
+        <button id="mediumBtn" aria-label="一般">🙂 一般</button>
+        <button id="easyBtn" aria-label="容易">😄 容易</button>
+      </div>
+      <div class="button-row" id="secondRow">
+        <button id="prevBtn" aria-label="上一題" disabled>⬅️ 上一題</button>
+        <button id="summaryBtn" aria-label="困難題目小結">📝 困難小結</button>
+      </div>
+    </div>
+    <div id="summaryBlock" aria-live="polite" aria-atomic="true" hidden></div>
+  </section>
+</main>
+<script>
+  // 章節資料定義
+  const chapters = [
+    // ... (所有 chapters 的資料和之前一樣，此處省略以節省篇幅) ...
+    {
+      id: "CH11",
+      title: "生物記憶卡_CH11 細胞週期和分裂",
+      flashcards: [
+        { question: "遺傳信息在人體內由什麼分子攜帶？它在細胞核內與什麼物質共同組成染色體？", answer: "遺傳信息由脫氧核糖核酸 (DNA) 攜帶。在細胞核內，DNA 與蛋白質一起組成染色體。" },
+        { question: "什麼是「染色質」？它與「染色體」有何區別？", answer: "染色質是DNA和蛋白質在細胞核內未濃縮時的極幼線狀結構，在顯微鏡下無法觀察。染色體是染色質在細胞分裂前增粗和縮短後的結構，經染色後可在顯微鏡下觀察。" },
+        { question: "一條複製後的染色體由哪兩個主要部分組成？它们之間如何連接？", answer: "一條複製後的染色體由兩條「姊妹染色單體」組成。它们由「著絲點」連接。" },
+        { question: "什麼是「同源染色體」？它们有何特點？", answer: "同源染色體是細胞核內形態和大小相同、成對出現的染色體。它们一條來自父系，一張來自母系。" },
+        { question: "甚麼是同源染色體？", answer: "同源染色體是指一對在大小、形狀上相同，並在相同位置上帶有控制相同性狀的基因的染色體（當中可以具有不同的等位基因）。在二倍體細胞中，一條來自父系，另一條來自母系。" },
+        { question: "人類的體細胞中含有多少對染色體？總共有多少條染色體？", answer: "人類的體細胞中含有23對染色體，總共有46條染色體。" },
+        { question: "什麼是「二倍體」細胞？它是如何形成的？", answer: "二倍體細胞含有兩套染色體（2n），通常由有絲細胞分裂產生。" },
+        { question: "什麼是「單倍體」細胞？它是如何形成的？", answer: "單倍體細胞只含有一套染色體（1n），由減數細胞分裂產生，例如配子（生殖細胞）。" },
+        { question: "二倍體和單倍體細胞的分別是甚麼？", answer: "二倍體細胞含有兩套完整的染色體（即每種染色體都有同源染色體），通常以 2n 表示。體細胞多是二倍體。單倍體細胞只含一套染色體（n），配子（精子和卵子）為單倍體細胞。" },
+        { question: "細胞週期中的「間期」的主要工作是什麼？", answer: "間期的工作包括細胞生長，合成蛋白質和細胞器、DNA複製、生長至最大體積。" },
+        { question: "細胞在間期 是否處於「靜止」或「休息」狀態？", answer: "不是。間期是細胞最活躍的階段，細胞會在這段時間生長，複製遺傳物質 (DNA)，並為細胞分裂作準備。" },
+        { question: "有絲細胞分裂的生物學重要性是什麼？", answer: "有絲細胞分裂對多細胞生物的生長、組織修復（替補死去或受損細胞）以及一些生物的無性繁殖至關重要。" },
+        { question: "有絲細胞分裂的目的是甚麼？", answer: "主要目的是為了生物的生長、修補受損組織和進行無性生殖。它能確保新產生的子細胞與親本細胞有完全相同、數量也相同的遺傳物質。" },
+        { question: "有絲細胞分裂結束後，產生的子細胞與親本細胞在遺傳上有何特點？", answer: "有絲細胞分裂產生兩個子細胞，它們的染色體數目與親本細胞相同，且在遺傳特徵上與親本細胞核完全相同。" },
+        { question: "在有絲分裂的「前期」，染色體會發生什麼變化？", answer: "染色質開始濃縮、縮短、變粗，形成肉眼可見的染色體；核膜和核仁逐漸消失；紡錘絲開始形成。" },
+        { question: "在有絲分裂的「中期」，染色體有什麼典型的排列？", answer: "染色體移動並排列在細胞的赤道上，每個著絲點都連接到紡錘絲。" },
+        { question: "在有絲分裂的「後期」，關鍵事件是什麼？", answer: "連接姊妹染色單體的著絲點分裂，姊妹染色單體分離，並被紡錘絲拉向細胞兩極，成為獨立的染色體。" },
+        { question: "在有絲分裂的「末期」，細胞會發生什麼變化？", answer: "染色體到達兩極並開始解螺旋，重新形成染色質；紡錘絲消失；核膜和核仁重新形成，形成兩個新的細胞核。" },
+        { question: "什麼是「胞質分裂」？它通常發生在細胞分裂的哪個階段之後？", answer: "胞質分裂是指細胞質和細胞膜的分裂，將一個母細胞分成兩個子細胞。它通常發生在核分裂（有絲分裂或減數分裂）的末期之後。" },
+        { question: "DNA 複製發生在有絲分裂的哪一個階段？", answer: "DNA複製並非在有絲分裂期間發生，而是在分裂前的「間期」進行的。這是一個非常普遍的錯誤觀念。" },
+        { question: "有絲分裂過程中，染色體數目會否加倍？", answer: "不會。雖然在間期DNA含量會加倍（每條染色體有兩條染色單體），但染色體「數目」並無改變。直到後期姊妹染色單體分離，染色體數目才會暫時加倍，但隨後細胞質分裂，最終子細胞的染色體數目與親本細胞相同。" },
+        { question: "癌細胞的形成與有絲分裂有何關係？", answer: "癌症是由於細胞週期失控，細胞進行不受控制的有絲分裂，形成惡性腫瘤。" },
+        { question: "「染色體」和「染色單體」有何分別？", answer: "一條未複製的染色體由一條DNA分子構成。DNA複製後，一條染色體會由兩條完全相同的「姊妹染色單體」組成，它們由一個著絲點連接。在細胞分裂後期，姊妹染色單體分離後，便各自成為獨立的染色體。" },
+        { question: "為何在細胞分裂前期才能清楚看見染色體？", answer: "在間期，遺傳物質以細長的染色質形式存在，非常鬆散，在光學顯微鏡下難以看見。進入分裂期後，染色質會高度螺旋化和濃縮，形成粗短、清晰可見的染色體結構。" },
+        { question: "減數細胞分裂的生物學重要性是什麼？", answer: "減數細胞分裂產生配子（生殖細胞），使配子的染色體數目減半，確保在受精後合子的染色體數目維持恆定。它也是產生遺傳變異的重要機制。" },
+        { question: "減數分裂的獨有目的是甚麼？", answer: "減數分裂是為了產生遺傳上不完全相同、染色體數目減半的配子，以進行有性生殖。" },
+        { question: "減數細胞分裂結束後，產生的子細胞與親本細胞在遺傳上有何特點？", answer: "減數細胞分裂產生四個子細胞，它們的染色體數目是親本細胞的一半（單倍體），且在遺傳特徵上各不相同，也與親本細胞核不完全相同。" },
+        { question: "減數分裂分為哪兩個主要階段？", answer: "減數分裂I 和 減數分裂II。" },
+        { question: "減數分裂包含多少次細胞分裂？染色體複製了多少次？", answer: "減數分裂包含連續兩次細胞分裂（減數分裂 I 和 II），但染色體只在減數分裂 I 之前的間期複製一次。" },
+        { question: "減數分裂I的「前期I」中，一個關鍵的事件是什麼？它導致什麼結果？", answer: "同源染色體配對並發生交叉互換。這導致同源染色體上等位基因的重新組合，增加了子細胞的遺傳變異。" },
+        { question: "交叉互換在哪個階段發生？", answer: "發生在減數分裂 I 的前期。聯會是同源染色體配對的過程，而交叉互換則是它們交換部分遺傳物質的過程。" },
+        { question: "減數分裂I的「中期I」中，染色體如何排列？", answer: "同源染色體對（而不是姊妹染色單體）排列在細胞的赤道板上。" },
+        { question: "在減數分裂I的「後期I」中，分離的是什麼？", answer: "同源染色體分離，並被拉向細胞兩極。此時姊妹染色單體仍然連接在一起。" },
+        { question: "減數分裂II與有絲分裂有何相似之處？", answer: "減數分裂II的階段（前期II、中期II、後期II、末期II）與有絲分裂的各個階段基本相似，例如姊妹染色單體在後期II分離。" },
+        { question: "減數分裂 I 和減數分裂 II 的主要區別是甚麼？", answer: "減數分裂 I 分離的是「同源染色體」，使染色體數目減半。減數分裂 II 分離的則是「姊妹染色單體」，過程類似有絲分裂。" },
+        { question: "經過減數分裂 I 後，細胞是單倍體還是二倍體？", answer: "雖然此時每條染色體仍有兩條染色單體，但因為同源染色體已經分離，細胞內只剩下一套染色體，所以是單倍體。這是容易混淆的地方。" },
+        { question: "減數細胞分裂如何通過「獨立分類」（或隨機排列）來產生遺傳變異？", answer: "在減數分裂I的中期I，同源染色體對在赤道板上的排列是隨機的。每對同源染色體都會獨立於其他對進行排列，導致不同染色體組合的配子產生。" },
+        { question: "「獨立分配」指的是甚麼的分離？", answer: "指的是在減數分裂 I 中期 I，「同源染色體對」在赤道板上的排列方式是隨機的，導致它們分離到不同子細胞時也是隨機組合的。" },
+        { question: "除了互換和獨立分類，什麼其他事件也能增加有性生殖後代的遺傳變異？", answer: "「隨機受精」。在受精過程中，任何一個雄性配子（精子）都有機會與任何一個雌性配子（卵子）結合，形成合子，進一步增加後代的遺傳多樣性。" },
+        { question: "為何兄弟姊妹間（雙生除外）樣貌會不同？減數分裂如何解釋？", answer: "減數分裂透過兩種機制產生遺傳變異：(1) 前期 I 的交叉互換，使染色體上的基因重新組合；(2) 中期 I 的獨立分配，即每對同源染色體隨機排列和分離，導致配子有不同的染色體組合。" },
+        { question: "有絲分裂和減數分裂在「子細胞數量」和「染色體數目」上有何不同？", answer: "有絲分裂產生2個子細胞，染色體數目與親本細胞相同（2n→2n）。減數分裂產生4個子細胞，染色體數目是親本細胞的一半（2n→n）。" },
+        { question: "有絲分裂和減數分裂在「核分裂次數」和「基因變異」上有何不同？", answer: "有絲分裂只有1次核分裂，不產生基因變異（除非發生突變）。減數分裂有2次核分裂，會透過基因交換和獨立分類產生基因變異。" },
+        { question: "分裂後的子細胞遺傳物質完全相同的是有絲分裂還是減數分裂？", answer: "有絲分裂。子細胞在遺傳上與親本細胞完全相同。減數分裂產生的子細胞（配子）則各不相同，且與親本細胞也不同。" },
+        { question: "香蕉樹的栽培品種大多是「三倍體」，為什麼它们通常不育？", answer: "三倍體（3n）在減數分裂形成配子時，染色體無法正常配對和分離，導致產生不正常的配子或無法產生配子，因此不育。" },
+        { question: "為什麼「不育的三倍體香蕉樹」要通過「旁枝另行種植」來繁殖？", answer: "旁枝的細胞透過有絲細胞分裂來生長，能產生與母株基因完全相同的完整香蕉樹。這種無性繁殖方式不涉及減數分裂和受精，因此可以規避三倍體不育的問題。" },
+        { question: "如果一個生物的體細胞有20條染色體，它的配子有多少條染色體？經過有絲分裂後的子細胞又有多少條？", answer: "它的配子（經減數分裂）會有10條染色體。它的體細胞經過有絲分裂後，產生的子細胞仍然是20條染色體。" },
+        { question: "所有生物都進行減數分裂嗎？", answer: "不是。只有進行有性生殖的真核生物才會進行減數分裂。例如細菌等原核生物則透過二分裂進行無性繁殖。" },
+        { question: "在圖像題中，如何快速分辨一個細胞正處於有絲分裂還是減數分裂？", answer: "關鍵是尋找「同源染色體配對」的現象。如果在細胞中期，染色體是成對排列在赤道板上，那它就是減數分裂 I。如果只是單獨排列，没有同源染色體，則是有絲分裂或減數分裂 II。" },
+        { question: "在DNA含量的曲線圖中，DNA含量加倍的斜線代表哪個時期？", answer: "代表間期，即DNA複製的時期。" },
+        { question: "在DNA含量的曲線圖中，減數分裂會有幾次DNA含量減半的垂直下降？", answer: "會有兩次。第一次是在減數分裂 I 末期的胞質分裂後，第二次是在減數分裂 II 末期的胞質分裂後。" },
+        { question: "有絲分裂的中期與減數分裂 II 的中期的細胞圖像有何不同？", answer: "兩者圖像可能非常相似，都是染色體單獨排列在赤道板上。主要區別在於染色體數目：減數分裂 II 細胞的染色體數目是親代體細胞的一半。" },
+        { question: "交叉互換會發生在有絲分裂嗎？", answer: "不會。交叉互換是減數分裂 I 前期獨有的過程，是有性生殖遺傳變異的主要來源之一。" }
+      ]
+    },
+    {
+   id: "CH12",
+      title: "生物記憶卡_CH12 有花植物的生殖",
+      flashcards: [
+        { question: "什麼是無性生殖？", answer: "無性生殖是不涉及配子融合的生殖方式，後代與親本遺傳物質相同，例如細菌二分裂或植物營養繁殖。無性生殖的特點是後代没有遺傳變異。" },
+        { question: "什麼是有性生殖？", answer: "有性生殖涉及雄配子和雌配子融合，後代遺傳物質為兩個親本的組合，例如花的傳粉和受精。有性生殖的特點是後代具有遺傳變異。" },
+        { question: "無性生殖和有性生殖在親本數目上有何不同？", answer: "無性生殖只需一個親本，有性生殖通常需要兩個親本提供配子（也可以只有一個親本，如兩性花）。" },
+        { question: "什麼是營養繁殖？", answer: "營養繁殖是利用植物的營養器官（如莖、葉）形成新植株的無性生殖方式。\n解釋: 營養繁殖是植物無性生殖的一種常見形式。" },
+        { question: "塊莖和鱗莖有何不同？", answer: "塊莖是膨大的地下莖（如馬鈴薯），鱗莖是短小地下莖外包肉質鱗葉（如洋蔥）。" },
+        { question: "插枝是什麼？", answer: "插枝是人工將植物枝條插入土壤中生根，形成新植株的營養繁殖方法。插枝是常用的人工營養繁殖技術。" },
+        { question: "花萼的作用是什麼？", answer: "花萼由萼片組成，保護花蕾內部結構免受損害。花萼是花朵最外層的保護結構。" },
+        { question: "花瓣如何幫助傳粉？", answer: "花瓣以顏色、芳香或蜜源標記吸引昆蟲，促進傳粉。" },
+        { question: "雄蕊的兩部分是什麼？", answer: "雄蕊包括花絲（支撐）和花藥（產生花粉粒）。雄蕊是花朵的雄性生殖器官。" },
+        { question: "心皮由哪三部分組成？", answer: "心皮包括柱頭（接收花粉）、花柱（支撐柱頭）和子房（含胚珠）。\n解釋: 心皮是花朵的雌性生殖器官。" },
+        { question: "什麼是兩性花？", answer: "兩性花同時具有雄蕊和心皮，能產生雄配子和雌配子。\n解釋: 大多數花朵是兩性花。" },
+        { question: "單性花和兩性花有何區別？", answer: "單性花只有雄蕊或心皮，兩性花則兩者都有。這是根據花朵生殖器官的完整性來分類。" },
+        { question: "傳粉的定義是什麼？", answer: "傳粉是花粉粒從花藥傳到柱頭的過程。" },
+        { question: "自花傳粉和異花傳粉的後代有何不同？", answer: "自花傳粉後代遺傳變異少，異花傳粉後代遺傳變異多。" },
+        { question: "蟲媒花的柱頭有什麼特徵？", answer: "蟲媒花的柱頭帶黏性且藏在花內，方便沾取昆蟲帶來的花粉。" },
+        { question: "風媒花的花藥有什麼特徵？", answer: "風媒花的花藥懸垂在花外，輕附於花絲，方便花粉隨風散播。" },
+        { question: "花粉管在受精中的作用是什麼？", answer: "花粉管將雄配子從柱頭運送到胚珠，完成受精。" },
+        { question: "受精後子房和子房壁變成什麼？", answer: "子房發育成包裹種子的果實，子房壁會發育成果皮。" },
+        { question: "胚珠在受精後有什麼變化？", answer: "胚珠發育成種子，內部的合子成為胚胎。\n解釋: 種子是胚珠發育的結果。" },
+        { question: "果實如何幫助種子散播？", answer: "果實通過風、水或動物等方式，將種子帶到遠處。果實是種子散播的載體。" },
+        { question: "動物如何散播種子？", answer: "動物吃下多汁果實，種子隨糞便排出，實現散播。" },
+        { question: "種子散播有什麼好處？", answer: "種子散播減少競爭，讓植物佔據新環境。有利於物種的繁衍和分佈。" },
+        { question: "無性生殖比有性生殖快的原因是什麼？", answer: "無性生殖直接從母株獲取食物，不需傳粉或種子萌發。無性生殖過程簡短，效率高。" },
+        { question: "為什麼無性生殖後代易受疾病影響？", answer: "無性生殖後代遺傳相同，缺乏變異，疾病易傳播。没有遺傳變異是無性生殖的缺點（在特定情況下也可以是優點）。" },
+        { question: "有性生殖為什麼較慢？", answer: "有性生殖需傳粉、受精和種子發育，過程複雜。" },
+        { question: "什麼是不定根？", answer: "不定根從莖或葉長出，幫助吸收水分和礦物質。不定根是植物適應環境的一種方式。" },
+        { question: "花粉粒和雄配子的關係是什麼？", answer: "花粉粒內含雄配子，但本身不是雄配子。花粉粒是雄配子的載體。" },
+        { question: "果皮和種皮分別由什麼發育而成？", answer: "果皮由子房壁發育，種皮由珠被發育。" },
+        { question: "異花傳粉比自花傳粉更有利的理由是什麼？", answer: "異花傳粉增加遺傳變異，提升物種生存能力。" },
+        { question: "無性生殖和有性生殖的主要區別是什麼？", answer: "無性生殖只涉及單一親本，後代在遺傳上與親本完全相同。有性生殖通常涉及兩個親本（也可以只涉及一個親本，如兩性花），經配子結合（受精）產生後代，後代在遺傳上與親本不同。" },
+        { question: "有性生殖對於植物有哪些主要優點？", answer: "有性生殖的主要優點是能增加後代的遺傳變異。" },
+        { question: "什麼是營養繁殖？它屬於哪種生殖方式？", answer: "營養繁殖是無性生殖的一種方式。過程中，有花植物的營養部分（如根、莖、葉）重新發育成一棵新的植株。" },
+        { question: "馬鈴薯透過哪種天然營養繁殖方式繁殖？", answer: "馬鈴薯透過塊莖繁殖。塊莖是地下莖末端脹起的部分，能儲存食物並長出幼芽。" },
+        { question: "花萼和花瓣在花朵中有什麼作用？", answer: "花萼通常由萼片組成，主要作用是保護花芽。花瓣組成花冠，通常鮮豔或有氣味，主要作用是吸引傳粉者。兩者在花朵發育和傳粉中扮演不同角色。" },
+        { question: "雄蕊的哪一部分產生花粉？", answer: "雄蕊的花藥部分產生花粉。花藥是花粉的生產地點。" },
+        { question: "雌蕊由哪三部分組成？哪一部分接受花粉？", answer: "雌蕊由柱頭、花柱和子房組成。柱頭是接受花粉的部分。" },
+        { question: "傳粉和受精是同一個過程嗎？為什麼？", answer: "傳粉和受精不是同一個過程。傳粉是花粉的轉移，而受精是雄配子和卵細胞融合的過程。傳粉是受精的前提，但傳粉不一定會導致受精。" },
+        { question: "自花傳粉和異花傳粉的主要區別是什麼？", answer: "自花傳粉是指花粉從同一朵花的雄蕊傳到雌蕊，或從同一株植物不同花的雄蕊傳到雌蕊。異花傳粉是指花粉從一株植物的花傳到另一株同種植物的花。區別在於花粉來源是否為同一朵花或同一株植物。" },
+        { question: "蟲媒花的花朵通常具有哪些特徵？", answer: "蟲媒花的花朵通常具有大而鮮豔的花瓣、產生香味或蜜液，花粉表面粗糙且帶黏性，便於附著在昆蟲身上。這些特徵是吸引昆蟲的適應性表現。" },
+        { question: "風媒花朵通常具有哪些特徵？", answer: "風媒花的花朵通常花小、不鮮豔、沒有香味或蜜液，花藥大且通常伸出花外，產生大量輕而光滑的花粉，柱頭大且多呈羽毛狀，便於捕捉空氣中的花粉。這些特徵有利於高效的風力傳粉。" },
+        { question: "受精後，花朵的子房和胚珠分別發育成什麼？", answer: "受精後，子房會發育成果實，胚珠會發育為種子。" },
+        { question: "種子的主要結構包括哪些部分？它們的功能是什麼？", answer: "種子的主要結構包括種皮（保護作用）、胚胎（發育成新植株）和子葉（儲存食物）。" },
+        { question: "果實的主要功能是什麼？", answer: "果實的主要功能是保護種子，並幫助種子傳播到新的地方。" },
+        { question: "列舉三種種子傳播的方式。", answer: "種子傳播的方式包括風力傳播、水力傳播和動物傳播。這些方式有助於種子遠離母株，尋找新的生長環境。" },
+        { question: "為什麼透過無性生殖繁殖的植物後代與親本在遺傳上是相同的？", answer: "無性生殖透過有絲細胞分裂完成。 有絲分裂產生的子細胞與母細胞具有完全相同的遺傳物質，因此後代在遺傳上與親本完全相同。" },
+        { question: "有些學生認為水和礦物質是植物的「食物」，這種觀點正確嗎？", answer: "這種觀點不正確。植物透過光合作用自己製造「食物」（葡萄糖）。水和礦物質是植物生長所需的原料，就像食材一樣，而不是植物直接的「食物」。 植物的「食物」是自身合成的有機物，水和礦物質是其合成的必要原料。" }
+      ]
+    },
+    {
+      id: "CH13",
+      title: "生物記憶卡_CH13 人的生殖",
+      flashcards: [
+        { question: "男性生殖系統中，哪個器官同時負責產生精子和分泌雄性激素？", answer: "睾丸。其內的精小管負責製造精子，管間細胞負責分泌雄性激素。" },
+        { question: "附睾在男性生殖系統中的作用是什麼？", answer: "暫時儲存精子和讓精子成熟。" },
+        { question: "陰囊有什麼生理作用？", answer: "將睾丸保持在比體溫低的環境，有利精子發育。" },
+        { question: "精子的哪個部分為游動提供能量？", answer: "中段，當中含有大量線粒體。" },
+        { question: "精子頭部的頂體有什麼功能？", answer: "含有酶，幫助精子透過分解穿透卵子外層。" },
+        { question: "除了精子外，哪些細胞含有大量線粒體？", answer: "肌肉細胞（用於收縮）和小腸絨毛上皮細胞（用於吸收）。" },
+        { question: "女性生殖系統中卵巢的主要功能是什麼？", answer: "製造卵子和雌性激素及孕激素。" },
+        { question: "受精通常在女性生殖系統的哪個部位發生？", answer: "輸卵管的上半部。" },
+        { question: "輸卵管中的纖毛有什麼作用？", answer: "通過纖毛擺動將卵子（受精後為胚胎）運向子宮。" },
+        { question: "卵子的細胞核含有多少染色體？為什麼是這個數目？", answer: "單倍體，因為卵子是減數分裂產生的配子。確保受精後合子具有二倍體染色體，維持物種染色體數目。" },
+        { question: "精子和卵子在體積、數量和活動能力上有何主要區別？", answer: "• 精子：體積非常小，數量極多，有尾巴（鞭毛）能主動游動。\n• 卵子：體積相對巨大（人體最大細胞），數量少，不能主動移動。" },
+        { question: "精子和卵子在活動能力上有什麼不同？", answer: "精子能游動，卵子不能活動，靠纖毛和肌肉收縮運輸。" },
+        { question: "男性第二性徵的有何例子？", answer: "長鬍鬚、聲音變低沉或肩膀變寬。" },
+        { question: "以下哪項是女性的第二性徵？\n選項：A. 恥毛生長 B. 身高增加 C. 月經 D. 臉上長痘痘", answer: "A. 恥毛生長" },
+        { question: "什麼是月經週期？一般持續多久？", answer: "子宮內膜增厚和脫落以準備胚胎植入的週期，通常 28 天。" },
+        { question: "什麼是排卵？在 28 天月經週期中的哪天發生？", answer: "成熟卵子從卵巢釋放，通常在第 14 天左右。" },
+        { question: "月經週期中，黃體的功能是什麼？", answer: "分泌激素維持子宮內膜厚度，支持懷孕。" },
+        { question: "在月經週期中哪些日子性交最可能懷孕？\n選項：A. 第 3-6 天 B. 第 11-14 天 C. 第 21-24 天 D. 第 26-29 天", answer: "B. 第 11-14 天。" },
+        { question: "受精後，合子如何進入子宮並植入子宮內膜？", answer: "合子經有絲分裂形成細胞球，通過纖毛擺動移動到子宮並植入至已加厚的子宮內膜。" },
+        { question: "植入是什麼過程？它發生在哪裡？", answer: "植入是指發育早期的胚胎植入到母親的子宮內膜中的過程。" },
+        { question: "胎兒在子宮內是否會呼吸？它的氧氣從何而來？", answer: "胎兒在子宮內不進行呼吸，其肺部充滿液體。它的所有氧氣都來自母體血液，通過胎盤擴散到胎兒血液中，再由臍靜脈運送給胎兒。（提提同學，臍帶為胎兒結構，而非母親的結構。）" },
+        { question: "雙胞胎中，單卵雙生的性別和基因型是否必定相同？異卵雙生呢？", answer: "單卵雙生由同一個受精卵分裂而成，因此他們的基因型完全相同，性別也必定相同。異卵雙生由兩個不同的受精卵發育而成，他們的基因相似度和普通兄弟姐妹一樣，性別可能相同也可能不同。" },
+        { question: "羊水是由什麼結構產生？其功能是什麼？", answer: "羊膜分泌羊水，保護胚胎、提供緩衝和允許運動。保護胚胎免受機械損傷，保持穩定環境，防止乾燥。" },
+        { question: "胎盤的功能有哪些？", answer: "物質交換（氧、養分、廢物）、激素分泌、屏障作用（避免病原體直接進入）。" },
+        { question: "胎盤中物質交換的結構特徵是？", answer: "有大量指狀絨毛以增加表面積、大量血管存在能迅速運走已吸收的物質，以維持陡峭的濃度梯度、薄壁縮短擴散距離。" },
+        { question: "臍帶內動脈和靜脈的血液成分有何不同？", answer: "臍動脈攜帶缺氧血和含有大量代謝廢物，臍靜脈攜帶含氧血和含有大量養分。" },
+        { question: "為什麼母親和胎兒的血液不直接混合？", answer: "避免母親血壓損害胎兒血管及血型不合問題。" },
+        { question: "臍帶是屬於母體還是胎兒的結構？", answer: "它們主要由胎兒的組織發育而成，因此屬於胎兒的附屬結構，而非屬於母親。" },
+        { question: "羊水對胎兒有哪些重要的保護作用？", answer: "緩衝震盪，保護胎兒免受機械損傷；維持恆定溫度；提供活動空間，利於胎兒肌肉和骨骼發育。" },
+        { question: "胎兒在子宮內會自己消化和呼吸嗎？", answer: "不會。胎兒的消化和呼吸系統尚未啟用。所有營養和氧氣都通過臍靜脈從胎盤獲得；所有代謝廢物和二氧化碳都通過臍動脈送到胎盤排出（於胎盤以擴散形式進行物質交換）。" },
+        { question: "單卵雙生與二卵雙生在形成過程上有何根本不同？", answer: "• 單卵雙生：由一個受精卵在早期分裂成兩個獨立的胚胎發育而成，基因完全相同。\n• 二卵雙生：由兩個不同的卵子分別與兩個不同的精子受精後發育而成，基因相似度和普通兄弟姐妹一樣。" },
+        { question: "母乳喂哺對新生嬰兒有什麼獨特的好處？", answer: "母乳除了提供所需的營養外，還含有來自母體的抗體，能增強嬰兒的免疫力，幫助抵抗疾病。" },
+        { question: "哪種避孕方法除了能避孕，還能有效預防性傳播疾病？", answer: "安全套。它能作為物理屏障，阻止精液交換，同時也阻止體液中的病原體（如細菌、病毒）傳播。" },
+        { question: "避孕方法中，阻止精子與卵相遇的例子有哪些？", answer: "避孕套、子宮帽。" },
+        { question: "阻止胚胎植入子宮內膜的避孕方法是什麼？", answer: "子宮環等。" },
+        { question: "為什麼精子含有頂體？", answer: "釋放酶分解卵的啫喱層，幫助受精。" },
+        { question: "為什麼精子在女性生殖道中有較高死亡率？", answer: "受酸性環境、黏液阻擋及體溫不適影響。" },
+        { question: "什麼是單卵雙生？", answer: "由一個受精卵分裂成兩個胚胎。" },
+        { question: "避孕方法有哪三種生物學原理？", answer: "分析其是否阻止精子與卵相遇、阻止排卵或阻止胚胎植入。" },
+        { question: "精液分析中，哪兩個指標與男性不育關係最大？", answer: "精子數量和精子活動力。" },
+        { question: "臍動脈中流的是含氧血還是缺氧血？血液的流向是？", answer: "流的是缺氧血。血液從胎兒流向胎盤，將胎兒產生的二氧化碳和代謝廢物送走。" },
+        { question: "臍靜脈中流的是含氧血還是缺氧血？血液的流向是？", answer: "流的是含氧血。血液從胎盤流向胎兒，為胎兒帶來從母體獲得的氧氣和營養物質。" },
+        { question: "為什麼臍帶血管中的血液類型（動脈/靜脈 vs 含氧/缺氧）與我們熟知的成人循環系統正好相反？", answer: "因為定義血管的標準是基於相對於心臟的血流方向，而非含氧量。動脈是將血帶離心臟，靜脈是將血帶回心臟。在胎兒循環中，氣體交換的器官是胎盤，而不是肺。因此，從胎兒心臟流向胎盤的臍動脈帶走廢物（缺氧血），而從胎盤流回胎兒心臟的臍靜脈帶來營養（含氧血）。" },
+        { question: "臍帶和胎盤是屬於母體還是胎兒的結構？", answer: "臍帶是由胎兒的組織發育而來的，因此屬於胎兒的結構。胎盤包含兩者的組織。胎盤緊貼母體的子宮壁，以便與母體血液進行物質交換。" },
+        { question: "胎盤會直接「過濾」母體的血液給胎兒使用嗎？", answer: "不會。母體與胎兒的血液循環是各自獨立、互不混合的。營養、氧氣、廢物等物質是透過胎盤中一層薄薄的細胞膜（胎盤屏障）進行擴散和主動運輸來交換的。" },
+        { question: "分娩的階段有哪些？", answer: "擴張（子宮頸擴張，羊膜破裂）、娩出（胎兒推出）、胎盤排出。" },
+        { question: "為什麼輸卵管結紮不能預防性傳播疾病？", answer: "只阻斷配子運輸，不阻止病原體傳播。" },
+        { question: "有花植物和哺乳動物如何補償配子傳遞時的遺失或死亡？", answer: "有花植物：製造大量花粉。\n哺乳動物：產生大量精子並體內受精。" },
+        { question: "有花植物和哺乳動物如何處理配子距離遠的問題，以增加受精機會？", answer: "有花植物：傳粉媒介將花粉送至胚珠。\n哺乳動物：交配行為，將精子導入雌體。" },
+        { question: "有花植物和哺乳動物如何防止配子乾化？", answer: "有花植物：花粉有厚壁。\n哺乳動物：配子在體內受精，精液提供水介質。" }
+      ]
+    },
+    {
+      id: "CH14",
+      title: "生物記憶卡_CH14 生長和發育",
+      flashcards: [
+        { question: "生長與發育的區別是什麼？", answer: "生長是體積和乾質量的永久性增加，發育是形態和複雜性的永久改變。" },
+        { question: "為什麼僅測量樹木的高度無法反映其實際生長情況？", answer: "樹木可能向側向生長（如枝條或寬度增加），高度無顯著變化，因此高度無法全面反映生長。" },
+        { question: "植物生長主要透過哪兩個過程？", answer: "細胞分裂和細胞增大。" },
+        { question: "為什麼河豚脹大不算是真正的生長？", answer: "因為體積變化是暫時的，不是永久增加。" },
+        { question: "為什麼表面積適合用於測量葉片的生長？", answer: "葉片為扁平結構，表面積能準確反映其擴展程度。" },
+        { question: "體積測量最適合哪類結構？", answer: "形狀不規則的結構，例如水果。" },
+        { question: "乾質量與鮮質量有何不同？", answer: "乾質量是除去水分後的重量，鮮質量包括水分重量。" },
+        { question: "如何量度乾質量？", answer: "把生物放進略高於 100°C 烘箱加熱，直至重量不再因失去水分而減少。" },
+        { question: "僅測量單一生長參數（如高度）有什麼缺點？", answer: "僅限於單一維度，無法反映其他層面的生長情況。" },
+        { question: "生長與繁殖有何差別？", answer: "兩者均涉及生物變化，但生長是體型增大，繁殖是產生後代。" },
+        { question: "使用鮮質量量度生長的缺點是什麼？", answer: "受水分含量變化影響，可能不準確，因為水的含量會被環境所影響。" },
+        { question: "為什麼將綠豆浸泡在 100°C 沸水中可能無法發芽？", answer: "沸水會使蛋白質和酶變性，殺死種子，阻止發芽。" },
+        { question: "種子萌發需要哪些條件？", answer: "水、氧氣、溫暖環境。" },
+        { question: "生物學中的「生長參數」指的是什麼？", answer: "用於評估生長的可測量因子，如高度、表面積或體積。" },
+        { question: "水對種子萌發的重要性有哪些？", answer: "軟化種皮、活化酶、水解儲存食物和運輸可溶物。" },
+        { question: "種子萌發時，子葉的乾質量為何會減少？", answer: "因為儲存的食物被分解供胚芽和胚根使用。" },
+        { question: "無損測量對生長研究的益處是什麼？", answer: "可在不傷害生物的情況下，對同一生物進行多次測量。" },
+        { question: "植物的初生生長發生在哪裡？", answer: "根端和莖端的頂端分生組織。" },
+        { question: "次生生長由哪種組織引起？", answer: "維管束的形成層（側生分生組織）。" },
+        { question: "何謂維管束形成層？它的位置在哪裡？", answer: "產生次生木質部和韌皮部的分生組織，位於木質部和韌皮部之間。" },
+        { question: "一年生植物的生長特點是什麼？", answer: "一個生長季節完成生命週期，生長曲線呈 S 形。" },
+        { question: "單一維度測量 (如高度) 的局限性是什麼？", answer: "僅捕捉生長的一個方面，無法反映其他維度的變化。" },
+        { question: "人體生長速率在哪兩個階段最快？", answer: "嬰兒期和青年期。" },
+        { question: "為什麼量度植物高度不能完全反映生長？", answer: "因為植物可能只向橫向生長。" },
+        { question: "種子萌發期間澱粉酶的作用是什麼？", answer: "水解澱粉成糖，提供給呼吸作用使用。" },
+        { question: "根據生物學定義，「生長」是指什麼？它透過哪兩個主要的細胞過程來實現？", answer: "生長是指生物體積和乾質量的永久性增加。它主要透過細胞分裂（增加細胞數量）和細胞增大（增加細胞體積）兩個過程來實現。" },
+        { question: "「生長」和「發育」有何不同？請舉例說明。", answer: "「生長」是量變（變大、變重），而「發育」是質變（變得更複雜、更成熟）。例如，一個嬰兒體重增加是生長；而他學會走路、長出牙齒、性成熟則是發育的一部分。發育包含了生長。" },
+        { question: "在量度生物生長時，為何科學家偏好使用「乾質量」而非「鮮質量」？", answer: "因為生物體內的水分含量會因飲水、流汗、排尿等生理活動而劇烈波動，濕質量不穩定。乾質量排除了水分的影響，能更準確、客觀地反映生物體內有機物質的真正積累，即真實的生長。" },
+        { question: "簡述如何量度一株幼苗的乾質量。", answer: "1. 將幼苗表面的泥土洗淨。\n2. 放入恆溫烘箱中（約 80-100°C）進行烘乾。\n3. 定時取出稱重，直至連續兩次或多次稱得的質量相同（即達到恆重），此重量即為乾質量。" },
+        { question: "僅有細胞分裂而沒有細胞增大，體積會有明顯變化嗎？為什麼？", answer: "不能。如果只有細胞分裂，生物體的細胞數量會增加，但總體積可能變化不大。必須伴隨細胞增大，即細胞合成更多細胞質並吸收水分，生物體的體積和質量才會顯著增加。" },
+        { question: "什麼是「細胞分化」？它對多細胞生物有何重要性？", answer: "細胞分化是指在發育過程中，細胞在形態、結構和功能上發生特異性變化的過程。它使生物體能形成不同的組織（如肌肉組織、神經組織）和器官（如心、肝），從而執行各種複雜的生命功能。" },
+        { question: "在觀察洋蔥根尖細胞時，科學家主要觀察哪一個區域？為什麼？", answer: "主要觀察細胞分裂區。因為這個區域的細胞具有旺盛的分裂能力，可以觀察到有絲分裂的各個階段。" },
+        { question: "人體的皮膚細胞和神經細胞含有相同的遺傳物質 (DNA) 嗎？如果相同，為何它們的功能和形態差異如此之大？", answer: "是的，它們含有相同的遺傳物質。它們的差異源於細胞分化過程中的基因選擇性表達，即在不同細胞中，只有一部分基因被「開啟」並表達，從而決定了細胞特有的形態和功能。" },
+        { question: "植物的生長為何主要集中在根尖和莖尖等部位？", answer: "因為這些部位含有頂端分生組織，這是一種由未分化、能不斷分裂的細胞組成的組織，是植物長度和高度增加的主要來源。" },
+        { question: "為何給植物施肥可以促進其生長？肥料提供了什麼？", answer: "肥料主要提供了植物生長必需的無機鹽（如氮、磷、鉀）。這些無機鹽是植物合成重要有機物（如蛋白質、核酸、葉綠素）的原料，從而促進細胞分裂和增大，加速生長。" },
+        { question: "我們可以通過計算樹木的「年輪」來估計其年齡。年輪的形成與哪種組織有關？", answer: "與形成層（一種側生分生組織）有關。形成層細胞在生長季節（春夏季）分裂快、細胞大、顏色淺；在非生長季節（秋冬季）分裂慢、細胞小、顏色深，從而形成一深一淺的環紋，代表一年。" },
+        { question: "如果一個實驗顯示，某植物的鮮重（鮮質量）增加了，但乾質量卻減少了。請解釋這個現象可能的原因。", answer: "這意味著植物吸收的水分量大於其通過呼吸作用消耗的有機物量。植物可能處於一個無法進行光合作用（如黑暗中）但仍能從濕潤土壤中吸水的環境，導致它一邊消耗自身儲存的有機物（乾質量下降），一邊又吸收水分（濕質量增加）。" }
+      ]
+    }
+  ];
+  // 狀態管理：每章節各自維護學習狀態
+  const stateByChapter = {};
+  function initChapterState(chapterId){
+    const chapter = chapters.find(c=>c.id===chapterId);
+    stateByChapter[chapterId] = {
+      cardsWithWeights: chapter.flashcards.map(c => ({ ...c, weight: 1, hardCount: 0 })),
+      currentIndex: 0, flipped: false, flipping: false, history: [0], historyPos: 0
+    };
+  }
+  chapters.forEach(ch => initChapterState(ch.id));
+  
+  // 目前章節 & 主題
+  let currentChapterId = "CH11";
+  const themes = ['', 'theme-ocean-blue', 'theme-sunset-glow', 'theme-forest-green'];
+  let currentThemeIndex = 0;
+
+  // UI 元素
+  const docElem = document.documentElement;
+  const headerTitle = document.getElementById('headerTitle');
+  const chapterInfo = document.getElementById('chapterInfo');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const card = document.getElementById('card');
+  const cardFront = document.getElementById('cardFront');
+  const cardBack = document.getElementById('cardBack');
+  const cardNumber = document.getElementById('cardNumber');
+  const flipBtn = document.getElementById('flipBtn');
+  const hardBtn = document.getElementById('hardBtn');
+  const mediumBtn = document.getElementById('mediumBtn');
+  const easyBtn = document.getElementById('easyBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const summaryBtn = document.getElementById('summaryBtn');
+  const summaryBlock = document.getElementById('summaryBlock');
+  const themeBtn = document.getElementById('themeBtn');
+
+  function getChapter(){ return chapters.find(c=>c.id===currentChapterId); }
+  function getState(){ return stateByChapter[currentChapterId]; }
+  
+  function updateHeader(){
+    const ch = getChapter();
+    headerTitle.textContent = ch.title;
+    document.title = ch.title;
+    chapterInfo.textContent = `目前章節：${ch.id}`;
+  }
+  
+  function renderCard() {
+    const cardContainer = document.querySelector('.card-container');
+    cardContainer.style.animation = 'none';
+    void cardContainer.offsetHeight; // 觸發瀏覽器重繪 (reflow)
+    cardContainer.style.animation = '';
+
+    const st = getState();
+    st.flipped = false;
+    card.classList.remove("flipped");
+    card.setAttribute("aria-pressed", "false");
+    const item = st.cardsWithWeights[st.currentIndex];
+    cardFront.textContent = item.question;
+    cardBack.textContent = item.answer;
+    cardNumber.textContent = `卡片 ${st.currentIndex + 1} / ${st.cardsWithWeights.length}`;
+    prevBtn.disabled = (st.historyPos <= 0);
+    summaryBlock.hidden = true;
+    summaryBlock.innerHTML = "";
+  }
+  
+  function flipCard() {
+    const st = getState();
+    if (st.flipping) return;
+    st.flipping = true;
+    st.flipped = !st.flipped;
+    card.classList.toggle("flipped", st.flipped);
+    card.setAttribute("aria-pressed", st.flipped ? "true" : "false");
+    setTimeout(() => { st.flipping = false; }, 600);
+  }
+  
+  function updateWeight(difficulty) {
+    const st = getState();
+    const cardObj = st.cardsWithWeights[st.currentIndex];
+    if (difficulty === "hard") { cardObj.weight += 2; cardObj.hardCount++; }
+    else if (difficulty === "medium") { /* 不變 */ }
+    else if (difficulty === "easy") { cardObj.weight = Math.max(1, cardObj.weight - 1); }
+  }
+  
+  function weightedRandomIndex() {
+    const st = getState();
+    const totalWeight = st.cardsWithWeights.reduce((sum, c) => sum + c.weight, 0);
+    if (totalWeight <= 0) return 0;
+    let r = Math.random() * totalWeight;
+    for (let i = 0; i < st.cardsWithWeights.length; i++) {
+      r -= st.cardsWithWeights[i].weight;
+      if (r < 0) return i;
+    }
+    return 0;
+  }
+  
+  function nextCard(difficulty) {
+    const st = getState();
+    updateWeight(difficulty);
+    const nextIdx = weightedRandomIndex();
+    st.currentIndex = nextIdx;
+    if (st.historyPos < st.history.length - 1) {
+      st.history = st.history.slice(0, st.historyPos + 1);
+    }
+    st.history.push(st.currentIndex);
+    st.historyPos++;
+    renderCard();
+  }
+  
+  function prevCard() {
+    const st = getState();
+    if (st.historyPos <= 0) return;
+    st.historyPos--;
+    st.currentIndex = st.history[st.historyPos];
+    renderCard();
+  }
+  
+  function showHardSummary() {
+    const st = getState();
+    let sortedCards = [...st.cardsWithWeights]
+      .filter(c => c.hardCount > 0)
+      .sort((a,b) => b.hardCount - a.hardCount)
+      .slice(0,5);
+    if (sortedCards.length === 0) {
+      summaryBlock.innerHTML = "<h3>尚無標記為困難的題目</h3>";
+      summaryBlock.hidden = false;
+      return;
+    }
+    let html = "<h3>困難題目小結（前5題）</h3>";
+    sortedCards.forEach((c,i) => {
+      html += `<div class="summary-item">
+        <p><strong>題目 ${i + 1}：</strong>${c.question}</p>
+        <p><strong>答案：</strong>${c.answer}</p>
+        <p><strong>困難標記次數：</strong>${c.hardCount}</p>
+      </div>`;
+    });
+    summaryBlock.innerHTML = html;
+    summaryBlock.hidden = false;
+  }
+  
+  function switchChapter(newId){
+    if (newId === currentChapterId) return;
+    tabs.forEach(t=>{
+      const active = t.dataset.chapter === newId;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    currentChapterId = newId;
+    updateHeader();
+    renderCard();
+    card.focus();
+  }
+  
+  // 初始渲染
+  updateHeader();
+  renderCard();
+  
+  // 事件綁定
+  flipBtn.addEventListener("click", flipCard);
+  hardBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("hard"); });
+  mediumBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("medium"); });
+  easyBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("easy"); });
+  prevBtn.addEventListener("click", prevCard);
+  summaryBtn.addEventListener("click", showHardSummary);
+  
+  themeBtn.addEventListener('click', () => {
+    currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+    const newTheme = themes[currentThemeIndex];
+    docElem.className = newTheme;
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.code === "Space" || e.key === " ") && document.activeElement === card) {
+      e.preventDefault(); flipCard(); return;
+    }
+    if (e.key === "1") { const st=getState(); if(!st.flipped) flipCard(); nextCard("hard"); }
+    if (e.key === "2") { const st=getState(); if(!st.flipped) flipCard(); nextCard("medium"); }
+    if (e.key === "3") { const st=getState(); if(!st.flipped) flipCard(); nextCard("easy"); }
+    if (e.key === "ArrowLeft") { prevCard(); }
+    if (e.key?.toLowerCase?.() === "s") { showHardSummary(); }
+  });
+  
+  card.addEventListener('click', flipCard);
+  tabs.forEach(tab => tab.addEventListener('click', () => switchChapter(tab.dataset.chapter)));
+  
+  // 為了簡化，我移除了之前版本中 chapters 資料的省略部分，將完整的資料放入
+  // 這確保了程式碼的完整性和可運行性
+</script>
+</body>
+</html>
