@@ -247,8 +247,19 @@ function loadProgressAndSettings() {
       const progressData = JSON.parse(progressDataJSON);
       if (progressData.stateByChapter) {
         Object.assign(stateByChapter, progressData.stateByChapter);
+
+        // 【新增的關鍵修正】：強制重設所有課題的暫時狀態
+        // 無論讀取到什麼，都確保 flipped 和 flipping 是 false
+        for (const chapterId in stateByChapter) {
+          if (stateByChapter[chapterId]) {
+            stateByChapter[chapterId].flipped = false;
+            stateByChapter[chapterId].flipping = false; // <-- 【補上這最重要的一行】
+          }
+        }
       }
-      if (progressData.currentChapterId) {
+      
+      // 安全檢查：確認讀取到的章節 ID 是否存在於當前檔案中
+      if (progressData.currentChapterId && chapters.some(c => c.id === progressData.currentChapterId)) {
         currentChapterId = progressData.currentChapterId;
       }
     } catch (e) {
@@ -270,7 +281,6 @@ function loadProgressAndSettings() {
     }
   }
 }
-
 // =================================================
 // Local Storage 功能區塊結束
 // =================================================
@@ -681,4 +691,5 @@ loadProgressAndSettings(); // <-- 新增：在渲染前，先讀取儲存的進�
 </script>
 </body>
 </html>
+
 
