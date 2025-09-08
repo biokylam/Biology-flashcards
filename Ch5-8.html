@@ -214,54 +214,62 @@
   </section>
 </main>
 <script>
+const PROGRESS_KEY = 'flashcardProgress_1-4'; // <-- 每個檔案都不同！
+const SETTINGS_KEY = 'flashcardSettings';     // <-- 所有檔案都相同！
 // =================================================
 // Local Storage 功能區塊
 // =================================================
 
+// 【用這段新程式碼】替換掉舊的 saveProgress 和 loadProgressAndSettings 函式
+
 // 函式：儲存所有進度到 localStorage
 function saveProgress() {
-  // 建立一個物件來存放需要儲存的資料
-  const dataToSave = {
-    stateByChapter: stateByChapter,       // 儲存每個章節的學習狀態
-    currentChapterId: currentChapterId,   // 儲存最後所在的章節ID
-    currentThemeIndex: currentThemeIndex  // 儲存主題樣式的索引
+  // 1. 儲存【專屬進度】
+  const progressData = {
+    stateByChapter: stateByChapter,
+    currentChapterId: currentChapterId
   };
-  
-  // 將物件轉換為 JSON 文字格式並儲存
-  localStorage.setItem('flashcardProgress', JSON.stringify(dataToSave));
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(progressData));
+
+  // 2. 儲存【共用設定】
+  const settingsData = {
+    currentThemeIndex: currentThemeIndex
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
 }
 
 // 函式：從 localStorage 讀取並應用所有進度
 function loadProgressAndSettings() {
-  const savedDataJSON = localStorage.getItem('flashcardProgress');
-  
-  if (savedDataJSON) { // 檢查是否有儲存過資料
+  // 1. 讀取【專屬進度】
+  const progressDataJSON = localStorage.getItem(PROGRESS_KEY);
+  if (progressDataJSON) {
     try {
-      const savedData = JSON.parse(savedDataJSON);
-      
-      // 讀取學習進度
-      if (savedData.stateByChapter) {
-        Object.assign(stateByChapter, savedData.stateByChapter);
+      const progressData = JSON.parse(progressDataJSON);
+      if (progressData.stateByChapter) {
+        Object.assign(stateByChapter, progressData.stateByChapter);
       }
-      
-      // 讀取上次章節
-      if (savedData.currentChapterId) {
-        currentChapterId = savedData.currentChapterId;
+      if (progressData.currentChapterId) {
+        currentChapterId = progressData.currentChapterId;
       }
-      
-      // 讀取主題
-      if (typeof savedData.currentThemeIndex !== 'undefined') {
-        currentThemeIndex = savedData.currentThemeIndex;
+    } catch (e) {
+      console.error("讀取進度資料時出錯:", e);
+    }
+  }
+  
+  // 2. 讀取【共用設定】
+  const settingsDataJSON = localStorage.getItem(SETTINGS_KEY);
+  if (settingsDataJSON) {
+    try {
+      const settingsData = JSON.parse(settingsDataJSON);
+      if (typeof settingsData.currentThemeIndex !== 'undefined') {
+        currentThemeIndex = settingsData.currentThemeIndex;
         docElem.className = themes[currentThemeIndex];
       }
     } catch (e) {
-      console.error("讀取 localStorage 資料時出錯:", e);
-      // 如果資料格式錯誤，可以選擇清除它
-      // localStorage.removeItem('flashcardProgress');
+      console.error("讀取設定資料時出錯:", e);
     }
   }
 }
-
 // =================================================
 // Local Storage 功能區塊結束
 // =================================================
