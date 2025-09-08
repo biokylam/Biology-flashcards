@@ -248,6 +248,11 @@ function loadProgressAndSettings() {
       if (progressData.stateByChapter) {
         Object.assign(stateByChapter, progressData.stateByChapter);
       }
+       for (const chapterId in stateByChapter) {
+        if (stateByChapter[chapterId]) {
+          stateByChapter[chapterId].flipped = false;
+        }
+      }
       if (progressData.currentChapterId) {
         currentChapterId = progressData.currentChapterId;
       }
@@ -703,5 +708,6 @@ loadProgressAndSettings(); // <-- 新增：在渲染前，先讀取儲存的進�
 </script>
 </body>
 </html>
+
 
 
