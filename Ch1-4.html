@@ -214,6 +214,35 @@
   </section>
 </main>
 <script>
+  // =================================================
+  // 讀取本地儲存的資料 (整個區塊都放在最前面)
+  // =================================================
+
+  // 1. 先定義讀取進度的函式
+  function loadProgress() {
+    const savedData = localStorage.getItem('flashcardProgress');
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      Object.assign(stateByChapter, parsedData.stateByChapter);
+      currentChapterId = parsedData.currentChapterId || "CH1";
+    }
+  }
+
+  // 2. 定義讀取初始設定的函式
+  function loadInitialSettings() {
+    // 讀取進度
+    loadProgress(); // <--- 你問的這行就在這裡
+
+    // 讀取主題
+    const savedThemeIndex = localStorage.getItem('flashcardThemeIndex');
+    if (savedThemeIndex !== null) {
+      currentThemeIndex = parseInt(savedThemeIndex, 10);
+      docElem.className = themes[currentThemeIndex];
+    }
+  }
+
+  // 3. 立即執行
+  loadInitialSettings();
   // 章節資料定義
   const chapters = [
     // ... (所有 chapters 的資料和之前一樣，此處省略以節省篇幅) ...
@@ -481,6 +510,25 @@
   const summaryBtn = document.getElementById('summaryBtn');
   const summaryBlock = document.getElementById('summaryBlock');
   const themeBtn = document.getElementById('themeBtn');
+// <-- 新增：保存進度的函式
+function saveProgress() {
+  const dataToSave = {
+    stateByChapter: stateByChapter,
+    currentChapterId: currentChapterId
+  };
+  localStorage.setItem('flashcardProgress', JSON.stringify(dataToSave));
+}
+
+// <-- 新增：讀取進度的函式
+function loadProgress() {
+  const savedData = localStorage.getItem('flashcardProgress');
+  if (savedData) {
+    const parsedData = JSON.parse(savedData);
+    // 將儲存的 stateByChapter 合併回程式中
+    Object.assign(stateByChapter, parsedData.stateByChapter);
+    currentChapterId = parsedData.currentChapterId || "CH1";
+  }
+}
 
   function getChapter(){ return chapters.find(c=>c.id===currentChapterId); }
   function getState(){ return stateByChapter[currentChapterId]; }
@@ -552,6 +600,7 @@
     st.history.push(st.currentIndex);
     st.historyPos++;
     renderCard();
+    saveProgress(); // <--- 就是加在這裡！
   }
   
   function prevCard() {
@@ -596,6 +645,7 @@
     updateHeader();
     renderCard();
     card.focus();
+    saveProgress(); // <--- 同時也加在這裡
   }
   
   // 初始渲染
@@ -614,7 +664,8 @@
     currentThemeIndex = (currentThemeIndex + 1) % themes.length;
     const newTheme = themes[currentThemeIndex];
     docElem.className = newTheme;
-  });
+localStorage.setItem('flashcardThemeIndex', currentThemeIndex); 
+});
 
   document.addEventListener("keydown", (e) => {
     if ((e.code === "Space" || e.key === " ") && document.activeElement === card) {
