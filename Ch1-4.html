@@ -214,35 +214,58 @@
   </section>
 </main>
 <script>
-  // =================================================
-  // 讀取本地儲存的資料 (整個區塊都放在最前面)
-  // =================================================
+// =================================================
+// Local Storage 功能區塊
+// =================================================
 
-  // 1. 先定義讀取進度的函式
-  function loadProgress() {
-    const savedData = localStorage.getItem('flashcardProgress');
-    if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      Object.assign(stateByChapter, parsedData.stateByChapter);
-      currentChapterId = parsedData.currentChapterId || "CH1";
+// 函式：儲存所有進度到 localStorage
+function saveProgress() {
+  // 建立一個物件來存放需要儲存的資料
+  const dataToSave = {
+    stateByChapter: stateByChapter,       // 儲存每個章節的學習狀態
+    currentChapterId: currentChapterId,   // 儲存最後所在的章節ID
+    currentThemeIndex: currentThemeIndex  // 儲存主題樣式的索引
+  };
+  
+  // 將物件轉換為 JSON 文字格式並儲存
+  localStorage.setItem('flashcardProgress', JSON.stringify(dataToSave));
+}
+
+// 函式：從 localStorage 讀取並應用所有進度
+function loadProgressAndSettings() {
+  const savedDataJSON = localStorage.getItem('flashcardProgress');
+  
+  if (savedDataJSON) { // 檢查是否有儲存過資料
+    try {
+      const savedData = JSON.parse(savedDataJSON);
+      
+      // 讀取學習進度
+      if (savedData.stateByChapter) {
+        Object.assign(stateByChapter, savedData.stateByChapter);
+      }
+      
+      // 讀取上次章節
+      if (savedData.currentChapterId) {
+        currentChapterId = savedData.currentChapterId;
+      }
+      
+      // 讀取主題
+      if (typeof savedData.currentThemeIndex !== 'undefined') {
+        currentThemeIndex = savedData.currentThemeIndex;
+        docElem.className = themes[currentThemeIndex];
+      }
+    } catch (e) {
+      console.error("讀取 localStorage 資料時出錯:", e);
+      // 如果資料格式錯誤，可以選擇清除它
+      // localStorage.removeItem('flashcardProgress');
     }
   }
+}
 
-  // 2. 定義讀取初始設定的函式
-  function loadInitialSettings() {
-    // 讀取進度
-    loadProgress(); // <--- 你問的這行就在這裡
+// =================================================
+// Local Storage 功能區塊結束
+// =================================================
 
-    // 讀取主題
-    const savedThemeIndex = localStorage.getItem('flashcardThemeIndex');
-    if (savedThemeIndex !== null) {
-      currentThemeIndex = parseInt(savedThemeIndex, 10);
-      docElem.className = themes[currentThemeIndex];
-    }
-  }
-
-  // 3. 立即執行
-  loadInitialSettings();
   // 章節資料定義
   const chapters = [
     // ... (所有 chapters 的資料和之前一樣，此處省略以節省篇幅) ...
@@ -510,25 +533,6 @@
   const summaryBtn = document.getElementById('summaryBtn');
   const summaryBlock = document.getElementById('summaryBlock');
   const themeBtn = document.getElementById('themeBtn');
-// <-- 新增：保存進度的函式
-function saveProgress() {
-  const dataToSave = {
-    stateByChapter: stateByChapter,
-    currentChapterId: currentChapterId
-  };
-  localStorage.setItem('flashcardProgress', JSON.stringify(dataToSave));
-}
-
-// <-- 新增：讀取進度的函式
-function loadProgress() {
-  const savedData = localStorage.getItem('flashcardProgress');
-  if (savedData) {
-    const parsedData = JSON.parse(savedData);
-    // 將儲存的 stateByChapter 合併回程式中
-    Object.assign(stateByChapter, parsedData.stateByChapter);
-    currentChapterId = parsedData.currentChapterId || "CH1";
-  }
-}
 
   function getChapter(){ return chapters.find(c=>c.id===currentChapterId); }
   function getState(){ return stateByChapter[currentChapterId]; }
@@ -600,7 +604,7 @@ function loadProgress() {
     st.history.push(st.currentIndex);
     st.historyPos++;
     renderCard();
-    saveProgress(); // <--- 就是加在這裡！
+    saveProgress(); 
   }
   
   function prevCard() {
@@ -645,10 +649,15 @@ function loadProgress() {
     updateHeader();
     renderCard();
     card.focus();
-    saveProgress(); // <--- 同時也加在這裡
+    saveProgress();
   }
   
-  // 初始渲染
+ // =================================================
+// 初始設定與渲染
+// =================================================
+
+loadProgressAndSettings(); // <-- 新增：在渲染前，先讀取儲存的進度與設定
+
   updateHeader();
   renderCard();
   
@@ -664,8 +673,8 @@ function loadProgress() {
     currentThemeIndex = (currentThemeIndex + 1) % themes.length;
     const newTheme = themes[currentThemeIndex];
     docElem.className = newTheme;
-localStorage.setItem('flashcardThemeIndex', currentThemeIndex); 
-});
+    saveProgress(); 
+  });
 
   document.addEventListener("keydown", (e) => {
     if ((e.code === "Space" || e.key === " ") && document.activeElement === card) {
