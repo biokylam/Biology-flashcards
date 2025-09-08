@@ -57,6 +57,31 @@
             transform: translateY(-3px) scale(1.02);
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
+        /* 【新增部分】 */
+.reset-container {
+    margin-top: 25px; /* 與上方列表的間距 */
+    padding-top: 20px; /* 按鈕上方的內邊距 */
+    border-top: 1px solid rgba(255, 255, 255, 0.2); /* 一條分隔線 */
+}
+
+#resetBtn {
+    background-color: #c0392b; /* 使用警示性的紅色 */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+#resetBtn:hover {
+    background-color: #e74c3c;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
     </style>
 </head>
 <body>
@@ -68,6 +93,32 @@
             <li><a href="Ch9-10.html">第九至十章</a></li>
             <li><a href="Ch11-14.html">第十一至十四章</a></li>
             </ul>
+        <div class="reset-container">
+    <button id="resetBtn">⚠️ 重設所有學習進度</button>
+  </div>
+  </div>
+    <script>
+    const resetBtn = document.getElementById('resetBtn');
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            // 跳出一個確認對話框，防止使用者誤觸
+            const isConfirmed = confirm('您確定要重設所有學習進度嗎？\n\n這個操作將會清除所有課題的困難標記、學習記錄和顏色主題設定，且無法復原！');
+
+            // 如果使用者點擊了「確定」
+            if (isConfirmed) {
+                // 清除這個網站所有的 localStorage 資料
+                localStorage.clear();
+
+                // 跳出一個提示，告訴使用者已完成
+                alert('所有學習進度已成功重設！');
+            }
+        });
+    }
+</script>
+</body>
+</html>
     </div>
 </body>
+
 </html>
