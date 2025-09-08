@@ -212,6 +212,58 @@
   </section>
 </main>
 <script>
+// =================================================
+// Local Storage 功能區塊
+// =================================================
+
+// 函式：儲存所有進度到 localStorage
+function saveProgress() {
+  // 建立一個物件來存放需要儲存的資料
+  const dataToSave = {
+    stateByChapter: stateByChapter,       // 儲存每個章節的學習狀態
+    currentChapterId: currentChapterId,   // 儲存最後所在的章節ID
+    currentThemeIndex: currentThemeIndex  // 儲存主題樣式的索引
+  };
+  
+  // 將物件轉換為 JSON 文字格式並儲存
+  localStorage.setItem('flashcardProgress', JSON.stringify(dataToSave));
+}
+
+// 函式：從 localStorage 讀取並應用所有進度
+function loadProgressAndSettings() {
+  const savedDataJSON = localStorage.getItem('flashcardProgress');
+  
+  if (savedDataJSON) { // 檢查是否有儲存過資料
+    try {
+      const savedData = JSON.parse(savedDataJSON);
+      
+      // 讀取學習進度
+      if (savedData.stateByChapter) {
+        Object.assign(stateByChapter, savedData.stateByChapter);
+      }
+      
+      // 讀取上次章節
+      if (savedData.currentChapterId) {
+        currentChapterId = savedData.currentChapterId;
+      }
+      
+      // 讀取主題
+      if (typeof savedData.currentThemeIndex !== 'undefined') {
+        currentThemeIndex = savedData.currentThemeIndex;
+        docElem.className = themes[currentThemeIndex];
+      }
+    } catch (e) {
+      console.error("讀取 localStorage 資料時出錯:", e);
+      // 如果資料格式錯誤，可以選擇清除它
+      // localStorage.removeItem('flashcardProgress');
+    }
+  }
+}
+
+// =================================================
+// Local Storage 功能區塊結束
+// =================================================
+
   // 章節資料定義
   const chapters = [
     // ... (所有 chapters 的資料和之前一樣，此處省略以節省篇幅) ...
@@ -432,6 +484,7 @@
     st.history.push(st.currentIndex);
     st.historyPos++;
     renderCard();
+    saveProgress();
   }
   
   function prevCard() {
@@ -476,9 +529,15 @@
     updateHeader();
     renderCard();
     card.focus();
+    saveProgress();
   }
   
-  // 初始渲染
+// =================================================
+// 初始設定與渲染
+// =================================================
+
+loadProgressAndSettings(); // <-- 新增：在渲染前，先讀取儲存的進度與設定
+
   updateHeader();
   renderCard();
   
@@ -494,6 +553,7 @@
     currentThemeIndex = (currentThemeIndex + 1) % themes.length;
     const newTheme = themes[currentThemeIndex];
     docElem.className = newTheme;
+    saveProgress(); 
   });
 
   document.addEventListener("keydown", (e) => {
