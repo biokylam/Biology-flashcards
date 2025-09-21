@@ -176,7 +176,7 @@
 <body>
 <header>
   <a href="index.html" class="back-link">🔙 返回目錄</a>
-  <span id="headerTitle">CH9 植物的營養和氣體交換</span>
+  <span id="headerTitle">CH1 生物學入門</span>
 </header>
 <main>
   <nav class="chapters" aria-label="章節切換">
@@ -184,7 +184,7 @@
     <button class="tab" data-chapter="CH10" aria-pressed="false">CH10</button>
   </nav>
   <div class="toolbar">
-    <span id="chapterInfo" class="pill">目前章節：CH9</span>
+    <span id="chapterInfo" class="pill">目前章節：CH11</span>
     <button id="themeBtn" aria-label="切換主題" style="min-width: auto; padding: 0.4rem 0.7rem;">🎨 切換主題</button>
     <span class="pill">操作提示：點卡片或按空白鍵翻轉</span>
   </div>
@@ -237,8 +237,6 @@ function saveProgress() {
 }
 
 // 函式：從 localStorage 讀取並應用所有進度
-function loadProgressAndSettings() {
-  // 1. 讀取【專屬進度】
 function loadProgressAndSettings() {
   // 1. 讀取【專屬進度】
   const progressDataJSON = localStorage.getItem(PROGRESS_KEY);
@@ -594,5 +592,4 @@ loadProgressAndSettings(); // <-- 新增：在渲染前，先讀取儲存的進�
 </script>
 </body>
 </html>
-
 
