@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>生物記憶卡</title>
+<style>
+  :root{ /* 預設主題：深紫色 */
+    --primary:#5a4fcf;
+    --primary-2:#8f7ce8;
+    --bg-1:#667eea;
+    --bg-2:#764ba2;
+    --card-1:#a18cd1;
+    --card-2:#fbc2eb;
+    --front-1:#c3aed6;
+    --front-2:#f7d6e0;
+    --back-1:#6a3093;
+    --back-2:#a044ff;
+    --text:#2c2c54;
+    --text-inv:#f0e9ff;
+    --shadow-1: rgba(90, 79, 207, 0.7);
+    --shadow-2: rgba(143, 124, 232, 0.9);
+  }
+  /* --- 新增：定義多套顏色主題 --- */
+  :root.theme-ocean-blue { /* 主題2：海洋藍 */
+    --primary: #0077b6; --primary-2: #0096c7; --bg-1: #005f73; --bg-2: #0a9396;
+    --card-1: #94d2bd; --card-2: #e9d8a6; --front-1: #e9f5db; --front-2: #cfe8e0;
+    --back-1: #001219; --back-2: #005f73; --text: #001219; --text-inv: #e9f5db;
+    --shadow-1: rgba(0, 119, 182, 0.7); --shadow-2: rgba(0, 150, 199, 0.9);
+  }
+  :root.theme-sunset-glow { /* 主題3：日落霞光 */
+    --primary: #e76f51; --primary-2: #f4a261; --bg-1: #e15f41; --bg-2: #e76f51;
+    --card-1: #f4a261; --card-2: #e9c46a; --front-1: #fff8f0; --front-2: #fefae0;
+    --back-1: #d62828; --back-2: #f77f00; --text: #264653; --text-inv: #ffffff;
+    --shadow-1: rgba(231, 111, 81, 0.7); --shadow-2: rgba(244, 162, 97, 0.9);
+  }
+  :root.theme-forest-green { /* 主題4：森林綠 */
+    --primary: #2d6a4f; --primary-2: #40916c; --bg-1: #1b4332; --bg-2: #2d6a4f;
+    --card-1: #74c69d; --card-2: #b7e4c7; --front-1: #d8f3dc; --front-2: #ffffff;
+    --back-1: #081c15; --back-2: #1b4332; --text: #081c15; --text-inv: #d8f3dc;
+    --shadow-1: rgba(45, 106, 79, 0.7); --shadow-2: rgba(64, 145, 108, 0.9);
+  }
+  /* --- 主題定義結束 --- */
+
+  *{box-sizing:border-box}
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    margin: 0; padding: 0;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    color: #f0f0f0;
+    transition: background 0.5s ease;
+  }
+  header {
+  /* 大部分樣式不變，主要是修改排版方式 */
+  background: linear-gradient(90deg, var(--primary), var(--primary-2));
+  width: 100%;
+  padding: 1.1rem 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  position: sticky; top: 0; z-index: 10;
+  transition: background 0.5s ease;
+
+  /* 以下是修改和新增的部分 */
+  display: flex;
+  justify-content: center; /* 讓內容水平置中 */
+  align-items: center;    /* 讓內容垂直置中 */
+  position: relative;     /* 為了讓返回按鈕能定位 */
+}
+.back-link {
+  position: absolute; /* 絕對定位，讓它脫離正常的排版流 */
+  left: 15px;         /* 定位在 header 左邊 15px 的位置 */
+  top: 50%;           /* 垂直置中 */
+  transform: translateY(-50%); /* 確保精確垂直置中 */
+
+  color: var(--text-inv);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.back-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+  main {
+    flex: 1; width: 100%; max-width: 520px;
+    padding: 1rem 1rem 1.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: .75rem;
+  }
+  .chapters {
+    width: 100%; display: flex; gap: .5rem;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem;
+  }
+  .chapters::-webkit-scrollbar{height:6px}
+  .chapters::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:6px}
+  .tab {
+    white-space: nowrap; background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.25); padding: .45rem .75rem;
+    border-radius: 999px; cursor: pointer; transition: all .25s; font-size: .95rem;
+  }
+  .tab:hover { background: rgba(255,255,255,0.25); }
+  .tab.active {
+    background: #ffce6b; color: #2b2b2b; border-color: #ffce6b;
+    box-shadow: 0 2px 10px rgba(255,206,107,0.45);
+  }
+  #flashcardPage {
+    flex-direction: column; align-items: center; display: flex; width: 100%;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-container {
+    perspective: 1000px; width: 100%; height: 240px; outline: none;
+    animation: fadeIn 0.4s ease-out;
+  }
+  .card {
+    width: 100%; height: 240px; position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s, background 0.5s ease;
+    cursor: pointer; border-radius: 16px;
+    background: linear-gradient(135deg, var(--card-1), var(--card-2));
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3); color: var(--text);
+    display: flex; justify-content: center; align-items: center;
+    padding: 1.25rem; font-size: 1.05rem; line-height: 1.45;
+    user-select: none; text-align: left; white-space: pre-wrap;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; width: 100%; height: 100%; border-radius: 16px;
+    backface-visibility: hidden; display: flex; justify-content: center;
+    align-items: flex-start; padding: 1.25rem; box-sizing: border-box;
+    overflow-y: auto;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+  .card-front { background: linear-gradient(135deg, var(--front-1), var(--front-2)); color: var(--text); }
+  .card-back { transform: rotateY(180deg); background: linear-gradient(135deg, var(--back-1), var(--back-2)); color: var(--text-inv); }
+  #cardNumber { margin-top: 0.4rem; font-size: 0.9rem; color: #e9e6ff; text-align: center; }
+  .footer { margin-top: 1rem; width: 100%; display: flex; flex-direction: column; align-items: center; gap: .4rem; }
+  .button-row { display: flex; justify-content: center; gap: .6rem; flex-wrap: wrap; width: 100%; }
+  button {
+    background: var(--primary); border: none; color: white;
+    padding: 0.5rem 0.9rem; font-size: 1rem; border-radius: 10px; cursor: pointer;
+    transition: background 0.25s, transform .05s, box-shadow 0.25s;
+    min-width: 88px;
+    box-shadow: 0 4px 10px var(--shadow-1);
+  }
+  button:hover:not(:disabled) {
+    background: var(--primary-2); box-shadow: 0 6px 14px var(--shadow-2);
+  }
+  button:active:not(:disabled){ transform: translateY(1px); }
+  button:disabled { background: #a0aabe; cursor: default; box-shadow: none; color: #eee; }
+  #summaryBlock {
+    margin-top: 0.9rem; background: rgba(0,0,0,0.35); padding: 1rem; border-radius: 12px;
+    max-height: 340px; overflow-y: auto; width: 100%; text-align: left;
+    transition: all 0.4s ease-out; transform: translateY(20px); opacity: 0;
+  }
+  #summaryBlock:not([hidden]) { transform: translateY(0); opacity: 1; }
+  #summaryBlock h3 { margin: 0 0 .5rem 0; color: var(--text-inv); font-size: 1.05rem; }
+  #summaryBlock .summary-item { margin-bottom: .8rem; background: rgba(255,255,255,0.08); padding: .6rem .7rem; border-radius: 10px; }
+  #summaryBlock .summary-item p { margin: 0.2rem 0; }
+  .toolbar { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  .pill { font-size: .9rem; color: #fff; background: rgba(255,255,255,.15); padding: .35rem .6rem; border-radius: 999px; }
+  @media (max-width: 520px) {
+    .card { height: 210px; font-size: 1rem; padding: 1rem; }
+    .card-face { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="back-link">🔙 返回目錄</a>
+  <span id="headerTitle">CH1 生物學入門</span>
+</header>
+<main>
+  <nav class="chapters" aria-label="章節切換">
+    <button class="tab active" data-chapter="CH19" aria-pressed="true">CH19</button>
+    <button class="tab" data-chapter="CH20" aria-pressed="false">CH20</button>
+    <button class="tab" data-chapter="CH21" aria-pressed="false">CH21</button>
+  </nav>
+  <div class="toolbar">
+    <span id="chapterInfo" class="pill">目前章節：CH11</span>
+    <button id="themeBtn" aria-label="切換主題" style="min-width: auto; padding: 0.4rem 0.7rem;">🎨 切換主題</button>
+    <span class="pill">操作提示：點卡片或按空白鍵翻轉</span>
+  </div>
+  <section id="flashcardPage" aria-live="polite" aria-atomic="true">
+    <div class="card-container" tabindex="0" aria-label="抽認卡，點擊或按空白鍵翻轉">
+      <div id="card" class="card" role="button" aria-pressed="false" tabindex="0">
+        <div id="cardFront" class="card-face card-front"></div>
+        <div id="cardBack" class="card-face card-back"></div>
+      </div>
+      <div id="cardNumber" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div class="footer">
+      <div class="button-row" id="firstRow">
+        <button id="flipBtn" aria-label="翻轉卡片">🔄 翻轉</button>
+        <button id="hardBtn" aria-label="困難">🤔 困難</button>
+        <button id="mediumBtn" aria-label="一般">🙂 一般</button>
+        <button id="easyBtn" aria-label="容易">😄 容易</button>
+      </div>
+      <div class="button-row" id="secondRow">
+        <button id="prevBtn" aria-label="上一題" disabled>⬅️ 上一題</button>
+        <button id="summaryBtn" aria-label="困難題目小結">📝 困難小結</button>
+      </div>
+    </div>
+    <div id="summaryBlock" aria-live="polite" aria-atomic="true" hidden></div>
+  </section>
+</main>
+<script>
+const PROGRESS_KEY = 'flashcardProgress_19-21'; // <-- 每個檔案都不同！
+const SETTINGS_KEY = 'flashcardSettings';     // <-- 所有檔案都相同！
+// =================================================
+// Local Storage 功能區塊
+// =================================================
+
+// 【用這段新程式碼】替換掉舊的 saveProgress 和 loadProgressAndSettings 函式
+
+// 函式：儲存所有進度到 localStorage
+function saveProgress() {
+  // 1. 儲存【專屬進度】
+  const progressData = {
+    stateByChapter: stateByChapter,
+    currentChapterId: currentChapterId
+  };
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(progressData));
+
+  // 2. 儲存【共用設定】
+  const settingsData = {
+    currentThemeIndex: currentThemeIndex
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
+}
+
+// 函式：從 localStorage 讀取並應用所有進度
+function loadProgressAndSettings() {
+  // 1. 讀取【專屬進度】
+  const progressDataJSON = localStorage.getItem(PROGRESS_KEY);
+  if (progressDataJSON) {
+    try {
+      const progressData = JSON.parse(progressDataJSON);
+      if (progressData.stateByChapter) {
+        Object.assign(stateByChapter, progressData.stateByChapter);
+
+        // 【新增的關鍵修正】：強制重設所有課題的暫時狀態
+        // 無論讀取到什麼，都確保 flipped 和 flipping 是 false
+        for (const chapterId in stateByChapter) {
+          if (stateByChapter[chapterId]) {
+            stateByChapter[chapterId].flipped = false;
+            stateByChapter[chapterId].flipping = false; // <-- 【補上這最重要的一行】
+          }
+        }
+      }
+      
+      // 安全檢查：確認讀取到的章節 ID 是否存在於當前檔案中
+      if (progressData.currentChapterId && chapters.some(c => c.id === progressData.currentChapterId)) {
+        currentChapterId = progressData.currentChapterId;
+      }
+    } catch (e) {
+      console.error("讀取進度資料時出錯:", e);
+    }
+  }
+  
+  // 2. 讀取【共用設定】
+  const settingsDataJSON = localStorage.getItem(SETTINGS_KEY);
+  if (settingsDataJSON) {
+    try {
+      const settingsData = JSON.parse(settingsDataJSON);
+      if (typeof settingsData.currentThemeIndex !== 'undefined') {
+        currentThemeIndex = settingsData.currentThemeIndex;
+        docElem.className = themes[currentThemeIndex];
+      }
+    } catch (e) {
+      console.error("讀取設定資料時出錯:", e);
+    }
+  }
+}
+// =================================================
+// Local Storage 功能區塊結束
+// =================================================
+  // 章節資料定義
+  const chapters = [
+    // ... (所有 chapters 的資料和之前一樣，此處省略以節省篇幅) ...
+    {
+       id: "CH19",
+      title: "CH19 生態系",
+      flashcards: [
+      { question: "什麼是生物的感應性？", answer: "生物能探測環境刺激並作出適當反應的能力。\n\n解釋： 感應性讓生物能適應環境變化，維持生存。" },
+      { question: "什麼是生態位？", answer: "生物在生態系中扮演的角色與生存方式，包含溫度範圍、食物種類和空間。\n\n解釋: 生態位決定生物如何利用資源及與其他物種互動。" },
+      { question: "什麼是物質循環？", answer: "生態系中元素（如碳、氮）在生物和環境間不斷轉換和回收。\n\n解釋: 物質循環避免元素流失，維持生態系平衡。" },
+      { question: "能量能在生態系循環？", answer: "能量在傳遞過程中以熱散失，必須依靠太陽持續輸入。\n\n解釋: 能量流不同於物質循環，需不斷補充。" },
+      { question: "生態系中能量的最終來源是？", answer: "太陽。\n\n解釋: 綠色植物利用光合作用將太陽能轉化為化學能。" },
+      { question: "什麼是生產者？", answer: "自養生物，透過光合作用製造有機物。\n\n解釋: 生產者是食物鏈的基礎。" },
+      { question: "消費者分為哪幾類？", answer: "初級（吃植物）、次級（吃初級消費者）、三級消費者（吃次級消費者）。" },
+      { question: "分解者的作用是什麼？", answer: "分解死去有機物，釋放無機養分供生產者吸收。\n\n解釋: 分解者維持物質循環。" },
+      { question: "為何食物鏈通常不超過四個營養級？", answer: "因能量傳遞效率低，能量大量散失。\n\n解釋: 高營養級生物獲得的能量很少。" },
+      { question: "什麼是數量錐體？", answer: "顯示食物鏈中各營養級生物數量的圖形。\n\n解釋: 通常底部最大，上層逐漸減少。" },
+      { question: "什麼是生物量錐體？", answer: "生物量錐體顯示乾質量總和，更準確反映能量含量。" },
+      { question: "什麼類型的生物會出現倒置的生物量錐體？", answer: "更替率高的生物，快速繁殖但總生物量較小，導致錐體倒置，如浮游植物與浮游動物關係。" },
+      { question: "樣方適合在在何時使用來取樣？", answer: "評估植物和不動或行動緩慢動物的分佈和豐度。\n\n解釋: 樣方適合均勻環境，不適合快速移動的動物。" },
+      { question: "樣線取樣有何用途？", answer: "探究環境條件變化中物種分佈範圍，但無法測量個體數量。\n\n解釋: 注意樣線使用時具方向性。" },
+      { question: "什麼是樣帶取樣？", answer: "結合樣方和樣線，量化物種在環境梯度上的豐度變化。\n\n解釋: 更精確了解分佈與環境關係。" },
+      { question: "生態演替是什麼？", answer: "生物群落隨時間逐步演變，環境和物種組成逐漸改變。\n\n解釋: 可以是自然恢復或環境變化的過程。" },
+      { question: "原生演替與次生演替的主要差別？", answer: "原生演替從無土壤開始，次生演替發生於已有土壤的地方。\n\n解釋: 次生演替通常速度較快。" },
+      { question: "什麼是頂級羣落？", answer: "演替終點，生態系達到穩定平衡的群落。\n\n解釋: 物種多樣性最高，生物量最大。" },
+      { question: "碳循環中，碳如何從生物回到大氣？", answer: "呼吸作用、分解作用、燃燒化石燃料等。\n\n解釋: 這些過程釋放二氧化碳。" },
+      { question: "氮循環中，固氮細菌的作用是什麼？", answer: "把大氣中的氮氣轉化成植物可吸收的銨化合物。" },
+      { question: "反硝化作用是什麼？", answer: "反硝化細菌將土壤中的硝酸鹽轉化為氮氣，釋放到大氣。\n\n解釋: 是一個厭氧過程。" },
+      { question: "生物多樣性由什麼因素決定？", answer: "群落中物種數量的豐富程度及各物種個體的相對數量。\n\n解釋: 生物多樣性越高，生態系越穩定。" },
+      { question: "競爭中的種內競爭與種間競爭有何不同？", answer: "種內競爭是同種個體間競爭，種間競爭是不同物種間競爭。\n\n解釋: 種內競爭通常更激烈因資源需求完全相同。" },
+      { question: "互利共生與偏利共棲的差別？", answer: "互利共生雙方均得益，偏利共棲一方得益另一方不受影響。" },
+      { question: "什麼是生態系？", answer: "生態系是由生物羣落和其物理環境組成的自給自足、穩定、動態的系統。\n\n解釋: 生態系包括非生物因子（如溫度、光照）和生物羣落（如植物、動物），它們相互作用維持生態平衡。" },
+      { question: "區分物種、種羣和羣落。", answer: "物種是可繁殖的生物群體；種羣是同一生境中的相同物種；羣落是同一生境中的所有種羣。\n\n解釋: 物種是分類基礎，種羣研究個體間相互作用，羣落研究物種間相互作用。" },
+      { question: "解釋優勢種的概念。", answer: "優勢種是羣落中數量最多或影響力最大的物種，對羣落結構起決定性作用。\n\n解釋: 優勢種很多時都是數量最多，或是對羣落影響最大，如林地中的喬木。" },
+      { question: "溫度如何影響生物分佈？", answer: "溫度影響酶活性，從而影響生物代謝和分佈；恆溫動物分佈較廣，變溫動物分佈較窄。\n\n解釋: 恆溫動物能調節體溫，適應更廣泛環境；變溫動物受環境溫度限制。" },
+      { question: "光照對植物和動物的影響有何不同？", answer: "植物依賴光合作用，受光強度和日照時間影響；動物行為和活動模式受光照影響。\n\n解釋: 植物生長和開花受光照控制；動物可分為晝行性和夜行性。" },
+      { question: "什麼是互利共生？舉例。", answer: "互利共生是兩種生物均受益的關係，如地衣中的藻類和真菌。\n\n解釋: 藻類提供食物，真菌提供保護，雙方互惠。" },
+      { question: "區分偏利共棲和寄生。", answer: "偏利共棲是一方受益，另一方不受影響；寄生是一方受益，另一方受損，如藤壺附著鯨魚（偏利共棲），絛蟲寄生人體（寄生）。" },
+      { question: "解釋捕食者與獵物數量的週期性變化。", answer: "獵物增加→捕食者增加→獵物減少→捕食者減少，呈週期性波動。\n\n解釋: 捕食者數量變化滯後於獵物，因食物供應變化。" },
+      { question: "什麼是生態演替？", answer: "生態演替是羣落隨時間逐漸轉變的過程，最終達到頂級羣落。\n\n解釋: 演替由生物活動和環境變化驅動，如光禿岩石演替至林地。" },
+      { question: "區分原生演替和次生演替。", answer: "原生演替從無土壤開始，次生演替從有土壤但植被被破壞的土地開始。\n\n解釋: 原生演替較慢，如火山爆發後；次生演替較快，如火災後。" },
+      { question: "解釋先鋒羣落的作用。", answer: "先鋒羣落（如地衣）能生存於惡劣環境，改善土壤，為後繼物種創造條件。\n\n解釋: 地衣分解岩石，形成土壤，促進其他植物生長。" },
+      { question: "什麼是頂級羣落？", answer: "頂級羣落是演替的最終階段，物種多樣性高，結構穩定。\n\n解釋: 頂級羣落能自我維持，除非受重大干擾。" },
+      { question: "為什麼食物鏈中高營養級消費者較少？", answer: "因能量傳遞時有損失，無法支持大量高營養級消費者。\n\n解釋: 僅約10%能量傳遞到下一營養級，其餘損失於呼吸、排遺等。" },
+      { question: "什麼是倒置生物量錐體？", answer: "倒置生物量錐體是因為低營養級生物量的更替率高於高營養級而出現。\n\n解釋: 如浮游植物（生產者）生物量小於浮游動物（消費者），而且浮游植物替率較高。" },
+      { question: "列舉能量在生態系中損失的途徑。", answer: "呼吸作用、排遺、未被攝食的部分、傳遞給分解者。\n\n解釋: 這些途徑導致僅少量能量傳遞到下一營養級。" },
+      { question: "解釋碳循環中的關鍵過程。", answer: "光合作用、呼吸作用、分解、燃燒等。\n\n解釋: 光合作用固定CO₂，呼吸和分解釋放CO₂，維持碳平衡。" },
+      { question: "什麼是固氮作用？", answer: "固氮作用是將大氣中的氮轉化為植物可利用的銨化合物。\n\n解釋: 由固氮細菌和豆科植物根瘤菌進行，是氮循環的關鍵步驟。" },
+      { question: "區分硝化作用和反硝化作用。", answer: "硝化作用將銨轉化為硝酸鹽，反硝化作用將硝酸鹽轉化為氮。\n\n解釋: 硝化作用由硝化細菌進行，反硝化作用由反硝化細菌進行。" },
+      { question: "一個池塘裏所有的魚、蝦和水草，能否構成一個「生態系」？", answer: "不能。這只構成一個「群落」，因為它只包含了生物部分。\n\n解釋: 一個完整的生態系必須包含生物群落，以及非生物部分，如水、陽光、石頭和溶解的礦物質。" },
+      { question: "「種群」和「群落」有何區別？", answer: "種群：指在特定時間、特定棲息地中，同一物種的所有個體。例如：維多利亞公園裡所有的白鴿。群落：指在特定棲息地中，所有不同物種的種群集合。例如：維多利亞公園裡所有的生物，包括白鴿、樹木、昆蟲、細菌等。\n\n解釋: 物種是分類基礎，種羣研究個體間相互作用，羣落研究物種間相互作用。" },
+      { question: "舉出影響生物分佈的三個主要「非生物因子」。", answer: "溫度、光照強度、水和濕度是其中幾個關鍵因子。\n\n解釋: 溫度影響酶的活性；光照是生產者的能量來源；水是所有生命活動的基礎。這些因子共同決定了哪些生物能在特定環境中生存。" },
+      { question: "棲息地和生態位有何不同？", answer: "棲息地：是生物居住的「地址」。生態位：是生物在生態系中的「職業」或「角色」，包括牠的食物來源、與其他生物的關係、以及牠在能量流動和物質循環中的作用。一個棲息地可以有多個不同的生態位。\n\n解釋: 棲息地指生物的生活地點，生態位指生物的功能角色。" },
+      { question: "食物鏈中，為什麼只有大約10%的能量能從一個營養級傳遞到下一個營養級？", answer: "因為在每個營養級，大部分能量（約90%）會因以下原因散失：用於生物自身的呼吸作用，以熱能形式散失；生物的某些部分未被取食（如骨頭、根）；排泄物和遺體中的能量未被下一營養級完全同化。\n\n解釋: 能量傳遞效率低是食物鏈層次有限的原因。" },
+      { question: "為什麼能量錐體永不倒置，但數量錐體有時會倒置？", answer: "能量錐體：能量在傳遞過程中必定會散失，所以每一級的能量必定少於上一級，呈正立金字塔形。數量錐體：可能會倒置。例如，一棵大樹（一個生產者）可以支持成千上萬隻昆蟲（初級消費者），形成倒置的錐體。\n\n解釋: 能量傳遞的不可逆性決定了能量錐體的形狀，而個體大小則影響數量錐體。" },
+      { question: "在一個穩定的生態系中，哪個營養級的總生物量通常是最大的？", answer: "生產者（第一營養級）。\n\n解釋: 因為只有生產者能將光能轉化為化學能並儲存在有機物中，它們構成了整個生態系能量和生物量的基礎。" },
+      { question: "分解者在食物網中扮演什麼角色？牠們應放在哪個營養級？", answer: "分解者（如細菌、真菌）分解動植物的遺體和排泄物，將有機物轉化為無機物，重新釋放到環境中供生產者使用。牠們不屬於任何一個營養級，而是與所有營養級都有關聯。" },
+      { question: "植物能直接利用空氣中含量最豐富的氮氣嗎？", answer: "不能。空氣中的氮氣分子結構非常穩定，植物無法直接吸收利用。\n\n解釋: 氮氣必須經過「固氮作用」轉化為氨或硝酸鹽等含氮化合物後，才能被植物的根部吸收。" },
+      { question: "硝化細菌在氮循環中的具體作用是什麼？它轉換了什麼物質？", answer: "硝化細菌的作用是硝化作用。牠們將土壤中的氨 (Ammonia, NH₃) 或銨鹽 (Ammonium, NH₄⁺) 逐步氧化，最終轉化為硝酸鹽 (Nitrates, NO₃⁻)。\n\n解釋: 這是植物最容易吸收的氮形態。" },
+      { question: "反硝化細菌對農作物是有益還是有害？為什麼？", answer: "對農作物是有害的。\n\n解釋: 因為反硝化細菌在缺氧條件下，會將土壤中的硝酸鹽轉化為氮氣釋放到大氣中，導致土壤氮素流失，降低土壤肥力。" },
+      { question: "豆科植物（如花生、大豆）根部的根瘤菌有什麼特殊功能？", answer: "根瘤菌能進行生物固氮作用。\n\n解釋: 它們與豆科植物形成共生關係，將空氣中的氮氣轉化為植物可以利用的氨，極大地提高了土壤的氮素含量。" },
+      { question: "為什麼使用樣方進行調查時，通常要隨機佈置？", answer: "隨機佈置樣方是為了避免主觀偏見，確保樣本能客觀地反映整個研究區域的物種分佈和密度，從而使估算結果更準確、更具代表性。\n\n解釋: 隨機性是科學調查的關鍵，以確保數據的客觀性和代表性。" },
+      { question: "樣方和樣帶在生態調查中的用途有何不同？", answer: "樣方：主要用於估算一個區域內，不移動或移動緩慢的生物（如植物）的密度、頻度或覆蓋率。樣帶：主要用於研究物種分佈如何沿著一個環境梯度（如從岸邊到內陸的海拔變化、濕度變化）而發生改變。\n\n解釋: 樣方側重於區域內數量估計，樣帶側重於沿梯度變化。" },
+      { question: "外來入侵物種為什麼常常會對本地生態系造成巨大破壞？", answer: "因為入侵物種在新的環境中，通常缺少能控制其數量的天敵、競爭者或疾病。\n\n解釋: 這使得牠們的種群能夠迅速增長，大量消耗資源，排擠本地物種，從而破壞原有的食物網結構和生態平衡。" },
+      { question: "在一個封閉的水族箱（生態瓶）中，如果魚全部死亡，不久後水生植物也會死亡，為什麼？", answer: "因為魚的呼吸作用和排泄物分解後，會為水生植物提供光合作用所需的二氧化碳和礦物質（如氮、磷）。一旦魚死亡，這些物質的供應就會中斷，植物將因缺少原料而無法生存，整個生態瓶的物質循環崩潰。" }
+    ]
+    },
+    {
+   id: "CH20",
+      title: "CH20 光合作用",
+      flashcards: [
+      { question: "一棵大樹的絕大部分生物量（乾重）主要來自哪裡？是土壤還是空氣？", answer: "主要來自空氣。\n\n解釋: 植物的質量主要由有機物（如纖維素）構成，其碳骨架來自於空氣中的二氧化碳，而非土壤中的礦物質。" },
+      { question: "在光合作用的總方程式中，光和葉綠素是「反應物」嗎？為什麼？", answer: "不是。二氧化碳和水才是反應物。\n\n解釋: 光是驅動反應的能量來源，而葉綠素是吸收光能的色素，它參與反應但本身不會被消耗，因此不屬於反應物。" },
+      { question: "光合作用產生的氧氣，其氧原子是來自作為原料的二氧化碳，還是水分子？", answer: "來自水分子（H₂O）。\n\n解釋: 在光反應階段，水分子被分解（稱為光解），釋放出電子、質子和氧氣。這是一個非常關鍵且容易混淆的知識點。" },
+      { question: "光合作用的目的是什麼？", answer: "光合作用的目的是製造有機物（主要是葡萄糖）來儲存能量和構建自身。\n\n解釋: 呼吸作用則是分解有機物以釋放能量供生命活動使用。兩者目的相反，但相互依存。" },
+      { question: "葉片中的柵狀葉肉和海綿葉肉，哪一層含有更多的葉綠體？這與其功能有何關係？", answer: "柵狀葉肉含有更多的葉綠體。\n\n解釋: 因為它位於葉片上層，能接觸到更多陽光，其細胞排列緊密，最大化地進行光合作用，是主要的光合作用場所。" },
+      { question: "葉綠體中的類囊體和基質分別是光合作用哪個階段的場所？", answer: "類囊體：是光反應的場所，其膜上含有葉綠素和相關的酶。基質：是暗反應，或稱卡爾文循環的場所，含有催化此階段反應的酶。\n\n解釋: 類囊體進行光反應，基質進行暗反應。" },
+      { question: "「碳反應」是否必須在黑暗中進行？", answer: "不是。這個名稱容易引起誤解。「碳反應」或「暗反應」的正確含義是它不直接需要光能來驅動。\n\n解釋: 但它需要光反應產生的 ATP 和 NADPH，因此通常在白天與光反應同步進行。" },
+      { question: "光反應階段產生了哪兩種攜帶能量的關鍵分子，以推動下一階段的反應？", answer: "ATP (三磷酸腺苷) 和 NADPH。\n\n解釋: ATP提供了化學能，而NADPH提供了還原力，兩者都是驅動碳反應將二氧化碳轉化為糖所必需的。" },
+      { question: "在光反應中，水被分解（水的光解）的意義是什麼？", answer: "水的光解有三個重要意義：產生氧氣：作為副產品釋放。提供電子：用以補充葉綠素失去的電子。產生質子 (H⁺)：用於形成NADPH。\n\n解釋: 水的光解是光合作用的關鍵步驟之一。" },
+      { question: "如果光反應停止，暗反應（卡爾文循環）能否無限進行下去？為什麼？", answer: "不能。\n\n解釋: 碳反應的進行嚴重依賴光反應所提供的 ATP和 NADPH。一旦光反應停止，ATP和NADPH的供應中斷，暗反應也會隨之停止。" },
+      { question: "在暗反應中，二氧化碳最初是與哪一個分子結合的？", answer: "二氧化碳與五碳化合物結合。\n\n解釋: 這個過程稱為固碳作用，是卡爾文循環的第一步。" },
+      { question: "當光合作用速率的圖表呈現一條水平線時，這代表什麼？", answer: "這代表光合作用速率達到了最大值，此時正在被研究的因素（如光強度或CO₂濃度）不再是限制因素。速率的瓶頸變成了另一個保持不變的因素，例如溫度或二氧化碳濃度等。" },
+      { question: "在光強度極低的情況下，提高二氧化碳濃度能否顯著提升光合作用速率？", answer: "不能。\n\n解釋: 在光強度極低時，光強度是主要的限制因素。因為光反應產生的ATP和NADPH極少，即使有充足的二氧化碳，碳反應也無法快速進行。" },
+      { question: "溫度過高（例如超過40°C）為什麼會導致光合作用速率急劇下降？", answer: "因為高溫會使催化光合作用（特別是碳反應）的酶變性，使其失去活性，無法有效催化化學反應。\n\n解釋: 同時，高溫也可能導致氣孔關閉以防止水分過度流失，從而減少了二氧化碳的供應。" },
+      { question: "為什麼溫室種植有時會使用紅色或藍色的燈光，而不是能量看起來更強的綠光？", answer: "因為葉綠素主要吸收紅光和藍光進行光合作用，而對綠光吸收最少，大部分綠光被反射掉（這也是葉子呈綠色的原因）。\n\n解釋: 使用紅光和藍光能最有效地被植物利用，提高光合作用效率。" },
+      { question: "什麼是光補償點？", answer: "光補償點是指在某個光強度下，植物光合作用產生氧氣的速率，恰好等於呼吸作用消耗氧氣的速率（或者說，光合作用固定CO₂的速率等於呼吸作用釋放CO₂的速率）。\n\n解釋: 在這一點上，沒有淨氣體交換。" },
+      { question: "為什麼在炎熱乾燥的正午，某些植物的光合作用速率反而會下降？", answer: "因為在這種天氣下，植物為了減少水分通過蒸騰作用流失，會關閉大部分氣孔。\n\n解釋: 氣孔關閉雖然保住了水分，但也導致了二氧化碳供應不足，從而限制了光合作用的速率。" },
+      { question: "植物在白天有光的時候，還需要進行呼吸作用嗎？為什麼？", answer: "需要。\n\n解釋: 呼吸作用是所有活細胞（包括根、莖、葉細胞）為了獲取生命活動（如生長、物質運輸）所需能量而必須持續進行的過程，不分晝夜。" },
+      { question: "如何理解植物在24小時內的「淨二氧化碳交換量」？", answer: "淨交換量 = 光合作用吸收的CO₂量 - 呼吸作用釋放的CO₂量。 白天（有光）：光合速率通常大於呼吸速率，表現為淨吸收CO₂。 夜晚（無光）：只進行呼吸作用，表現為淨釋放CO₂。\n\n解釋: 淨交換量反映植物在特定時間內的整體CO₂平衡。" },
+      { question: "如果將一盆植物密封在一個透明玻璃罩內，在持續光照下，罩內的二氧化碳濃度會如何變化？", answer: "罩內的二氧化碳濃度會先下降，然後維持在一個穩定的低水平。\n\n解釋: 下降是因為光合作用消耗CO₂的速率大於呼吸作用釋放的速率。當CO₂濃度降低到光補償點對應的水平時，消耗和釋放速率相等，濃度便不再變化。" },
+      { question: "光合作用製造的葡萄糖，除了用於呼吸作用，還有哪些主要用途？", answer: "轉化為澱粉，作為能量的暫時儲存形式。轉化為蔗糖，通過韌皮部運輸到植物其他部位。用作合成其他有機物的原料，如纖維素（構成細胞壁）、蛋白質和脂質。\n\n解釋: 葡萄糖是植物生命活動的基礎物質。" },
+      { question: "葉片表面的角質層 (cuticle) 對光合作用有何利弊？", answer: "利：角質層是透明的蠟狀層，能有效防止葉片內部水分過度蒸發。弊：它幾乎不透氣，會阻礙氣體（如CO₂）的進出。\n\n解釋: 因此，氣體交換主要依賴於氣孔。" },
+      { question: "檢測光合作用產生澱粉的實驗中，為什麼要先對葉片進行脫色？用什麼試劑？", answer: "需要脫色是為了去除葉綠素的干擾，避免其綠色掩蓋了澱粉與碘液反應所產生的藍黑色。\n\n解釋: 常用的脫色試劑是熱酒精，因為酒精能溶解葉綠素。" },
+      { question: "在上述實驗中，用碘液測試前，為什麼要先用熱水漂洗葉片？", answer: "用熱水漂洗有兩個目的：軟化葉片，使其更容易被染色。洗去殘留的酒精，因為酒精會影響碘液與澱粉的反應。\n\n解釋: 漂洗步驟確保碘液試驗的準確性。" },
+      { question: "為什麼說整個地球生態系的能量最終來源都是太陽能？", answer: "因為生產者（主要是進行光合作用的生物）位於所有食物鏈的基礎。它們通過光合作用將太陽的光能轉化為儲存在有機物中的化學能，然後能量再通過食物鏈逐級傳遞給消費者和分解者，驅動了整個生態系的運作。\n\n解釋: 太陽能是地球生態系統的能量之源。" },
+      { question: "光合作用在哪個細胞器內進行？", answer: "葉綠體。\n\n解釋: 葉綠體內有葉綠素，能吸收光能推動光合作用。" },
+      { question: "光合作用需要哪些基本條件？", answer: "光、葉綠素、二氧化碳和水。\n\n解釋: 其中光和葉綠素為能量來源和催化劑，二氧化碳和水是原材料。" },
+      { question: "脫澱粉的目的為何？", answer: "移除葉內已有的澱粉，確保實驗中檢測到的澱粉是新合成的。\n\n解釋: 這避免誤以為實驗前存在的澱粉是光合作用的結果。" },
+      { question: "如何檢測光合作用是否發生？", answer: "檢驗葉片釋放的氧氣或檢驗葉片中澱粉的存在（碘液試驗）。\n\n解釋: 氧氣是副產物，澱粉是儲存的光合作用產物。" },
+      { question: "光合作用分為哪兩個主要階段？", answer: "光化學反應（光反應）和碳固定（暗反應）。\n\n解釋: 光反應吸收光能產生ATP和NADPH，暗反應不需光，利用ATP和NADPH合成糖。" },
+      { question: "光反應在哪裡進行？", answer: "葉綠體的類囊體膜上。\n\n解釋: 類囊體膜含葉綠素和電子傳遞鏈。" },
+      { question: "暗反應（卡爾文循環）在哪裡進行？", answer: "葉綠體的基質。\n\n解釋: 不依賴光，利用ATP和NADPH合成三碳糖。" },
+      { question: "光合作用中水的作用是什麼？", answer: "水分子光解，產生氧氣、氫離子和電子。\n\n解釋: 氧氣釋放到大氣，電子和氫離子參與光反應。" },
+      { question: "光合作用中ATP和NADPH的角色是什麼？", answer: "提供能量和還原力給暗反應合成有機物。" },
+      { question: "卡爾文循環中五碳化合物的作用？", answer: "作為二氧化碳的受體，結合二氧化碳形成三碳化合物。\n\n解釋: 這是碳固定反應的起點。" },
+      { question: "什麼是光磷酸化？", answer: "利用光能合成ATP的過程。\n\n解釋: 光磷酸化發生在電子傳遞鏈上。" },
+      { question: "為什麼光合作用速率會因光強度飽和而不再增加？", answer: "其他因素如二氧化碳濃度或溫度成為限制因素。\n\n解釋: 光強度超過最適點後速率不再受光限制。" },
+      { question: "何謂限制因素？", answer: "限制光合作用速率的最缺乏因素，如光、二氧化碳或溫度。\n\n解釋: 光合作用速率受最短缺的條件制約。" },
+      { question: "氫氧化鉀在光合作用實驗中的用途？", answer: "吸收空氣中的二氧化碳，製造無二氧化碳環境。\n\n解釋: 以檢驗二氧化碳是否為光合作用必要條件。" },
+      { question: "為什麼葉綠素不能寫成葉綠體？", answer: "葉綠素是色素，葉綠體是細胞器。\n\n解釋: 葉綠素吸光，葉綠體是光合作用場所。" },
+      { question: "光合作用生成的葡萄糖有哪些用途？", answer: "能量來源、合成澱粉、纖維素及蔗糖運輸。\n\n解釋: 澱粉是儲存形式，纖維素是細胞壁成分。" },
+      { question: "海綿葉肉和柵狀葉肉的主要差異是什麼？", answer: "海綿葉肉細胞鬆散、含氣室，促進氣體擴散；柵狀葉肉細胞緊密、多葉綠體。\n\n解釋: 結構適應光合作用與氣體交換。" },
+      { question: "光反應和暗反應有何不同？", answer: "光反應需光，產生ATP、NADPH和氧；暗反應不需光，利用ATP和NADPH合成糖。\n\n解釋: 兩者協同完成光合作用。" },
+      { question: "光合作用的氧氣來自哪裡？", answer: "水的光解。\n\n解釋: 氧是水分子分解的副產品。" },
+      { question: "NADP在光合作用中扮演什麼角色？", answer: "接受電子和氫，形成NADPH，提供還原力。\n\n解釋: NADPH參與碳固定的還原反應。" },
+      { question: "為什麼植物要在黑暗中脫澱粉至少24小時？", answer: "讓葉內原有澱粉被消耗，確保實驗澱粉為新合成。\n\n解釋: 防止誤判非實驗產生澱粉。" },
+      { question: "光合作用中電子傳遞鏈的作用是什麼？", answer: "傳遞激發的電子，同時釋放能量合成ATP。\n\n解釋: 這過程是光磷酸化的基礎。" },
+      { question: "光合作用的文字方程式是什麼？", answer: "二氧化碳 + 水 → 葡萄糖 + 氧氣\n\n解釋: 這是光合作用的總結，植物利用光能將二氧化碳和水轉化為食物（葡萄糖）並釋放氧氣。" },
+      { question: "光合作用的必要條件是什麼？", answer: "光、二氧化碳、葉綠素和水。\n\n解釋: 光提供能量，二氧化碳和水是原料，葉綠素吸收光能以驅動反應。" },
+      { question: "光合作用在生態系中扮演什麼角色？", answer: "提供食物、維持能量流動並平衡大氣中的二氧化碳和氧氣。" },
+      { question: "卡爾文循環在哪裡發生？", answer: "在葉綠體的基質中。\n\n解釋: 卡爾文循環是光獨立階段，將碳固定成葡萄糖。" },
+      { question: "光化學反應的產物是什麼？", answer: "ATP、NADPH和氧氣。\n\n解釋: 這些產物為卡爾文循環提供能量和還原力。" },
+      { question: "溫度如何影響光合作用？", answer: "最適溫度使酶活性最大化；過高或過低會降低速率。" },
+      { question: "為什麼葉片寬而扁平？", answer: "以最大化光吸收和氣體交換。\n\n解釋: 較大的表面積提高光合作用效率。" },
+      { question: "為什麼基質中含有酶？", answer: "以催化卡爾文循環中的反應。\n\n解釋: 基質是碳固定的場所，需要酶活性。" },
+      { question: "水的光解是什麼？", answer: "利用光能將水分解成氧氣、氫和電子。\n\n解釋: 為光化學反應提供電子並釋放氧氣。" },
+      { question: "光合作用除了葡萄糖外還有什麼最終產物？", answer: "澱粉、纖維素、蛋白質和脂質。\n\n解釋: 葡萄糖被轉化為這些化合物以儲存和生長。" }
+    ]
+    },
+    {
+      id: "CH21",
+      title: "CH21 呼吸作用",
+    flashcards: [
+      { question: "呼吸作用和呼吸是同一回事嗎？請解釋兩者的關係。", answer: "不是。\n\n解釋: 呼吸：是指生物體與外界環境進行氣體交換的物理過程（例如：吸入氧氣，呼出二氧化碳）。呼吸作用：是在細胞內發生的一系列化學反應，分解有機物（如葡萄糖）以釋放能量，並轉移到ATP中。呼吸是為呼吸作用提供氧氣。" },
+      { question: "呼吸作用是「製造」能量的過程嗎？如果不是，請準確描述其能量轉換的角色。", answer: "不是。能量不能被「製造」。\n\n解釋: 呼吸作用是一個能量轉換的過程，它將儲存在葡萄糖等有機物中的化學能，逐步釋放出來，並轉移到ATP 分子的鍵中，供細胞直接使用。" },
+      { question: "呼吸作用與在空氣中燃燒葡萄糖有何根本區別？", answer: "兩者都是氧化葡萄糖並釋放能量，但主要區別在於：呼吸作用：是在酶的催化下，於體溫中有序、分步地進行的受控過程，能量逐步釋放並儲存於ATP中。 燃燒：是劇烈、不受控的反應，能量在瞬間以光和熱的形式大量釋放。\n\n解釋: 呼吸作用是生物體內受控的能量釋放過程，燃燒則是劇烈的化學反應。" },
+      { question: "所有生物都必須進行呼吸作用嗎？", answer: "是的。\n\n解釋: 所有生物（包括動物、植物、真菌、微生物）的活細胞都必須持續進行呼吸作用，以獲取生命活動所需的能量。植物在進行光合作用的同時，其所有活細胞（包括根、莖）也在24小時不停地進行呼吸作用。" },
+      { question: "需氧呼吸的三個主要階段，分別在哪個細胞位置發生？", answer: "糖酵解：在 細胞質中發生。\n克雷伯氏循環：在 線粒體基質中發生。\n氧化磷酸化：在 線粒體內膜上發生。" },
+      { question: "糖酵解階段的起始反應物和最終產物是什麼？這個階段需要氧氣嗎？", answer: "起始反應物：1分子葡萄糖 (6碳)。\n最終產物：2分子丙酮酸鹽 (3碳)、少量ATP和NADH。\n這個階段不需要氧氣參與。\n\n解釋: 糖酵解是呼吸作用的第一步，不需氧氣。" },
+      { question: "如果沒有線粒體，細胞能否進行呼吸作用？", answer: "可以，但只能進行不完整的呼吸作用。\n\n解釋: 細胞可以在細胞質中進行糖酵解，產生極少量的ATP。但後續能產生大量ATP的克雷伯氏循環和氧化磷酸化都必須在線粒體中進行。" },
+      { question: "克雷伯氏循環 (Krebs cycle) 的主要作用是什麼？它產生了哪些重要的中間產物？", answer: "主要作用是將來自糖酵解的丙酮酸鹽徹底分解，並在此過程中產生大量NADH 和 FADH。\n\n解釋: 此過程也會產生少量ATP和二氧化碳。" },
+      { question: "在需氧呼吸中，二氧化碳是在哪個階段產生的？", answer: "二氧化碳主要在克雷伯氏循環階段產生。\n\n解釋: 當丙酮酸鹽進入線粒體並在循環中被逐步分解時，其碳原子會以二氧化碳的形式被釋放出來。" },
+      { question: "NADH 和 FADH在呼吸作用中的角色是什麼？", answer: "它們是氫載體/電子載體。在糖酵解和克雷伯氏循環中，它們從葡萄糖的分解過程中接收電子，然後將這些電子運送到線粒體內膜上的電子傳遞鏈，用於驅動ATP的大量合成。" },
+      { question: "線粒體內膜高度摺疊成嵴有什麼功能上的優勢？", answer: "高度摺疊極大地增加了線粒體內膜的表面積。\n\n解釋: 這為進行氧化磷酸化的電子傳遞鏈和ATP合酶提供了更多的附著空間，從而大大提高了ATP的生產效率。" },
+      { question: "在需氧呼吸中，氧氣的具體作用是什麼？它在哪個階段參與反應？", answer: "氧氣是電子傳遞鏈的最終電子受體。\n\n解釋: 在氧化磷酸化階段的末端，氧氣會接收從NADH和FADH傳遞過來的電子，並與氫結合形成水。這個過程是需氧呼吸能持續進行的關鍵。" },
+      { question: "如果氧氣供應中斷，電子傳遞鏈會發生什麼？對ATP的產生有何影響？", answer: "如果沒有氧氣作為最終電子受體，電子傳遞鏈上的電子會「交通堵塞」，無法繼續傳遞。這會導致質子梯度無法建立，ATP合酶停止工作，絕大部分的ATP合成會停止。" },
+      { question: "缺氧呼吸與需氧呼吸在ATP產量上有何巨大差異？為什麼？", answer: "需氧呼吸能產生大量ATP（約30-32個），而缺氧呼吸只能產生極少量ATP（僅2個）。這是因為缺氧呼吸只完成了糖酵解階段，葡萄糖未被徹底分解，大部分能量仍鎖在乳酸或酒精等有機產物中。" },
+      { question: "人體肌肉細胞進行缺氧呼吸的產物是什麼？這與酵母菌的缺氧呼吸產物有何不同？", answer: "人體肌肉：產物是乳酸。酵母菌：產物是酒精和二氧化碳。\n\n解釋: 兩者都只在糖酵解階段產生少量ATP。" },
+      { question: "劇烈運動時，肌肉為什麼會產生乳酸？", answer: "劇烈運動時，心血管系統輸送氧氣的速率跟不上肌肉細胞消耗的速率，導致氧氣供應不足。為了快速產生ATP以維持運動，肌肉細胞便會進行缺氧呼吸，將丙酮酸鹽轉化為乳酸。" },
+      { question: "在缺氧呼吸中，將丙酮酸鹽轉化為乳酸或酒精的目的是什麼？", answer: "主要目的是為了再生 NAD。\n\n解釋: 在糖酵解過程中，NAD被還原為NADH。為了讓糖酵解能持續進行以產生ATP，細胞必須將NADH氧化變回NAD。乳酸發酵和酒精發酵就是完成這個再生過程的途徑。" },
+      { question: "麵包製作過程中，麵團會發脹，這是利用了酵母菌的哪種呼吸作用？與哪種產物有關？", answer: "利用了酵母菌的缺氧呼吸（酒精發酵）。麵團內部氧氣很快被耗盡，酵母菌便進行缺氧呼吸，產生的二氧化碳氣體被困在麵團中，使其膨脹。產生的酒精則在烘烤過程中揮發掉了。" },
+      { question: "長跑運動員的有氧能力通常比短跑運動員強，這在細胞層面有何體現？", answer: "長跑運動員的肌肉細胞中，通常含有更多和更大的線粒體，以及更豐富的毛細血管網絡。\n\n解釋: 這使得他們的細胞能更有效地進行需氧呼吸，為長時間的耐力運動提供持續且大量的ATP。" },
+      { question: "為什麼馬拉松選手在比賽中會補充含糖飲料，而不是純水？", answer: "長時間劇烈運動會大量消耗體內的糖原儲備。\n\n解釋: 補充含糖飲料可以直接為身體提供葡萄糖，作為呼吸作用的燃料，持續產生ATP，有助於維持運動表現，延緩疲勞。" },
+      { question: "呼吸作用的基本定義是什麼？", answer: "呼吸作用是生物體內透過受控的氧化分解反應，把食物中的化學能釋放，部分用於合成ATP。\n\n解釋: 呼吸作用分步驟進行，涉及酶催化，能量不會一次性釋放。" },
+      { question: "ATP在細胞中的角色是什麼？", answer: "ATP是細胞內的能量載體，通過分解釋放能量推動各種代謝反應。\n\n解釋: ATP不能跨細胞運輸，只在產生細胞內使用。" },
+      { question: "糖酵解的主要產物有哪些？", answer: "2個丙酮酸鹽、2個NADH和淨產生2個ATP。\n\n解釋: 糖酵解不需氧，在細胞質中進行。" },
+      { question: "丙酮酸鹽在需氧呼吸中如何繼續代謝？", answer: "在線粒體基質轉化為乙酰輔酶A，釋放CO₂並產生NADH，進入克雷伯氏循環。" },
+      { question: "克雷伯氏循環的生成物有哪些？", answer: "ATP、NADH、FADH和 CO₂。\n\n解釋: 這些產物提供能量和電子給氧化磷酸化。" },
+      { question: "氧化磷酸化的最終電子受體是什麼？", answer: "氧氣，與氫離子和電子結合形成水。\n\n解釋: 氧是需氧呼吸不可或缺的關鍵。" },
+      { question: "酒精發酵的產物有哪些？", answer: "乙醇、二氧化碳和2個ATP。\n\n解釋: 主要由酵母等微生物進行。" },
+      { question: "乳酸發酵產生什麼？", answer: "乳酸和2個ATP。\n\n解釋: 人類骨骼肌在缺氧時進行乳酸發酵。" },
+      { question: "為什麼運動後會有氧債？", answer: "運動時乳酸發酵產生乳酸，運動後需額外氧氣將乳酸分解代謝。\n\n解釋: 氧債在恢復過程中增加的氧消耗。" },
+      { question: "呼吸作用中NAD和FAD的作用是？", answer: "作為電子載體，攜帶氫和電子至電子傳遞鏈。\n\n解釋: NADH和FADH在氧化磷酸化中被氧化。" },
+      { question: "線粒體基質的功能是什麼？", answer: "含有酶，提供反應場所進行克雷伯氏循環和連接反應。" },
+      { question: "糖酵解過程需要氧嗎？", answer: "糖酵解不需氧，產生丙酮酸鹽和少量ATP。\n\n解釋: 是缺氧呼吸的第一步。" },
+      { question: "呼吸作用中產生的CO₂來自哪個階段？", answer: "連接反應和克雷伯氏循環。\n\n解釋: 糖酵解不釋放CO₂。" },
+      { question: "為什麼呼吸作用中ATP產量不是100%？", answer: "大部分能量以熱散失。\n\n解釋: 約55%能量以熱散失。" },
+      { question: "肌肉細胞在缺氧時如何產生能量？", answer: "通過乳酸發酵產生少量ATP。\n\n解釋: 乳酸會積累引起肌肉疲勞。" },
+      { question: "需氧呼吸的字面方程式是什麼？", answer: "葡萄糖 + 氧氣 → 二氧化碳 + 水 + 能量" },
+      { question: "有氧呼吸的三個主要階段是什麼？", answer: "糖酵解、克雷伯氐循環、氧化磷酸化\n\n解釋: 這些階段按順序進行，糖酵解在細胞質中，克雷布斯循環在線粒體基質中，氧化磷酸化在內線粒體膜上進行。" },
+      { question: "為什麼NAD再生在缺氧呼吸中很重要？", answer: "它允許糖酵解繼續產生ATP。\n\n解釋: 糖酵解需要NAD。在缺氧條件下，NADH還原丙酮酸鹽以再生NAD⁺，維持ATP產生。" },
+      { question: "線粒體的結構及其在呼吸作用中的作用是什麼？", answer: "外膜（控制物質進入）、內膜（氧化磷酸化場所）、基質（克雷伯氐循環場所）\n\n解釋: 高度摺疊的內膜（嵴）增加酶的表面積，基質包含克雷伯氐循環的酶。" },
+      { question: "什麼是氧債？", answer: "運動後需要的額外氧氣以代謝肝臟中的乳酸\n\n解釋: 劇烈運動時乳酸積聚，運動後氧氣用於將乳酸轉化為丙酮酸或糖原。" },
+      { question: "氫氧化鈉在呼吸實驗中的作用是什麼？", answer: "吸收二氧化碳以檢測氧氣消耗\n\n解釋: 在呼吸計中，氫氧化鈉去除二氧化碳，通過氣體體積或壓力的變化測量氧氣使用量。" },
+      { question: "碳酸氫根指示劑在呼吸實驗中的作用是什麼？", answer: "通過顏色變化（紅色到黃色）檢測二氧化碳產生\n\n解釋: 二氧化碳增加降低pH，使指示劑變黃，證實種子或動物等進行呼吸作用。" },
+      { question: "為什麼呼吸實驗中的呼吸計必須密封？", answer: "檢測因呼吸作用引起的氣體體積或壓力變化\n\n解釋: 密封系統確保生物的氧氣消耗或二氧化碳產生影響內部氣壓。" }
+    ]
+    }
+  ];
+  // 狀態管理：每章節各自維護學習狀態
+  const stateByChapter = {};
+  function initChapterState(chapterId){
+    const chapter = chapters.find(c=>c.id===chapterId);
+    stateByChapter[chapterId] = {
+      cardsWithWeights: chapter.flashcards.map(c => ({ ...c, weight: 1, hardCount: 0 })),
+      currentIndex: 0, flipped: false, flipping: false, history: [0], historyPos: 0
+    };
+  }
+  chapters.forEach(ch => initChapterState(ch.id));
+  
+  // 目前章節 & 主題
+  let currentChapterId = "CH19";
+  const themes = ['', 'theme-ocean-blue', 'theme-sunset-glow', 'theme-forest-green'];
+  let currentThemeIndex = 0;
+
+  // UI 元素
+  const docElem = document.documentElement;
+  const headerTitle = document.getElementById('headerTitle');
+  const chapterInfo = document.getElementById('chapterInfo');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const card = document.getElementById('card');
+  const cardFront = document.getElementById('cardFront');
+  const cardBack = document.getElementById('cardBack');
+  const cardNumber = document.getElementById('cardNumber');
+  const flipBtn = document.getElementById('flipBtn');
+  const hardBtn = document.getElementById('hardBtn');
+  const mediumBtn = document.getElementById('mediumBtn');
+  const easyBtn = document.getElementById('easyBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const summaryBtn = document.getElementById('summaryBtn');
+  const summaryBlock = document.getElementById('summaryBlock');
+  const themeBtn = document.getElementById('themeBtn');
+
+  function getChapter(){ return chapters.find(c=>c.id===currentChapterId); }
+  function getState(){ return stateByChapter[currentChapterId]; }
+  
+  function updateHeader(){
+    const ch = getChapter();
+    headerTitle.textContent = ch.title;
+    document.title = ch.title;
+    chapterInfo.textContent = `目前章節：${ch.id}`;
+  }
+  
+  function renderCard() {
+    const cardContainer = document.querySelector('.card-container');
+    cardContainer.style.animation = 'none';
+    void cardContainer.offsetHeight; // 觸發瀏覽器重繪 (reflow)
+    cardContainer.style.animation = '';
+
+    const st = getState();
+    st.flipped = false;
+    card.classList.remove("flipped");
+    card.setAttribute("aria-pressed", "false");
+    const item = st.cardsWithWeights[st.currentIndex];
+    cardFront.textContent = item.question;
+    cardBack.textContent = item.answer;
+    cardNumber.textContent = `卡片 ${st.currentIndex + 1} / ${st.cardsWithWeights.length}`;
+    prevBtn.disabled = (st.historyPos <= 0);
+    summaryBlock.hidden = true;
+    summaryBlock.innerHTML = "";
+  }
+  
+  function flipCard() {
+    const st = getState();
+    if (st.flipping) return;
+    st.flipping = true;
+    st.flipped = !st.flipped;
+    card.classList.toggle("flipped", st.flipped);
+    card.setAttribute("aria-pressed", st.flipped ? "true" : "false");
+    setTimeout(() => { st.flipping = false; }, 600);
+  }
+  
+  function updateWeight(difficulty) {
+    const st = getState();
+    const cardObj = st.cardsWithWeights[st.currentIndex];
+    if (difficulty === "hard") { cardObj.weight += 2; cardObj.hardCount++; }
+    else if (difficulty === "medium") { /* 不變 */ }
+    else if (difficulty === "easy") { cardObj.weight = Math.max(1, cardObj.weight - 1); }
+  }
+  
+  function weightedRandomIndex() {
+    const st = getState();
+    const totalWeight = st.cardsWithWeights.reduce((sum, c) => sum + c.weight, 0);
+    if (totalWeight <= 0) return 0;
+    let r = Math.random() * totalWeight;
+    for (let i = 0; i < st.cardsWithWeights.length; i++) {
+      r -= st.cardsWithWeights[i].weight;
+      if (r < 0) return i;
+    }
+    return 0;
+  }
+  
+  function nextCard(difficulty) {
+    const st = getState();
+    updateWeight(difficulty);
+    const nextIdx = weightedRandomIndex();
+    st.currentIndex = nextIdx;
+    if (st.historyPos < st.history.length - 1) {
+      st.history = st.history.slice(0, st.historyPos + 1);
+    }
+    st.history.push(st.currentIndex);
+    st.historyPos++;
+    renderCard();
+    saveProgress();
+  }
+  
+  function prevCard() {
+    const st = getState();
+    if (st.historyPos <= 0) return;
+    st.historyPos--;
+    st.currentIndex = st.history[st.historyPos];
+    renderCard();
+  }
+  
+  function showHardSummary() {
+    const st = getState();
+    let sortedCards = [...st.cardsWithWeights]
+      .filter(c => c.hardCount > 0)
+      .sort((a,b) => b.hardCount - a.hardCount)
+      .slice(0,5);
+    if (sortedCards.length === 0) {
+      summaryBlock.innerHTML = "<h3>尚無標記為困難的題目</h3>";
+      summaryBlock.hidden = false;
+      return;
+    }
+    let html = "<h3>困難題目小結（前5題）</h3>";
+    sortedCards.forEach((c,i) => {
+      html += `<div class="summary-item">
+        <p><strong>題目 ${i + 1}：</strong>${c.question}</p>
+        <p><strong>答案：</strong>${c.answer}</p>
+        <p><strong>困難標記次數：</strong>${c.hardCount}</p>
+      </div>`;
+    });
+    summaryBlock.innerHTML = html;
+    summaryBlock.hidden = false;
+  }
+  
+  function switchChapter(newId){
+    if (newId === currentChapterId) return;
+    tabs.forEach(t=>{
+      const active = t.dataset.chapter === newId;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    currentChapterId = newId;
+    updateHeader();
+    renderCard();
+    card.focus();
+    saveProgress(); 
+  }
+  
+ // =================================================
+// 初始設定與渲染
+// =================================================
+
+loadProgressAndSettings(); // <-- 新增：在渲染前，先讀取儲存的進度與設定
+  updateHeader();
+  renderCard();
+  
+  // 事件綁定
+  flipBtn.addEventListener("click", flipCard);
+  hardBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("hard"); });
+  mediumBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("medium"); });
+  easyBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("easy"); });
+  prevBtn.addEventListener("click", prevCard);
+  summaryBtn.addEventListener("click", showHardSummary);
+  
+  themeBtn.addEventListener('click', () => {
+    currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+    const newTheme = themes[currentThemeIndex];
+    docElem.className = newTheme;
+    saveProgress();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.code === "Space" || e.key === " ") && document.activeElement === card) {
+      e.preventDefault(); flipCard(); return;
+    }
+    if (e.key === "1") { const st=getState(); if(!st.flipped) flipCard(); nextCard("hard"); }
+    if (e.key === "2") { const st=getState(); if(!st.flipped) flipCard(); nextCard("medium"); }
+    if (e.key === "3") { const st=getState(); if(!st.flipped) flipCard(); nextCard("easy"); }
+    if (e.key === "ArrowLeft") { prevCard(); }
+    if (e.key?.toLowerCase?.() === "s") { showHardSummary(); }
+  });
+  
+  card.addEventListener('click', flipCard);
+  tabs.forEach(tab => tab.addEventListener('click', () => switchChapter(tab.dataset.chapter)));
+  
+  // 為了簡化，我移除了之前版本中 chapters 資料的省略部分，將完整的資料放入
+  // 這確保了程式碼的完整性和可運行性
+</script>
+</body>
+</html>
+
