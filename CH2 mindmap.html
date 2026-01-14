@@ -83,21 +83,21 @@ html {
         // 1. 抓取目前的地圖資料
         const data = window.mm.state.data;
         
-        // 2. 定義一個「清潔工」函式，走遍所有節點把「摺疊 (fold)」標籤撕掉
+        // 2. 清潔工：把所有「手動摺疊」的標記移除
         function walk(node) {
             if (node.payload && node.payload.fold) {
-                delete node.payload.fold; // 刪除摺疊設定，強制打開
+                delete node.payload.fold; 
             }
             if (node.children) {
-                node.children.forEach(walk); // 繼續往下一層找
+                node.children.forEach(walk);
             }
         }
-
-        // 3. 執行清潔
         walk(data);
         
-        // 4. 把乾淨的資料塞回去並重畫
-        window.mm.setData(data);
+        // 3. 關鍵修正：重畫時，強制設定展開層級為無限 (-1)
+        window.mm.setData(data, { initialExpandLevel: -1 });
+        
+        // 4. 調整視角
         setTimeout(() => window.mm.fit(), 300);
     }
 </script>
