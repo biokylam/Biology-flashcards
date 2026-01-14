@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生物科總記憶卡</title>
+    <title>生物科學習平台</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -30,16 +30,22 @@
             width: 100%;
         }
         h1 {
-            font-size: 2.5em;
+            font-size: 2.2em;
             margin-bottom: 30px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .menu-section {
+            display: none; /* 預設隱藏所有區塊 */
+        }
+        .active {
+            display: block; /* 只顯示 active 的區塊 */
         }
         .chapter-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-        .chapter-list li a {
+        .chapter-list li a, .main-nav-btn {
             display: block;
             background-color: rgba(90, 79, 207, 0.7);
             color: #f0e9ff;
@@ -51,79 +57,118 @@
             font-weight: 500;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: none;
+            width: 100%;
+            cursor: pointer;
         }
-        .chapter-list li a:hover {
+        .chapter-list li a:hover, .main-nav-btn:hover {
             background-color: rgba(143, 124, 232, 0.9);
             transform: translateY(-3px) scale(1.02);
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
-        /* 【新增部分】 */
-.reset-container {
-    margin-top: 25px; /* 與上方列表的間距 */
-    padding-top: 20px; /* 按鈕上方的內邊距 */
-    border-top: 1px solid rgba(255, 255, 255, 0.2); /* 一條分隔線 */
-}
+        /* 主選單按鈕顏色區分 */
+        .btn-mindmap {
+            background-color: rgba(46, 204, 113, 0.6); /* 綠色系區分心智圖 */
+        }
+        .btn-mindmap:hover {
+            background-color: rgba(46, 204, 113, 0.8);
+        }
 
-#resetBtn {
-    background-color: #c0392b; /* 使用警示性的紅色 */
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-size: 1em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
+        .back-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            transition: 0.3s;
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
 
-#resetBtn:hover {
-    background-color: #e74c3c;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-}
+        .reset-container {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        #resetBtn {
+            background-color: #c0392b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #resetBtn:hover {
+            background-color: #e74c3c;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>生物科記憶卡 - 目錄</h1>
-        <ul class="chapter-list">
-            <li><a href="Ch1-4.html">第一至四章</a></li>
-            <li><a href="Ch5-8.html">第五至八章</a></li>
-            <li><a href="Ch9-10.html">第九至十章</a></li>
-            <li><a href="Ch11-14.html">第十一至十四章</a></li>
-            <li><a href="Ch15-18.html">第十五至十八章</a></li>
-            <li><a href="Ch19-21.html">第十九至二十一章</a></li>
+        
+        <div id="mainMenu" class="menu-section active">
+            <h1>生物科學習資源</h1>
+            <button class="main-nav-btn" onclick="showSection('flashcardMenu')">📑 生物科記憶卡</button>
+            <button class="main-nav-btn btn-mindmap" onclick="showSection('mindmapMenu')">🧠 Biology Mindmap</button>
+        </div>
+
+        <div id="flashcardMenu" class="menu-section">
+            <button class="back-btn" onclick="showSection('mainMenu')">← 返回主選單</button>
+            <h1>生物科記憶卡 - 目錄</h1>
+            <ul class="chapter-list">
+                <li><a href="Ch1-4.html">第一至四章</a></li>
+                <li><a href="Ch5-8.html">第五至八章</a></li>
+                <li><a href="Ch9-10.html">第九至十章</a></li>
+                <li><a href="Ch11-14.html">第十一至十四章</a></li>
+                <li><a href="Ch15-18.html">第十五至十八章</a></li>
+                <li><a href="Ch19-21.html">第十九至二十一章</a></li>
             </ul>
-        <div class="reset-container">
-    <button id="resetBtn">⚠️ 重設所有學習進度</button>
-  </div>
-  </div>
-    <script>
-    const resetBtn = document.getElementById('resetBtn');
+            <div class="reset-container">
+                <button id="resetBtn">⚠️ 重設所有學習進度</button>
+            </div>
+        </div>
 
-    if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
-            // 跳出一個確認對話框，防止使用者誤觸
-            const isConfirmed = confirm('您確定要重設所有學習進度嗎？\n\n這個操作將會清除所有課題的困難標記、學習記錄和顏色主題設定，且無法復原！');
+        <div id="mindmapMenu" class="menu-section">
+            <button class="back-btn" onclick="showSection('mainMenu')">← 返回主選單</button>
+            <h1>Biology Mindmap - 目錄</h1>
+            <p style="margin-bottom: 20px; color: #ddd;">內容正在準備中...</p>
+            <ul class="chapter-list">
+                <li><a href="#">單元一：分子生物學 (即將推出)</a></li>
+                <li><a href="#">單元二：遺傳學 (即將推出)</a></li>
+            </ul>
+        </div>
 
-            // 如果使用者點擊了「確定」
-            if (isConfirmed) {
-                // 清除這個網站所有的 localStorage 資料
-                localStorage.clear();
-
-                // 跳出一個提示，告訴使用者已完成
-                alert('所有學習進度已成功重設！');
-            }
-        });
-    }
-</script>
-</body>
-</html>
     </div>
+
+    <script>
+        // 切換顯示區塊的函數
+        function showSection(sectionId) {
+            // 隱藏所有區塊
+            const sections = document.querySelectorAll('.menu-section');
+            sections.forEach(s => s.classList.remove('active'));
+            
+            // 顯示指定區塊
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        // 原始的重設進度程式碼
+        const resetBtn = document.getElementById('resetBtn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                const isConfirmed = confirm('您確定要重設所有學習進度嗎？\n\n這個操作將會清除所有課題的困難標記、學習記錄和顏色主題設定，且無法復原！');
+                if (isConfirmed) {
+                    localStorage.clear();
+                    alert('所有學習進度已成功重設！');
+                }
+            });
+        }
+    </script>
 </body>
-
 </html>
-
-
-
