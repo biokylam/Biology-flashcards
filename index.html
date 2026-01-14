@@ -147,14 +147,14 @@
 <body>
     <div class="container">
         
-        <div id="mainMenu" class="menu-section active">
+        <div id="mainMenu" class="menu-section">
             <h1>生物科學習資源</h1>
-            <button class="main-nav-btn" onclick="showSection('flashcardMenu')">📑 生物科記憶卡</button>
-            <button class="main-nav-btn btn-mindmap" onclick="showSection('mindmapMenu')">🧠 Biology Mindmap</button>
+            <button class="main-nav-btn" onclick="showSection('flashcardMenu', true)">📑 生物科記憶卡</button>
+            <button class="main-nav-btn btn-mindmap" onclick="showSection('mindmapMenu', true)">🧠 Biology Mindmap</button>
         </div>
 
         <div id="flashcardMenu" class="menu-section">
-            <button class="back-btn" onclick="showSection('mainMenu')">← 返回主選單</button>
+            <button class="back-btn" onclick="showSection('mainMenu', true)">← 返回主選單</button>
             <h1>記憶卡 - 目錄</h1>
             <ul class="chapter-list">
                 <li><a href="Ch1-4.html">第一至四章</a></li>
@@ -170,7 +170,7 @@
         </div>
 
         <div id="mindmapMenu" class="menu-section">
-            <button class="back-btn" onclick="showSection('mainMenu')">← 返回主選單</button>
+            <button class="back-btn" onclick="showSection('mainMenu', true)">← 返回主選單</button>
             <h1>Mindmap - 目錄</h1>
             <p style="margin-bottom: 25px; color: rgba(255,255,255,0.7); font-style: italic;">內容正在準備中...</p>
             <ul class="chapter-list">
@@ -182,11 +182,37 @@
     </div>
 
     <script>
-        function showSection(sectionId) {
+        // 修改點 2: 修改整個 script 邏輯，加入自動偵測功能
+        
+        function showSection(sectionId, updateHash = false) {
             const sections = document.querySelectorAll('.menu-section');
             sections.forEach(s => s.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
+            
+            const target = document.getElementById(sectionId);
+            if (target) {
+                target.classList.add('active');
+                // 如果點擊按鈕，則更新網址
+                if (updateHash) {
+                    window.location.hash = sectionId;
+                }
+            }
         }
+
+        // 當網頁載入時，檢查網址有沒有帶標記 (例如 #flashcardMenu)
+        window.onload = function() {
+            const hash = window.location.hash.replace('#', '');
+            if (hash && document.getElementById(hash)) {
+                showSection(hash); // 有標記就去標記那一頁
+            } else {
+                showSection('mainMenu'); // 沒有就去主選單
+            }
+        };
+
+        // 當按下瀏覽器「上一頁」時，也能正常切換
+        window.onhashchange = function() {
+            const hash = window.location.hash.replace('#', '');
+            showSection(hash || 'mainMenu');
+        };
 
         const resetBtn = document.getElementById('resetBtn');
         if (resetBtn) {
