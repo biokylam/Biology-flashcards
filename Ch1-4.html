@@ -1,720 +1,204 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>生物記憶卡</title>
-<style>
-  :root{ /* 預設主題：深紫色 */
-    --primary:#5a4fcf;
-    --primary-2:#8f7ce8;
-    --bg-1:#667eea;
-    --bg-2:#764ba2;
-    --card-1:#a18cd1;
-    --card-2:#fbc2eb;
-    --front-1:#c3aed6;
-    --front-2:#f7d6e0;
-    --back-1:#6a3093;
-    --back-2:#a044ff;
-    --text:#2c2c54;
-    --text-inv:#f0e9ff;
-    --shadow-1: rgba(90, 79, 207, 0.7);
-    --shadow-2: rgba(143, 124, 232, 0.9);
-  }
-  /* --- 新增：定義多套顏色主題 --- */
-  :root.theme-ocean-blue { /* 主題2：海洋藍 */
-    --primary: #0077b6; --primary-2: #0096c7; --bg-1: #005f73; --bg-2: #0a9396;
-    --card-1: #94d2bd; --card-2: #e9d8a6; --front-1: #e9f5db; --front-2: #cfe8e0;
-    --back-1: #001219; --back-2: #005f73; --text: #001219; --text-inv: #e9f5db;
-    --shadow-1: rgba(0, 119, 182, 0.7); --shadow-2: rgba(0, 150, 199, 0.9);
-  }
-  :root.theme-sunset-glow { /* 主題3：日落霞光 */
-    --primary: #e76f51; --primary-2: #f4a261; --bg-1: #e15f41; --bg-2: #e76f51;
-    --card-1: #f4a261; --card-2: #e9c46a; --front-1: #fff8f0; --front-2: #fefae0;
-    --back-1: #d62828; --back-2: #f77f00; --text: #264653; --text-inv: #ffffff;
-    --shadow-1: rgba(231, 111, 81, 0.7); --shadow-2: rgba(244, 162, 97, 0.9);
-  }
-  :root.theme-forest-green { /* 主題4：森林綠 */
-    --primary: #2d6a4f; --primary-2: #40916c; --bg-1: #1b4332; --bg-2: #2d6a4f;
-    --card-1: #74c69d; --card-2: #b7e4c7; --front-1: #d8f3dc; --front-2: #ffffff;
-    --back-1: #081c15; --back-2: #1b4332; --text: #081c15; --text-inv: #d8f3dc;
-    --shadow-1: rgba(45, 106, 79, 0.7); --shadow-2: rgba(64, 145, 108, 0.9);
-  }
-  /* --- 主題定義結束 --- */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生物科學習平台</title>
+    <style>
+        /* 頁面置中核心設定 */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
 
-  *{box-sizing:border-box}
-  body {
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
-    margin: 0; padding: 0;
-    min-height: 100vh;
-    display: flex; flex-direction: column; align-items: center;
-    color: #f0f0f0;
-    transition: background 0.5s ease;
-  }
-  header {
-  /* 大部分樣式不變，主要是修改排版方式 */
-  background: linear-gradient(90deg, var(--primary), var(--primary-2));
-  width: 100%;
-  padding: 1.1rem 1rem;
-  font-size: 1.2rem;
-  font-weight: 700;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  position: sticky; top: 0; z-index: 10;
-  transition: background 0.5s ease;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            /* 背景保持深紫色漸層，能襯托出櫻桃紅 */
+            background: linear-gradient(135deg, #4834d4 0%, #686de0 100%);
+            color: #ffffff;
+            display: flex;
+            justify-content: center; /* 水平置中 */
+            align-items: center;     /* 垂直置中 */
+            min-height: 100vh;
+            box-sizing: border-box;
+            padding: 20px;
+        }
 
-  /* 以下是修改和新增的部分 */
-  display: flex;
-  justify-content: center; /* 讓內容水平置中 */
-  align-items: center;    /* 讓內容垂直置中 */
-  position: relative;     /* 為了讓返回按鈕能定位 */
-}
-.back-link {
-  position: absolute; /* 絕對定位，讓它脫離正常的排版流 */
-  left: 15px;         /* 定位在 header 左邊 15px 的位置 */
-  top: 50%;           /* 垂直置中 */
-  transform: translateY(-50%); /* 確保精確垂直置中 */
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
 
-  color: var(--text-inv);
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
+        h1 {
+            font-size: 2em;
+            margin-bottom: 30px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
 
-.back-link:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-  main {
-    flex: 1; width: 100%; max-width: 520px;
-    padding: 1rem 1rem 1.5rem;
-    display: flex; flex-direction: column; align-items: center; gap: .75rem;
-  }
-  .chapters {
-    width: 100%; display: flex; gap: .5rem;
-    overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem;
-  }
-  .chapters::-webkit-scrollbar{height:6px}
-  .chapters::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:6px}
-  .tab {
-    white-space: nowrap; background: rgba(255,255,255,0.15); color: #fff;
-    border: 1px solid rgba(255,255,255,0.25); padding: .45rem .75rem;
-    border-radius: 999px; cursor: pointer; transition: all .25s; font-size: .95rem;
-  }
-  .tab:hover { background: rgba(255,255,255,0.25); }
-  .tab.active {
-    background: #ffce6b; color: #2b2b2b; border-color: #ffce6b;
-    box-shadow: 0 2px 10px rgba(255,206,107,0.45);
-  }
-  #flashcardPage {
-    flex-direction: column; align-items: center; display: flex; width: 100%;
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .card-container {
-    perspective: 1000px; width: 100%; height: 240px; outline: none;
-    animation: fadeIn 0.4s ease-out;
-  }
-  .card {
-    width: 100%; height: 240px; position: relative;
-    transform-style: preserve-3d;
-    transition: transform 0.6s, background 0.5s ease;
-    cursor: pointer; border-radius: 16px;
-    background: linear-gradient(135deg, var(--card-1), var(--card-2));
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3); color: var(--text);
-    display: flex; justify-content: center; align-items: center;
-    padding: 1.25rem; font-size: 1.05rem; line-height: 1.45;
-    user-select: none; text-align: left; white-space: pre-wrap;
-  }
-  .card.flipped { transform: rotateY(180deg); }
-  .card-face {
-    position: absolute; width: 100%; height: 100%; border-radius: 16px;
-    backface-visibility: hidden; display: flex; justify-content: center;
-    align-items: flex-start; padding: 1.25rem; box-sizing: border-box;
-    overflow-y: auto;
-    transition: background 0.5s ease, color 0.5s ease;
-  }
-  .card-front { background: linear-gradient(135deg, var(--front-1), var(--front-2)); color: var(--text); }
-  .card-back { transform: rotateY(180deg); background: linear-gradient(135deg, var(--back-1), var(--back-2)); color: var(--text-inv); }
-  #cardNumber { margin-top: 0.4rem; font-size: 0.9rem; color: #e9e6ff; text-align: center; }
-  .footer { margin-top: 1rem; width: 100%; display: flex; flex-direction: column; align-items: center; gap: .4rem; }
-  .button-row { display: flex; justify-content: center; gap: .6rem; flex-wrap: wrap; width: 100%; }
-  button {
-    background: var(--primary); border: none; color: white;
-    padding: 0.5rem 0.9rem; font-size: 1rem; border-radius: 10px; cursor: pointer;
-    transition: background 0.25s, transform .05s, box-shadow 0.25s;
-    min-width: 88px;
-    box-shadow: 0 4px 10px var(--shadow-1);
-  }
-  button:hover:not(:disabled) {
-    background: var(--primary-2); box-shadow: 0 6px 14px var(--shadow-2);
-  }
-  button:active:not(:disabled){ transform: translateY(1px); }
-  button:disabled { background: #a0aabe; cursor: default; box-shadow: none; color: #eee; }
-  #summaryBlock {
-    margin-top: 0.9rem; background: rgba(0,0,0,0.35); padding: 1rem; border-radius: 12px;
-    max-height: 340px; overflow-y: auto; width: 100%; text-align: left;
-    transition: all 0.4s ease-out; transform: translateY(20px); opacity: 0;
-  }
-  #summaryBlock:not([hidden]) { transform: translateY(0); opacity: 1; }
-  #summaryBlock h3 { margin: 0 0 .5rem 0; color: var(--text-inv); font-size: 1.05rem; }
-  #summaryBlock .summary-item { margin-bottom: .8rem; background: rgba(255,255,255,0.08); padding: .6rem .7rem; border-radius: 10px; }
-  #summaryBlock .summary-item p { margin: 0.2rem 0; }
-  .toolbar { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: .6rem; flex-wrap: wrap; }
-  .pill { font-size: .9rem; color: #fff; background: rgba(255,255,255,.15); padding: .35rem .6rem; border-radius: 999px; }
-  @media (max-width: 520px) {
-    .card { height: 210px; font-size: 1rem; padding: 1rem; }
-    .card-face { padding: 1rem; }
-  }
-</style>
+        .menu-section {
+            display: none;
+        }
+
+        .active {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chapter-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* 櫻桃紅按鈕設定 - Sharp 風格 */
+        .chapter-list li a, .main-nav-btn {
+            display: block;
+            /* 櫻桃紅漸層色調 */
+            background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
+            color: #ffffff;
+            padding: 16px 20px;
+            margin-bottom: 18px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 1.15em;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(201, 24, 74, 0.4);
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .chapter-list li a:hover, .main-nav-btn:hover {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 8px 25px rgba(201, 24, 74, 0.6);
+            background: linear-gradient(135deg, #ff758f 0%, #ff4d6d 100%);
+        }
+
+        /* 心智圖按鈕 - 保持綠色但優化為 Sharp 感 */
+        .btn-mindmap {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%) !important;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4) !important;
+        }
+
+        .btn-mindmap:hover {
+            background: linear-gradient(135deg, #55efc4 0%, #2ecc71 100%) !important;
+            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.6) !important;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            margin-bottom: 25px;
+            font-size: 0.9em;
+            transition: 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-5px);
+        }
+
+        .reset-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #resetBtn {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #resetBtn:hover {
+            background-color: #ff4757;
+            color: white;
+            border-color: #ff4757;
+        }
+    </style>
 </head>
 <body>
-<header>
-  <a href="index.html" class="back-link">🔙 返回目錄</a>
-  <span id="headerTitle">CH1 生物學入門</span>
-</header>
-<main>
-  <nav class="chapters" aria-label="章節切換">
-    <button class="tab active" data-chapter="CH1" aria-pressed="true">CH1</button>
-    <button class="tab" data-chapter="CH2" aria-pressed="false">CH2</button>
-    <button class="tab" data-chapter="CH3" aria-pressed="false">CH3</button>
-    <button class="tab" data-chapter="CH4" aria-pressed="false">CH4</button>
-  </nav>
-  <div class="toolbar">
-    <span id="chapterInfo" class="pill">目前章節：CH11</span>
-    <button id="themeBtn" aria-label="切換主題" style="min-width: auto; padding: 0.4rem 0.7rem;">🎨 切換主題</button>
-    <span class="pill">操作提示：點卡片或按空白鍵翻轉</span>
-  </div>
-  <section id="flashcardPage" aria-live="polite" aria-atomic="true">
-    <div class="card-container" tabindex="0" aria-label="抽認卡，點擊或按空白鍵翻轉">
-      <div id="card" class="card" role="button" aria-pressed="false" tabindex="0">
-        <div id="cardFront" class="card-face card-front"></div>
-        <div id="cardBack" class="card-face card-back"></div>
-      </div>
-      <div id="cardNumber" aria-live="polite" aria-atomic="true"></div>
+    <div class="container">
+        
+        <div id="mainMenu" class="menu-section active">
+            <h1>生物科學習資源</h1>
+            <button class="main-nav-btn" onclick="showSection('flashcardMenu')">📑 生物科記憶卡</button>
+            <button class="main-nav-btn btn-mindmap" onclick="showSection('mindmapMenu')">🧠 Biology Mindmap</button>
+        </div>
+
+        <div id="flashcardMenu" class="menu-section">
+            <button class="back-btn" onclick="showSection('mainMenu')">← 返回主選單</button>
+            <h1>記憶卡 - 目錄</h1>
+            <ul class="chapter-list">
+                <li><a href="Ch1-4.html">第一至四章</a></li>
+                <li><a href="Ch5-8.html">第五至八章</a></li>
+                <li><a href="Ch9-10.html">第九至十章</a></li>
+                <li><a href="Ch11-14.html">第十一至十四章</a></li>
+                <li><a href="Ch15-18.html">第十五至十八章</a></li>
+                <li><a href="Ch19-21.html">第十九至二十一章</a></li>
+            </ul>
+            <div class="reset-container">
+                <button id="resetBtn" title="清除所有標記與記錄">⚠️ 重設學習進度</button>
+            </div>
+        </div>
+
+        <div id="mindmapMenu" class="menu-section">
+            <button class="back-btn" onclick="showSection('mainMenu')">← 返回主選單</button>
+            <h1>Mindmap - 目錄</h1>
+            <p style="margin-bottom: 25px; color: rgba(255,255,255,0.7); font-style: italic;">內容正在準備中...</p>
+            <ul class="chapter-list">
+                <li><a href="#" style="opacity: 0.8;">單元一：分子生物學 (即將推出)</a></li>
+                <li><a href="#" style="opacity: 0.8;">單元二：遺傳學 (即將推出)</a></li>
+            </ul>
+        </div>
+
     </div>
-    <div class="footer">
-      <div class="button-row" id="firstRow">
-        <button id="flipBtn" aria-label="翻轉卡片">🔄 翻轉</button>
-        <button id="hardBtn" aria-label="困難">🤔 困難</button>
-        <button id="mediumBtn" aria-label="一般">🙂 一般</button>
-        <button id="easyBtn" aria-label="容易">😄 容易</button>
-      </div>
-      <div class="button-row" id="secondRow">
-        <button id="prevBtn" aria-label="上一題" disabled>⬅️ 上一題</button>
-        <button id="summaryBtn" aria-label="困難題目小結">📝 困難小結</button>
-      </div>
-    </div>
-    <div id="summaryBlock" aria-live="polite" aria-atomic="true" hidden></div>
-  </section>
-</main>
-<script>
-const PROGRESS_KEY = 'flashcardProgress_1-4'; // <-- 每個檔案都不同！
-const SETTINGS_KEY = 'flashcardSettings';     // <-- 所有檔案都相同！
-// =================================================
-// Local Storage 功能區塊
-// =================================================
 
-// 【用這段新程式碼】替換掉舊的 saveProgress 和 loadProgressAndSettings 函式
-
-// 函式：儲存所有進度到 localStorage
-function saveProgress() {
-  // 1. 儲存【專屬進度】
-  const progressData = {
-    stateByChapter: stateByChapter,
-    currentChapterId: currentChapterId
-  };
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify(progressData));
-
-  // 2. 儲存【共用設定】
-  const settingsData = {
-    currentThemeIndex: currentThemeIndex
-  };
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
-}
-
-// 函式：從 localStorage 讀取並應用所有進度
-function loadProgressAndSettings() {
-  // 1. 讀取【專屬進度】
-  const progressDataJSON = localStorage.getItem(PROGRESS_KEY);
-  if (progressDataJSON) {
-    try {
-      const progressData = JSON.parse(progressDataJSON);
-      if (progressData.stateByChapter) {
-        Object.assign(stateByChapter, progressData.stateByChapter);
-
-        // 【新增的關鍵修正】：強制重設所有課題的暫時狀態
-        // 無論讀取到什麼，都確保 flipped 和 flipping 是 false
-        for (const chapterId in stateByChapter) {
-          if (stateByChapter[chapterId]) {
-            stateByChapter[chapterId].flipped = false;
-            stateByChapter[chapterId].flipping = false; // <-- 【補上這最重要的一行】
-          }
+    <script>
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.menu-section');
+            sections.forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
         }
-      }
-      
-      // 安全檢查：確認讀取到的章節 ID 是否存在於當前檔案中
-      if (progressData.currentChapterId && chapters.some(c => c.id === progressData.currentChapterId)) {
-        currentChapterId = progressData.currentChapterId;
-      }
-    } catch (e) {
-      console.error("讀取進度資料時出錯:", e);
-    }
-  }
-  
-  // 2. 讀取【共用設定】
-  const settingsDataJSON = localStorage.getItem(SETTINGS_KEY);
-  if (settingsDataJSON) {
-    try {
-      const settingsData = JSON.parse(settingsDataJSON);
-      if (typeof settingsData.currentThemeIndex !== 'undefined') {
-        currentThemeIndex = settingsData.currentThemeIndex;
-        docElem.className = themes[currentThemeIndex];
-      }
-    } catch (e) {
-      console.error("讀取設定資料時出錯:", e);
-    }
-  }
-}
-// =================================================
-// Local Storage 功能區塊結束
-// =================================================
 
-  // 章節資料定義
-  const chapters = [
-    // ... (所有 chapters 的資料和之前一樣，此處省略以節省篇幅) ...
-    {
-      id: "CH1",
-      title: "CH1 生物學入門",
-      flashcards: [
-   { question: "生物學主要研究甚麼？", answer: "生物學是一門研究生物的科學，範疇廣泛，包括生物的結構、生命週期、分類，以及生物之間和生物與環境的關係。\n\n解釋: 生物學旨在全面理解生命現象及其規律。" },
-      { question: "會動的東西就是生物嗎？", answer: "不是。運動是生物的特徵之一，但並非所有會動的東西都是生物，例如機械人、雲、火等。\n\n解釋: 判斷是否生物需要看它是否具備所有生命的特徵。" },
-      { question: "植物不會走動，所以它不是生物？", answer: "這是錯誤的觀念。雖然植物不會像動物一樣移動，但它們表現出向光性等生長運動，並且具備所有其他生命的特徵，例如生長、生殖、需要營養和呼吸等，所以植物是生物。\n\n解釋: 生物的判斷標準是其是否具備所有生命特徵。" },
-      { question: "生物為何需要進行「營養」？", answer: "生物透過營養過程獲取食物。食物中的物質可用於生長和修補身體組織，另一部分則透過呼吸作用釋放能量，以維持生命活動。\n\n解釋: 營養是生物獲取能量和物質基礎的過程。" },
-      { question: "「呼吸」和「呼吸作用」一樣嗎？", answer: "不一樣。「呼吸」通常指吸入和呼出氣體的動作（例如人類用肺呼吸），而「呼吸作用」是指在細胞內分解食物以釋放能量的化學過程，所有生物都會進行呼吸作用。\n\n解釋: 兩者是不同層面的概念，一個是宏觀行為，一個是微觀的細胞代謝過程。" },
-      { question: "所有生物都需要氧氣才能生存嗎？", answer: "不是。這是一個常見的誤解。雖然許多生物（包括人類）需要氧氣進行需氧呼吸，但有些生物（例如某些細菌）在無氧環境下也能生存，牠們進行的是缺氧呼吸。\n\n解釋: 氧氣對於某些生物的生存並非絕對必需。" },
-      { question: "生物學家如何分辨生物和非生物？", answer: "依據該物體是否具備所有生物的共同特徵，例如：由細胞組成、會進行營養、呼吸、排泄、生長、運動、反應和生殖等。\n\n解釋: 缺少任何一項都不能算是生物。" },
-      { question: "科學研究的第一步是甚麼？", answer: "科學研究始於「觀察」。\n\n解釋: 科學家透過感官或儀器留意周遭事物，從而提出問題。" },
-      { question: "甚麼是「假說」？它有甚麼特點？", answer: "假說是一個根據觀察和已有知識，對科學問題作出的「可驗證的」推測性解釋。\n\n解釋: 一個好的假說必須是清晰的，並且能夠透過實驗來進行驗證。" },
-      { question: "為甚麼在科學實驗中需要設立「對照組」？", answer: "對照組是用來比較的基準。\n\n解釋: 透過比較實驗組和對照組的結果，科學家才能確定實驗結果是由於所測試的變量所引起，而不是其他無關因素。" },
-      { question: "在「探究光對種子萌發的影響」實驗中，「光」是哪種變量？", answer: "「光」是自變量。\n\n解釋: 也就是實驗中研究者主動改變和測試的變量。" },
-      { question: "在「探究光對種子萌發的影響」實驗中，「種子的萌發率」又是哪種變量？", answer: "「種子的萌發率」是因變量。\n\n解釋: 也就是因為自變量的改變而產生的可量度的結果。" },
-      { question: "在科學實驗中，除了自變量外，其他所有條件都必須盡量保持不變，這些條件稱為什麼？", answer: "稱為控制變量。\n\n解釋: 確保這些變量不變，才能進行公平測試，確保實驗結果只由自變量引起。" },
-      { question: "如果實驗結果不支持你的假說，是否代表實驗失敗了？", answer: "不是。不支持假說的結果同樣有價值，它能幫助科學家排除不正確的解釋，從而提出新的假說，再進行探究。\n\n解釋: 科學就是一個不斷修正的過程。" },
-      { question: "為何在得出結論前，通常需要重複實驗？", answer: "重複實驗是為了確保結果的可靠性和可信性。\n\n解釋: 排除因偶然或操作失誤造成的誤差，使結論更具說服力，即提升實驗的信度。" },
-      { question: "如果你想研究某種肥料對植物生長的影響，你的對照組應該如何設置？", answer: "對照組的植物應該在除了不施加該種肥料外，所有其他條件（如水量、陽光、土壤、溫度）都與實驗組完全相同。\n\n解釋: 確保只有肥料這一個變量不同，以進行公平比較。" },
-      { question: "科學家如何處理和分析收集到的數據？", answer: "科學家會整理數據，可能會進行計算（如計算平均值），並將數據轉化為圖表（如棒形圖、線圖）來分析趨勢和關係，最終得出結論。\n\n解釋: 數據處理和分析是得出可靠結論的關鍵步驟。" },
-      { question: "在科學報告的「結論」部分，應該寫些甚麼？", answer: "結論部分應總結實驗結果是否支持最初的假說，並根據實驗數據作出簡潔有力的總結陳述。\n\n解釋: 結論是實驗的最終歸納和回答。" },
-      { question: "為何說科學知識是暫時性的？", answer: "因為科學是建立在現有證據上的。隨著新證據的出現或新技術的發展，現有的科學理論和定律可能會被修正、完善甚至推翻。\n\n解釋: 科學的發展是一個永無止境的探索過程。" }
-    ]
-    },
-    {
-    id: "CH2",
-    title: "CH2 生命的基本單位",
-    flashcards: [
-      { question: "水在生物體內的主要功能是什麼？", answer: "水作為溶劑、降溫劑、化學反應物和支撐物質，幫助維持生物的正常運作。\n\n解釋: 水是生命活動不可或缺的物質。" },
-      { question: "什麼是無機離子？舉例說明。", answer: "無機離子是生物體內的離子，例如硝酸鹽、鎂離子、鐵離子。\n\n解釋: 它們參與多種生理功能。" },
-      { question: "硝酸鹽在植物體內的功能是什麼？", answer: "硝酸鹽提供氮元素，是植物合成蛋白質的重要原料。\n\n解釋: 氮是植物生長必需的大量元素。" },
-      { question: "鎂離子在植物體內的功能是什麼？", answer: "鎂離子構成葉綠素的一部分，幫助植物吸收光進行光合作用。\n\n解釋: 葉綠素是植物進行光合作用的核心色素。" },
-      { question: "鐵離子在動物體內的功能是什麼？", answer: "鐵離子是血紅蛋白的核心成分，負責運輸氧氣。\n\n解釋: 血紅蛋白是紅血球中攜帶氧氣的蛋白質。" },
-      { question: "鈣離子在動物體內的功能是什麼？", answer: "鈣離子構成骨骼和牙齒，維持結構強度。\n\n解釋: 鈣是動物骨骼健康的重要元素。" },
-      { question: "磷酸鹽在生物體內的功能是什麼？", answer: "磷酸鹽是骨骼、DNA和RNA的重要組成部分。\n\n解釋: 它們支持遺傳和結構功能。" },
-      { question: "什麼是生物的有機化學成分？", answer: "有機化學成分是含碳元素的分子，例如碳水化合物、脂質、蛋白質和核酸。\n\n解釋: 這些是構成生物體並維持生命活動的主要分子。" },
-      { question: "碳水化合物的主要功能是什麼？", answer: "碳水化合物如葡萄糖是細胞的首要能量來源。\n\n解釋: 碳水化合物是生物體最直接的能量來源。" },
-      { question: "脂質在生物體內的功能是什麼？", answer: "脂質儲存能量、保護內臟並減少熱量散失。\n\n解釋: 脂質在生物體內扮演多重角色，包括結構和儲能。" },
-      { question: "蛋白質在生物體內的功能是什麼？", answer: "蛋白質包括酶、抗體和血紅蛋白。\n\n解釋: 它們功能多樣且關鍵，參與幾乎所有生命活動。" },
-      { question: "核酸在生物體內的功能是什麼？", answer: "核酸如DNA和RNA攜帶遺傳信息並參與蛋白質合成。\n\n解釋: 核酸是生物遺傳信息的載體和表達的關鍵分子。" },
-      { question: "什麼是細胞學說？", answer: "細胞學說指出所有生物由細胞構成，細胞是生命基本單位且由已有細胞分裂產生。\n\n解釋: 細胞學說是現代生物學的基石。" },
-      { question: "什麼是原核細胞？", answer: "原核細胞無細胞核和膜狀細胞器，例如細菌細胞。\n\n解釋: 它們是結構最簡單的細胞類型。" },
-      { question: "什麼是真核細胞？", answer: "真核細胞有細胞核和膜狀細胞器，例如動植物細胞。\n\n解釋: 它們比原核細胞結構更複雜，功能更特化。" },
-      { question: "動物細胞和植物細胞的主要區別是什麼？", answer: "植物細胞有細胞壁、葉綠體和大型液泡，動物細胞沒有這些結構。\n\n解釋: 這些結構是區分動植物細胞的關鍵特徵。" },
-      { question: "細胞膜的功能是什麼？", answer: "細胞膜具差異透性，控制物質進出細胞。\n\n解釋: 它維持細胞內環境的穩定。" },
-      { question: "細胞質的功能是什麼？", answer: "細胞質是凝膠狀物質，是細胞內化學反應的主要場所。\n\n解釋: 許多重要的細胞活動在此進行。" },
-      { question: "細胞核的功能是什麼？", answer: "細胞核含有DNA，控制細胞的所有活動。\n\n解釋: 細胞核是細胞的控制中心。" },
-      { question: "線粒體的功能是什麼？", answer: "線粒體進行呼吸作用，釋放能量供細胞使用。\n\n解釋: 它們是細胞的「發電廠」。" },
-      { question: "葉綠體的功能是什麼？", answer: "葉綠體含葉綠素，進行光合作用製造養分。\n\n解釋: 它們是植物細胞特有的能量轉換器。" },
-      { question: "什麼是組織？", answer: "組織是同類細胞組合起來執行特定功能，例如肌肉組織。\n\n解釋: 組織是細胞協同工作的層次。" },
-      { question: "什麼是器官？", answer: "器官由不同組織組成，執行特定功能，例如心臟。\n\n解釋: 器官是多種組織協同工作的層次。" },
-      { question: "什麼是系統？", answer: "系統由多個器官協調運作，例如消化系統。\n\n解釋: 系統是多個器官協同工作的最高層次。" },
-      { question: "生物體的組織層次是什麼？", answer: "從小到大依次為細胞→組織→器官→系統→生物體。\n\n解釋: 這是多細胞生物的層次結構。" },
-      { question: "為什麼肌肉細胞的線粒體數量較多？", answer: "肌肉細胞需大量能量進行收縮，線粒體產生ATP滿足需求。\n\n解釋: 線粒體數量與細胞能量需求密切相關。" },
-      { question: "澱粉、糖原和纖維素都是由甚麼基本單位組成的？", answer: "它們都是多糖，基本單位是葡萄糖。\n\n解釋: 但葡萄糖分子的連接方式不同，導致它們有不同的結構和功能。" },
-      { question: "糖原和澱粉的功能有何主要分別？", answer: "兩者都是生物儲存能量的形式。澱粉是植物儲存能量的方式（例如在馬鈴薯中），而糖原是動物儲存能量的方式，主要儲存在肝臟和肌肉細胞中。\n\n解釋: 儲存形式因生物種類而異。" },
-      { question: "蛋白質的基本單位是甚麼？", answer: "是氨基酸。\n\n解釋: 不同的氨基酸以不同次序連結，摺疊成特定的三維結構，形成功能各異的蛋白質。" },
-      { question: "如何計算光學顯微鏡的總放大倍率？", answer: "將目鏡的放大倍率與接物鏡的放大倍率相乘。\n\n解釋: 例如，目鏡是10X，接物鏡是40X，總放大倍率就是 10 × 40 = 400X。" },
-      { question: "在顯微鏡視野中看到的影像是怎樣的？", answer: "影像是上下倒轉和左右對調的。\n\n解釋: 這是一個非常重要的概念，影響載玻片移動的方向。" },
-      { question: "如果在視野中看到標本偏向右下方，應把載玻片移向哪個方向，才能將標本移至視野中央？", answer: "應將載玻片移向右下方。\n\n解釋: 因為影像是倒轉的，所以你希望影像移動的方向，就是你實際移動載玻片的方向。" },
-      { question: "為何轉用高倍率接物鏡後，視野會變暗？", answer: "因為高倍鏡的透光孔徑較小，進入鏡筒的光線減少。\n\n解釋: 所以視野會變暗。此時需要調節反光鏡或光欄來增加亮度。" },
-      { question: "「放大倍率」和「解像度」有何不同？", answer: "放大倍率指影像放大的程度。解像度（或分辨率）則指分辨兩個鄰近點的清晰程度。\n\n解釋: 高解像度意味能看到更多細節，單純提高放大倍率而沒有足夠的解像度，只會得到模糊的影像。" },
-      { question: "繪畫生物繪圖時，可以用陰影來表示暗處嗎？", answer: "不可以。\n\n解釋: 生物繪圖要求科學準確性，不可使用藝術繪畫中的塗抹或陰影技巧。" },
-      { question: "細胞壁和細胞膜在通透性上有何分別？", answer: "細胞壁是全透性，的水和已溶解的物質可以自由穿過。細胞膜則是差異透性的，能控制物質進出細胞。\n\n解釋: 細胞壁提供支持和保護，細胞膜則控制物質運輸。" },
-      { question: "線粒體的主要功能是「製造」能量嗎？", answer: "這個說法不嚴謹。能量不能被「製造」。線粒體是進行細胞呼吸作用的場所，它的功能是將食物中的化學能「釋放」出來，並轉化為細胞可直接利用的能量形式 (ATP)。\n\n解釋: 線粒體是能量轉換而非能量創造的場所。" },
-      { question: "只有植物細胞才有液泡嗎？", answer: "不是。動物細胞也有液泡，但通常體積細小且數量多。\n\n解釋: 植物細胞則有一個巨大且位於中央的液泡，負責儲存水分、維持細胞形狀。" },
-      { question: "所有植物細胞都有葉綠體嗎？", answer: "不是。只有植物的綠色部分（如葉肉細胞）的細胞才含有葉綠體以進行光合作用。\n\n解釋: 植物的根部細胞因為長在地下接觸不到陽光，所以沒有葉綠體。" },
-      { question: "細胞核的功能只是「控制中心」這麼簡單嗎？", answer: "「控制中心」是個簡化的說法。準確來說，細胞核內含有遺傳物質DNA（脫氧核糖核酸），DNA攜帶著製造蛋白質的指令，從而控制細胞的各種活動和遺傳特性。\n\n解釋: 細胞核的功能遠不止於簡單的控制。" },
-      { question: "細胞質是甚麼？", answer: "細胞質是細胞膜與細胞核之間的所有物質，包括啫喱狀的細胞溶質和懸浮在其中的各種細胞器（如線粒體、液泡等）。\n\n解釋: 許多化學反應都在這裡發生。" },
-      { question: "動物細胞和植物細胞結構上有哪三個主要區別？", answer: "(1) 植物細胞有細胞壁，動物細胞沒有；(2) 植物細胞有葉綠體，動物細胞沒有；(3) 成熟的植物細胞有一個大型中央液泡，動物細胞的液泡則細小。\n\n解釋: 這些結構是區分兩類細胞的關鍵。" },
-      { question: "原核細胞（如細菌）和真核細胞（如動植物細胞）最根本的區別是甚麼？", answer: "最根本的區別在於是否有由核膜包圍的細胞核。\n\n解釋: 真核細胞有真正的細胞核來存放遺傳物質，而原核細胞沒有，其遺傳物質散佈在細胞質的特定區域。" },
-      { question: "洋蔥表皮細胞是植物細胞，為何在顯微鏡下看不到葉綠體？", answer: "因為洋蔥的鱗莖生長在地下，不進行光合作用。\n\n解釋: 所以其表皮細胞沒有葉綠體。這再次證明並非所有植物細胞都有葉綠體。" },
-      { question: "請按由簡單到複雜的順序，排列出多細胞生物的組織層次。", answer: "細胞→ 組織→ 器官→ 系統→ 生物。\n\n解釋: 這是多細胞生物體結構的層次性。" },
-      { question: "甚麼是「組織」？", answer: "組織是由一群結構相似、功能相同的細胞組合而成的。\n\n解釋: 例如，許多肌肉細胞組成肌肉組織。" },
-      { question: "胃是一個「組織」還是一個「器官」？", answer: "胃是一個器官。\n\n解釋: 因為它由多種不同的組織（如肌肉組織、上皮組織、神經組織等）構成，共同合作執行消化的功能。" },
-      { question: "在組織層次中，植物和動物有甚麼不同？", answer: "動物有「系統」這一層次（如消化系統、呼吸系統），而植物的組織層次通常只到器官（根、莖、葉）。\n\n解釋: 一般不劃分出「系統」層次。" }
-    ]
-    },
-    {
-      id: "CH3",
-      title: "CH3 物質穿越細胞膜的活動",
-    flashcards: [
-      { question: "細胞膜的「流動鑲嵌模型」中，「流動」和「鑲嵌」分別指什麼？", answer: "流動: 指磷脂分子和大多數蛋白質分子都能夠移動，並非靜止不動，使細胞膜具有流動性。\n鑲嵌: 指各種蛋白質分子不規則地、像馬賽克一樣鑲嵌在磷脂雙分子層中。" },
-      { question: "物質進出細胞的過程到達平衡後，分子的運動是否會停止？", answer: "不會。這是一個常見的誤解。分子處於永恆的隨機運動中。到達平衡時，只是指物質在膜兩側的淨移動為零，即進出速率相等，但分子仍然在運動。" },
-      { question: "細胞膜對所有物質的通透性都一樣嗎？", answer: "不一樣。細胞膜具有差異透性，意思是它只允許某些物質通過，而阻止另一些物質通過。這對維持細胞內環境穩定至關重要。" },
-      { question: "「濃度梯度」是什麼意思？", answer: "濃度梯度是指在某一範圍內，物質的濃度存在差異。物質會自然地由高濃度區域移動到低濃度區域，這個過程稱為「順濃度梯度」移動。" },
-      { question: "擴散作用和滲透作用有什麼根本區別？", answer: "擴散作用是任何溶質粒子順濃度梯度的淨移動。而滲透作用專指「水分子」通過「差異透性膜」，由高水勢區域到低水勢區域的淨移動。關鍵在於：滲透必須涉及水分子、水勢梯度和差異透性膜。" },
-      { question: "水是從「高濃度溶液」流向「低濃度溶液」嗎？", answer: "錯誤。這是一個非常普遍的誤解。水是從「低濃度溶液」(水分子較多，水勢較高)流向「高濃度溶液」(水分子較少，水勢較低)。或者更準確地說，水是順着水勢梯度移動。" },
-      { question: "什麼是水勢？蒸餾水的水勢是多少？", answer: "水勢是衡量水分子自由移動能力的指標。蒸餾水的水勢被定義為最高值，即零(0)。在水中加入溶質會使水勢變成負數。" },
-      { question: "擴散需要消耗能量(ATP)嗎？", answer: "不需要。雖然擴散或需要借助膜上的蛋白質(載體蛋白或通道蛋白)，但它仍然是順濃度梯度進行的，屬於被動運輸，因此不消耗細胞的代謝能量。" },
-      { question: "如何區分擴散和主動轉運？", answer: "主要區別在於兩點：\n能量： 主動轉運需要消耗ATP，而擴散不需要。\n濃度梯度： 協助擴散是順濃度梯度運輸，而主動轉運不受濃度梯度限制，即可順濃度梯度，亦可以逆濃度梯度運輸物質。" },
-      { question: "氧氣和二氧化碳是通過哪種方式進出細胞的？", answer: "擴散。它們是細小、不帶電的分子，可以直接穿過磷脂雙分子層，順濃度梯度移動，不需要借助蛋白質，也不消耗能量。" },
-      { question: "葡萄糖和氨基酸這類較大的分子，是如何順濃度梯度進入細胞的？", answer: "通過擴散。這些分子對於直接穿過脂雙層來說太大或是極性太強，它們需要與特定的載體蛋白協助，由載體蛋白改變形狀後帶入細胞。" },
-      { question: "將紅血球放入蒸餾水中，它會發生什麼變化？為什麼？", answer: "紅血球會不斷吸水，最終脹裂。因為蒸餾水的水勢(0)高於紅血球細胞質的水勢，水分子會淨流入細胞。動物細胞沒有細胞壁的支撐，會因過度吸水而破裂。" },
-      { question: "將植物細胞放入蒸餾水中，它會脹裂嗎？為什麼？", answer: "不會。植物細胞會吸水，但不會脹破。因為它有堅韌的細胞壁，當細胞壁產生的壓力足以抵抗水繼續淨流入時，細胞便會變得硬脹。" },
-      { question: "什麼是質壁分離？", answer: "當植物細胞被置於高濃度溶液(低水勢溶液)中時，細胞會因滲透作用大量失水。細胞質和液泡會收縮，導致細胞膜與細胞壁分離的現象。" },
-      { question: "為什麼用鹽或糖醃製食物可以防止食物腐壞？", answer: "鹽或糖會製造一個高濃度的環境(極低的水勢)。當細菌等微生物接觸到食物時，它們會因滲透作用而大量失水，導致其細胞發生質壁分離而死亡或停止生長，從而達到防腐效果。" },
-      { question: "將發生了質壁分離的植物細胞放回蒸餾水中，它能復原嗎？", answer: "如果質壁分離的時間不長，細胞尚未死亡，那麼將它放回蒸餾水中，細胞會重新吸水，恢復原狀。這個過程稱為質壁分離復原。" },
-      { question: "在等滲溶液中，水分子還會進出細胞嗎？", answer: "會。等滲溶液指其水勢與細胞質的水勢相等。在這種情況下，水分子進出細胞的速率相等，所以沒有水的淨移動，細胞體積保持不變。" },
-      { question: "為植物施肥時，為什麼不能施加濃度過高的肥料？", answer: "如果土壤溶液的濃度過高(水勢過低)，甚至低於根毛細胞的水勢，植物的根不但不能吸水，反而會因滲透作用而失水，導致植株凋萎甚至死亡。" },
-      { question: "主動轉運有什麼特點？", answer: "主動轉運具有三個主要特點：\n需要能量(ATP)。\n需要載體蛋白。\n可以逆濃度梯度運輸物質(由低濃度到高濃度，部分情況會順濃度梯度運輸物質)。" },
-      { question: "舉出一個植物體內主動轉運的例子。", answer: "植物的根毛細胞從土壤中吸收礦物離子。即使土壤中某些離子的濃度低於根毛細胞內，細胞也能通過主動轉運將這些離子吸收進來。" },
-      { question: "如果一個細胞的呼吸作用受抑制，會對哪種跨膜運輸方式產生最直接的影響？", answer: "主動轉運。因為呼吸作用是細胞產生ATP的主要途徑，而主動轉運是唯一直接需要消耗ATP的跨膜運輸方式。呼吸作用受抑制，ATP供應不足，主動轉運速率就會顯著下降。" },
-      { question: "像蛋白質這樣的大分子，是如何進入細胞的？", answer: "通過吞噬作用。細胞膜會向內凹陷，將大分子包裹起來，形成一個小液泡，然後小液泡與細胞膜分離，進入細胞內部。這個過程需要消耗能量。" },
-      { question: "吞噬作用體現了細胞膜的什麼結構特性？", answer: "體現了細胞膜的流動性。正是因為細胞膜是流動的，它才能夠改變形狀，發生凹陷和融合，從而完成吞噬作用。" },
-      { question: "總結一下，哪幾種物質跨膜運輸方式需要消耗細胞的能量(ATP)？", answer: "主動轉運　和 吞噬作用。這三種方式都需要消耗細胞在呼吸作用中產生的ATP。" },
-      { question: "細胞膜的主要成分是什麼？", answer: "細胞膜由磷脂和蛋白質組成，具有差異透性。" },
-      { question: "什麼是擴散？", answer: "擴散是物質從高濃度區域向低濃度區域的自然移動過程。" },
-      { question: "滲透的定義是什麼？", answer: "滲透是水分子通過差異透性膜從高水勢區域向低水勢區域的移動。" },
-      { question: "主動轉運是什麼？", answer: "主動轉運是細胞利用能量把物質從低濃度區域運送至高濃度區域的過程（視乎情況，相反亦可）。" },
-      { question: "吞噬的過程是如何進行的？", answer: "吞噬是細胞膜形成液泡包裹粒子，然後將其運入細胞的過程。" },
-      { question: "低滲、高滲和等滲溶液的區別是什麼？", answer: "低滲溶液水勢高於細胞質，高滲溶液水勢低於細胞質，等滲溶液水勢相等。" },
-      { question: "細胞在高滲溶液中會發生什麼變化？", answer: "細胞會失水，可能導致萎縮或質壁分離。" },
-      { question: "為什麼脂肪酸可以穿越細胞膜？", answer: "脂肪酸是非極性分子，可以直接通過磷脂雙層。" },
-      { question: "細胞膜的流動性對吞噬有何重要性？", answer: "流動性使細胞膜能夠改變形狀，形成偽足以包裹粒子。" },
-      { question: "為什麼溫度會影響細胞膜的透性？", answer: "高温增加磷脂分子的動能，導致膜結構變鬆，增加透性。" },
-      { question: "如何通過透析管示範滲透？", answer: "透析管允許水分子進入，但不允許大分子（如蔗糖）通過，展示滲透原理。" },
-      { question: "細胞膜中的抗原是什麼？", answer: "抗原是糖蛋白，能夠識別細胞並區分自我和外來物質。" },
-      { question: "如何解釋細胞在等滲溶液中的行為？", answer: "細胞的質量和體積保持不變，因為進出水分子的速率相等。" },
-      { question: "影響擴散速率的因素有哪些？", answer: "濃度梯度、表面積、距離、温度和粒子的大小。" },
-      { question: "細胞膜的蛋白質有什麼功能？", answer: "蛋白質可作為通道、載體、受體、抗原或酶，加速細胞的生化反應。" },
-      { question: "質壁分離是什麼？", answer: "質壁分離是植物細胞在高滲環境中，細胞膜與細胞壁分離的現象。" },
-      { question: "細胞膜如何維持細胞內外環境的穩定？", answer: "通過差異透性控制物質進出，維持內部環境的穩定。" },
-      { question: "細胞膜的流動性如何影響細胞功能？", answer: "允許細胞改變形狀和進行細胞間的物質交流。" },
-      { question: "為什麼高濃度的糖或鹽溶液能夠保存食物？", answer: "因為它們的水勢低，導致微生物細胞失水，抑制其生長。" },
-      { question: "浸入濃蔗糖溶液的薯條會發生什麼變化？", answer: "薯條會變軟和減重，因為水分流失，細胞進入高滲環境。" },
-      { question: "什麼是流動鑲嵌模型？", answer: "流動鑲嵌模型描述細胞膜結構，磷脂分子可橫向移動（流動），蛋白質鑲嵌於磷脂雙層中。" },
-      { question: "磷脂雙層中的親水頭和疏水尾如何排列？", answer: "親水頭朝向細胞內外的水環境，疏水尾朝向膜內部，形成雙層結構。" },
-      { question: "通道蛋白和載體蛋白有什麼區別？", answer: "通道蛋白提供離子和小分子的通道，載體蛋白結合物質並運輸，常參與主動轉運。" },
-      { question: "擴散和滲透有何不同？", answer: "擴散是粒子從高濃度到低濃度的淨移動，滲透特指水分子通過差異透性膜從高水勢到低水勢的移動。" },
-      { question: "動物細胞在低滲溶液中會發生什麼？", answer: "動物細胞吸水膨脹，可能破裂，因無細胞壁支撐。" },
-      { question: "植物細胞在高滲溶液中會發生什麼？", answer: "植物細胞失水，細胞質收縮，出現質壁分離。" },
-      { question: "為什麼細胞膜具有彈性？", answer: "磷脂分子可橫向流動，允許膜改變形狀並修復缺口。" },
-      { question: "為什麼脂溶性分子更容易通過細胞膜？", answer: "磷脂雙層疏水，脂溶性分子可溶解其中並通過。" },
-      { question: "什麼是等滲溶液？", answer: "與細胞內液水勢相同的溶液，無淨水移動。" },
-      { question: "為什麼植物細胞在低滲溶液中不會破裂？", answer: "細胞壁提供支撐，抵抗膨脹壓力。" },
-      { question: "主動轉運中載體蛋白如何運作？", answer: "載體蛋白與物質結合，利用能量改變形狀，將物質運送到膜另一側。" },
-      { question: "吞噬在免疫系統中的作用是什麼？", answer: "白血球通過吞噬吞噬並消滅病原體。" },
-      { question: "為什麼細胞膜上的蛋白質可以移動？", answer: "磷脂雙層流動性允許蛋白質橫向移動。" },
-      { question: "什麼是質壁分離？", answer: "植物細胞在高滲溶液中失水，細胞質收縮，膜與細胞壁分離。" },
-      { question: "為什麼擴散不需要能量？", answer: "擴散是粒子隨機運動結果，順濃度梯度進行。" },
-      { question: "什麼是通道蛋白？", answer: "為特定離子或分子提供穿膜通道的膜蛋白。" },
-      { question: "滲透中水分子如何移動？", answer: "水從高水勢區域通過差異透性膜淨移動到低水勢區域。" },
-      { question: "主動轉運的例子有哪些？", answer: "如植物根部吸礦物質，小腸吸收葡萄糖。" },
-      { question: "什麼是載體蛋白？", answer: "通過改變形狀運輸特定物質的膜蛋白。" }
-    ]
-    },
-    {
-    id: "CH4",
-    title: "CH4 酶和新陳代謝",
-    flashcards: [
-      { question: "酶是什麼？", answer: "酶是蛋白質，能催化化學反應，降低反應所需的活化能。" },
-      { question: "酶的活性部位有何功用？", answer: "活性部位是酶的特定區域，能與受質結合並催化反應。" },
-      { question: "什麼是酶受質複合物？", answer: "是酶與受質結合形成的中間生成物，促進反應的進行。" },
-      { question: "分解代謝和合成代謝的區別是什麼？", answer: "分解代謝是將複雜分子分解為簡單分子，合成代謝則是將簡單分子合併為複雜分子。" },
-      { question: "活化能是什麼？", answer: "活化能是啟動化學反應所需的最低能量。" },
-      { question: "酶的專一性是什麼？", answer: "每種酶通常只催化一種特定的反應，如蛋白酶只能把蛋白質分解，不能把脂質或碳水化合物分解。" },
-      { question: "有什麼因素影響酶活性？", answer: "温度、pH值、受質濃度和酶濃度等因素均會影響酶的活性。" },
-      { question: "什麼是最適温度？", answer: "最適温度是酶活性最高的温度。" },
-      { question: "酶在低温時會發生什麼事？", answer: "在低温時，酶動能減少，可能變得不活躍。" },
-      { question: "酶在高温時會發生什麼事？", answer: "高温導致酶變性，活性部位形狀改變，不能與受質結合，永久失去催化能力。" },
-      { question: "酶在極端pH下會出現什麼變化？", answer: "極端pH值會使酶變性，降低反應速率。" },
-      { question: "什麼是抑制劑？", answer: "抑制劑是減慢酶反應速率的物質。" },
-      { question: "過氧化氫酶的作用是什麼？", answer: "過氧化氫酶催化過氧化氫分解成水和氧。" },
-      { question: "為什麼酶可重複使用？", answer: "酶在反應後不會改變結構，可以繼續催化其他反應。" },
-      { question: "光合作用是一種什麼代謝？", answer: "光合作用是合成代謝，利用光能合成葡萄糖。" },
-      { question: "呼吸作用是一種什麼代謝？", answer: "呼吸作用是分解代謝，將葡萄糖分解釋放能量。" },
-      { question: "鎖鑰假說是什麼？", answer: "鎖鑰假說形容酶的專一性，只能與特定形狀的受質結合。" },
-      { question: "什麼是酶的變性？", answer: "酶的變性是指其結構改變，導致失去功能。" },
-      { question: "如何測量酶反應速率？", answer: "通常通過量測受質的消耗速率或生成物的形成速率。" },
-      { question: "酶與化學催化劑的主要區別是什麼？", answer: "酶都是催化劑，但酶是生物催化劑。化學催化劑不包含酶。" },
-      { question: "為什麼洗衣粉含有酶？", answer: "生物活性洗衣粉中的酶可分解污漬(多數為脂質和蛋白質)，把不可溶的污漬分解成可溶於水的物質，藉以達至清潔效果。" },
-      { question: "澱粉酶的功能是什麼？", answer: "澱粉酶催化澱粉分解為麥芽糖。" },
-      { question: "什麼是酶的最適pH值？", answer: "某酶在該pH內活性最高。" },
-      { question: "為什麼酶的作用是專一的？", answer: "因為每種酶的活性部位形狀獨特，只能和特定形狀的受質結合。" },
-      { question: "如何防止酶變性？", answer: "控制反應環境的温度和pH值，避免過高温度或極端pH。" },
-      { question: "酶的活性會隨時間變化嗎？", answer: "是的，酶的活性會隨著受質的減少而降低，因為受質的數量隨時間減少，能與受質結合的機會亦隨之減少。" },
-      { question: "酶的反應速率隨著濃度的變化有什麼影響？", answer: "增加酶濃度通常會提高反應速率，但在受質不足的情況下效果有限。" },
-      { question: "新陳代謝只包括分解身體物質(例如消化食物)來獲取能量嗎?", answer: "不是。新陳代謝包括「分解代謝」和「合成代謝」。分解代謝是分解複雜分子以釋放能量(如呼吸作用)，而合成代謝是利用能量將簡單分子合成為複雜分子(如製造蛋白質)。" },
-      { question: "合成代謝需要能量還是釋放能量?", answer: "需要能量。合成代謝是將結構簡單的分子建構成結構複雜的分子，這個過程需要能量來推動，例如光合作用利用光能製造葡萄糖。" },
-      { question: "分解代謝是關於構建還是分解分子?", answer: "分解分子。分解代謝是將結構複雜的分子分解成結構較簡單的分子，並釋放出能量，例如呼吸作用中葡萄糖的分解。" },
-      { question: "呼吸作用屬於分解代謝還是合成代謝?", answer: "分解代謝。因為在呼吸作用中，結構較複雜的葡萄糖被分解成結構較簡單的二氧化碳和水，同時釋放出能量。" },
-      { question: "生物體內所有化學反應的總稱是什麼?", answer: "新陳代謝。它包含了維持生命所需的所有化學反應總和，包括分解與合成兩大類。" },
-      { question: "酶是生物嗎? 高溫會「殺死」酶嗎?", answer: "不是，酶是蛋白質分子，並非生物，所以不能被「殺死」。高溫會使其立體結構改變，失去催化功能，這個過程稱為「變性」，而不是死亡。" },
-      { question: "酶在化學反應中會被消耗掉嗎?", answer: "不會。酶是生物催化劑，在催化反應後其本身不會有任何改變，可以重複使用。因此，少量酶就能催化大量的受質。" },
-      { question: "為什麼生物體需要酶? 沒有酶，代謝反應也能自行發生嗎?", answer: "若沒有酶，體內的化學反應速率會極其緩慢，遠遠不能滿足生命活動的需求。酶作為生物催化劑，能高效地加速反應，確保新陳代謝順利進行。" },
-      { question: "酶的「活性部位」和其對應的「受質」的形狀是完全相同的嗎?", answer: "不是完全相同，而是「互相補足」的。就像鎖和鑰匙的關係，它們的形狀剛好能契合在一起，形成酶受質複合物。" },
-      { question: "一種酶可以催化多種不同的化學反應嗎?", answer: "不能。酶具有高度的「專一性」。通常一種酶的活性部位只與一種特定的受質結合，催化一種特定的反應。" },
-      { question: "什麼是「鎖鑰假說」?", answer: "這是一個用來解釋酶專一性的模型。它比喻酶像鑰匙，而受質就像對應的一把鎖，只有特定形狀的鑰匙才能插入鎖中，引發反應。" },
-      { question: "反應完成後，產物會一直與酶結合嗎?", answer: "不會。一旦受質被轉化為產物，產物便會脫離酶的活性部位。酶恢復原狀，可以再次與新的受質結合。" },
-      { question: "在低溫環境下(例如0°C)，酶會變性嗎?", answer: "不會。低溫只會降低酶的活性，使其變得不活躍，但其結構沒有被破壞。只要溫度回升到合適範圍，酶的活性便可以恢復。換言之，化學反應的速度能隨温度上升而增加，但酶在高温變性後，就算把温度降低，亦不能重新提高活性，因為變性是一個不可逆的反應。" },
-      { question: "溫度不斷升高，酶的反應速率就會無限加快嗎?", answer: "不會。每個酶都有其「最適溫度」。超過最適溫度後，高溫會開始破壞酶的立體結構，使其活性部位變形，導致反應速率急劇下降，這個過程就是變性。" },
-      { question: "將變性的酶冷卻，可以使其恢復活性嗎?", answer: "不可以。由高溫引起的變性是永久性的、不可逆的。酶的精密三維結構一旦被破壞，即使降溫也無法恢復其原有的形狀和功能。" },
-      { question: "胃蛋白酶在腸道(鹼性環境)中能有效分解蛋白質嗎?", answer: "不能。胃蛋白酶的最適pH值約為2 (強酸性)。腸道的環境是鹼性的，遠離了胃蛋白酶的最適pH值，會導致其變性，失去活性。" },
-      { question: "每個酶的最適pH值都是中性(pH 7)嗎?", answer: "不是。不同的酶有不同的最適pH值，胃蛋白酶在強酸環境中活性最高，而胰蛋白酶則在鹼性環境中活性最高。" },
-      { question: "酶的濃度會影響反應速率嗎?", answer: "會。在受質充足的情況下，酶的濃度越高，可用的活性部位就越多，反應速率就越快。" },
-      { question: "受質的濃度會影響反應速率嗎?", answer: "會。在酶濃度固定的情況下，增加受質濃度會提高反應速率。但當所有酶的活性部位都被受質佔據後，即使再增加受質，反應速率也不會再提升，達到了飽和點。" },
-      { question: "一個顯示酶活性與溫度關係的曲線圖，其頂點代表什麼?", answer: "頂點代表該酶的「最適溫度」，即酶活性最高時的溫度。" },
-      { question: "在酶活性與pH值的關係圖中，遠離最適pH值的兩側，曲線急劇下降的原因是什麼?", answer: "因為極端(過高或過低)的pH值會破壞酶的化學鍵，改變其立體結構，導致活性部位變形，使酶發生不可逆的變性。" },
-      { question: "生物洗衣粉在冷水中也能發揮作用，但用沸水開洗衣粉效果會更好嗎?", answer: "不會更好，效果會變差。生物洗衣粉含有蛋白酶和脂肪酶等，用於分解污漬。沸水的高溫會使這些酶變性，失去分解污漬的能力。溫水的效果通常最好。" },
-      { question: "為什麼新鮮菠蘿不能用來製作啫喱(果凍)?", answer: "因為新鮮菠蘿中含有蛋白酶(菠蘿蛋白酶)，它會分解啫喱中的凝膠蛋白(明膠)，使其無法凝固。罐頭菠蘿經過高溫處理，其中的酶已經變性，所以可以用來製作啫喱。" },
-      { question: "為什麼食物儲存在冰箱裡可以保鮮?", answer: "冰箱的低溫環境大大降低了微生物體內酶的活性，也減緩了食物本身酶的化學反應速率。這使得分解食物的過程變得非常緩慢，從而延長了食物的保質期。這並不是因為酶變性了。" },
-      { question: "什麼是新陳代謝？", answer: "新陳代謝是生物體內所有化學反應的總和，包括分解代謝和合成代謝。\n\n解釋: 分解代謝將複雜分子分解為簡單分子並釋放能量；合成代謝則相反，需消耗能量合成複雜分子。需清楚區分這兩者的功能。" },
-      { question: "酶在化學反應中的作用是什麼？", answer: "酶作為生物催化劑，降低反應所需的活化能，加速反應而不被消耗。\n\n解釋: 酶不提供能量，而是降低反應開始所需的能量障礙，使反應更快發生。" },
-      { question: "什麼是酶的活性部位？", answer: "活性部位是酶分子上與受質結合的特定區域，具有獨特形狀。\n\n解釋: 活性部位的形狀決定酶的專一性，只有形狀互補的受質能與其結合。" },
-      { question: "什麼是鎖鑰假說？", answer: "鎖鑰假說解釋酶的專一性，活性部位（鑰匙）只與特定受質（鎖）結合。\n\n解釋: 受質與活性部位的形狀互補，而非相同，確保酶只催化特定反應。" },
-      { question: "酶是否在反應後被消耗？", answer: "不，酶在反應後結構不變，可重複使用。" },
-      { question: "分解代謝與合成代謝有何區別？", answer: "分解代謝分解複雜分子並釋放能量；合成代謝合成複雜分子並消耗能量。\n\n解釋: 分解代謝（如呼吸作用）釋放能量，合成代謝（如光合作用）需能量輸入，需區分清楚。" },
-      { question: "溫度如何影響酶活性？", answer: "溫度升高增加酶活性至最適溫度，超過則因變性而降低活性。\n\n解釋: 高溫改變酶的三維結構，導致變性，而非「殺死」酶，需正確理解。" },
-      { question: "什麼是酶變性？", answer: "變性是酶因高溫或極端pH失去三維結構，導致活性喪失。\n\n解釋: 高溫或極端pH改變活性部位形狀，通常不可逆，影響催化功能。" },
-      { question: "所有酶的最適溫度都是37°C嗎？", answer: "不，不同酶的最適溫度因其自然環境而異。\n\n解釋: 如嗜熱菌的酶最適溫度高於37°C，需了解酶適應不同環境。" },
-      { question: "什麼是酶受質複合物？", answer: "酶受質複合物是受質分子與酶活性部位結合形成的暫時複合物。\n\n解釋: 此複合物是酶催化反應的關鍵步驟，促進受質轉化為生成物。" },
-      { question: "如何測量酶催化反應的速率？", answer: "測量受質消失速率或生成物形成速率。\n\n解釋: 如澱粉酶實驗中，用碘液測澱粉消失或本立德溶液測麥芽糖生成速度，需選擇正確試劑。" },
-      { question: "為什麼低溫下酶活性低？", answer: "低溫下分子動能低，酶與受質碰撞機會減少。\n\n解釋: 低溫僅導致酶暫時不活躍，溫度升高後活性可恢復，非變性。" },
-      { question: "什麼是酶抑制劑？", answer: "抑制劑是減慢或阻止酶與受質結合的化學物質。\n\n解釋: 如氰化物或重金屬離子，會干擾酶活性部位，降低反應速率。" },
-      { question: "生物洗衣粉中的酶如何去除污漬？", answer: "蛋白酶和脂肪酶分解蛋白質和脂肪污漬為可溶性小分子。\n\n解釋: 酶將污漬分解為易被水洗去的分子，展示其在日常生活的應用。" },
-      { question: "為什麼酶在最適pH下活性最高？", answer: "pH變化會改變酶形狀，影響催化效率，需保持在最適範圍。" },
-      { question: "高溫下的酶變性是否可逆？", answer: "不可逆，因活性部位結構永久改變。\n\n解釋: 高溫導致酶結構破壞，失去催化能力，需區分不可逆變性與在低温時暫時失去活性的情況。" },
-      { question: "不同酶的最適pH一樣嗎？", answer: "不同酶的最適pH因其功能環境不同，如胃蛋白酶在酸性胃中最適pH約2。\n\n解釋: pH影響活性部位形狀，需了解環境差異。" },
-      { question: "過氧化氫酶分解過氧化氫產生什麼氣體？", answer: "氧氣。\n\n解釋: 過氧化氫酶催化過氧化氫分解為水和氧氣，需熟悉此反應。" },
-      { question: "酶是否為活的生物？", answer: "不，酶是蛋白質分子，非生物。\n\n解釋: 酶是化學分子，高溫導致變性而非「殺死」，需正確理解。" },
-      { question: "如何判斷酶的最適溫度？", answer: "最適溫度是反應速率最高的溫度。\n\n解釋: 如酪蛋白實驗中，50-60°C間反應速率最高，需正確解讀數據。" },
-      { question: "酶反應速率隨時間下降的原因是什麼？", answer: "因受質濃度隨時間減少，而非酶被消耗。\n\n解釋: 酶可重複使用，反應速率下降是因受質耗盡，需理解此區別。" },
-      { question: "為什麼酶在低溫下變得不活躍，但在温度升高後可恢復活性？", answer: "低溫僅降低分子動能，溫度升高後活性恢復。\n\n解釋: 低溫不改變酶結構，僅減慢碰撞，與變性不同。" },
-      { question: "酶是否只催化分解反應？", answer: "不，酶可催化分解和合成反應。\n\n解釋: 如光合作用中的酶催化合成反應，需了解酶的多功能性。" },
-      { question: "重金屬如何影響酶活性？", answer: "重金屬如汞可作為抑制劑，改變酶結構或阻斷活性部位。\n\n解釋: 重金屬干擾酶功能，降低反應速率，需理解其機制。" },
-      { question: "為什麼酶實驗中需將酶和受質預先置於水浴中？", answer: "確保混合前酶和受質達到實驗所需溫度。\n\n解釋: 預熱確保反應速率測量準確，溫度影響酶活性。" }
-    ]
-    }
-  ];
-  // 狀態管理：每章節各自維護學習狀態
-  const stateByChapter = {};
-  function initChapterState(chapterId){
-    const chapter = chapters.find(c=>c.id===chapterId);
-    stateByChapter[chapterId] = {
-      cardsWithWeights: chapter.flashcards.map(c => ({ ...c, weight: 1, hardCount: 0 })),
-      currentIndex: 0, flipped: false, flipping: false, history: [0], historyPos: 0
-    };
-  }
-  chapters.forEach(ch => initChapterState(ch.id));
-  
-  // 目前章節 & 主題
-  let currentChapterId = "CH1";
-  const themes = ['', 'theme-ocean-blue', 'theme-sunset-glow', 'theme-forest-green'];
-  let currentThemeIndex = 0;
-
-  // UI 元素
-  const docElem = document.documentElement;
-  const headerTitle = document.getElementById('headerTitle');
-  const chapterInfo = document.getElementById('chapterInfo');
-  const tabs = Array.from(document.querySelectorAll('.tab'));
-  const card = document.getElementById('card');
-  const cardFront = document.getElementById('cardFront');
-  const cardBack = document.getElementById('cardBack');
-  const cardNumber = document.getElementById('cardNumber');
-  const flipBtn = document.getElementById('flipBtn');
-  const hardBtn = document.getElementById('hardBtn');
-  const mediumBtn = document.getElementById('mediumBtn');
-  const easyBtn = document.getElementById('easyBtn');
-  const prevBtn = document.getElementById('prevBtn');
-  const summaryBtn = document.getElementById('summaryBtn');
-  const summaryBlock = document.getElementById('summaryBlock');
-  const themeBtn = document.getElementById('themeBtn');
-
-  function getChapter(){ return chapters.find(c=>c.id===currentChapterId); }
-  function getState(){ return stateByChapter[currentChapterId]; }
-  
-  function updateHeader(){
-    const ch = getChapter();
-    headerTitle.textContent = ch.title;
-    document.title = ch.title;
-    chapterInfo.textContent = `目前章節：${ch.id}`;
-  }
-  
-  function renderCard() {
-    const cardContainer = document.querySelector('.card-container');
-    cardContainer.style.animation = 'none';
-    void cardContainer.offsetHeight; // 觸發瀏覽器重繪 (reflow)
-    cardContainer.style.animation = '';
-
-    const st = getState();
-    st.flipped = false;
-    card.classList.remove("flipped");
-    card.setAttribute("aria-pressed", "false");
-    const item = st.cardsWithWeights[st.currentIndex];
-    cardFront.textContent = item.question;
-    cardBack.textContent = item.answer;
-    cardNumber.textContent = `卡片 ${st.currentIndex + 1} / ${st.cardsWithWeights.length}`;
-    prevBtn.disabled = (st.historyPos <= 0);
-    summaryBlock.hidden = true;
-    summaryBlock.innerHTML = "";
-  }
-  
-  function flipCard() {
-    const st = getState();
-    if (st.flipping) return;
-    st.flipping = true;
-    st.flipped = !st.flipped;
-    card.classList.toggle("flipped", st.flipped);
-    card.setAttribute("aria-pressed", st.flipped ? "true" : "false");
-    setTimeout(() => { st.flipping = false; }, 600);
-  }
-  
-  function updateWeight(difficulty) {
-    const st = getState();
-    const cardObj = st.cardsWithWeights[st.currentIndex];
-    if (difficulty === "hard") { cardObj.weight += 2; cardObj.hardCount++; }
-    else if (difficulty === "medium") { /* 不變 */ }
-    else if (difficulty === "easy") { cardObj.weight = Math.max(1, cardObj.weight - 1); }
-  }
-  
-  function weightedRandomIndex() {
-    const st = getState();
-    const totalWeight = st.cardsWithWeights.reduce((sum, c) => sum + c.weight, 0);
-    if (totalWeight <= 0) return 0;
-    let r = Math.random() * totalWeight;
-    for (let i = 0; i < st.cardsWithWeights.length; i++) {
-      r -= st.cardsWithWeights[i].weight;
-      if (r < 0) return i;
-    }
-    return 0;
-  }
-  
-  function nextCard(difficulty) {
-    const st = getState();
-    updateWeight(difficulty);
-    const nextIdx = weightedRandomIndex();
-    st.currentIndex = nextIdx;
-    if (st.historyPos < st.history.length - 1) {
-      st.history = st.history.slice(0, st.historyPos + 1);
-    }
-    st.history.push(st.currentIndex);
-    st.historyPos++;
-    renderCard();
-    saveProgress(); 
-  }
-  
-  function prevCard() {
-    const st = getState();
-    if (st.historyPos <= 0) return;
-    st.historyPos--;
-    st.currentIndex = st.history[st.historyPos];
-    renderCard();
-  }
-  
-  function showHardSummary() {
-    const st = getState();
-    let sortedCards = [...st.cardsWithWeights]
-      .filter(c => c.hardCount > 0)
-      .sort((a,b) => b.hardCount - a.hardCount)
-      .slice(0,5);
-    if (sortedCards.length === 0) {
-      summaryBlock.innerHTML = "<h3>尚無標記為困難的題目</h3>";
-      summaryBlock.hidden = false;
-      return;
-    }
-    let html = "<h3>困難題目小結（前5題）</h3>";
-    sortedCards.forEach((c,i) => {
-      html += `<div class="summary-item">
-        <p><strong>題目 ${i + 1}：</strong>${c.question}</p>
-        <p><strong>答案：</strong>${c.answer}</p>
-        <p><strong>困難標記次數：</strong>${c.hardCount}</p>
-      </div>`;
-    });
-    summaryBlock.innerHTML = html;
-    summaryBlock.hidden = false;
-  }
-  
-  function switchChapter(newId){
-    if (newId === currentChapterId) return;
-    tabs.forEach(t=>{
-      const active = t.dataset.chapter === newId;
-      t.classList.toggle('active', active);
-      t.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-    currentChapterId = newId;
-    updateHeader();
-    renderCard();
-    card.focus();
-    saveProgress();
-  }
-  
- // =================================================
-// 初始設定與渲染
-// =================================================
-
-loadProgressAndSettings(); // <-- 新增：在渲染前，先讀取儲存的進度與設定
-
-  updateHeader();
-  renderCard();
-  
-  // 事件綁定
-  flipBtn.addEventListener("click", flipCard);
-  hardBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("hard"); });
-  mediumBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("medium"); });
-  easyBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("easy"); });
-  prevBtn.addEventListener("click", prevCard);
-  summaryBtn.addEventListener("click", showHardSummary);
-  
-  themeBtn.addEventListener('click', () => {
-    currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-    const newTheme = themes[currentThemeIndex];
-    docElem.className = newTheme;
-    saveProgress(); 
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if ((e.code === "Space" || e.key === " ") && document.activeElement === card) {
-      e.preventDefault(); flipCard(); return;
-    }
-    if (e.key === "1") { const st=getState(); if(!st.flipped) flipCard(); nextCard("hard"); }
-    if (e.key === "2") { const st=getState(); if(!st.flipped) flipCard(); nextCard("medium"); }
-    if (e.key === "3") { const st=getState(); if(!st.flipped) flipCard(); nextCard("easy"); }
-    if (e.key === "ArrowLeft") { prevCard(); }
-    if (e.key?.toLowerCase?.() === "s") { showHardSummary(); }
-  });
-  
-  card.addEventListener('click', flipCard);
-  tabs.forEach(tab => tab.addEventListener('click', () => switchChapter(tab.dataset.chapter)));
-  
-  // 為了簡化，我移除了之前版本中 chapters 資料的省略部分，將完整的資料放入
-  // 這確保了程式碼的完整性和可運行性
-</script>
+        const resetBtn = document.getElementById('resetBtn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                const isConfirmed = confirm('您確定要重設所有學習進度嗎？\n\n這將清除所有困難標記與記錄，且無法復原。');
+                if (isConfirmed) {
+                    localStorage.clear();
+                    alert('進度已成功重設！');
+                    location.reload();
+                }
+            });
+        }
+    </script>
 </body>
 </html>
-
-
-
-
