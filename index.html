@@ -5,108 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>生物科學習平台</title>
     <style>
+        /* 頁面置中核心設定 */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(to right, #667eea, #764ba2);
+            /* 背景保持深紫色漸層，能襯托出櫻桃紅 */
+            background: linear-gradient(135deg, #4834d4 0%, #686de0 100%);
             color: #ffffff;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: center; /* 水平置中 */
+            align-items: center;     /* 垂直置中 */
             min-height: 100vh;
-            margin: 0;
-            padding: 20px;
             box-sizing: border-box;
+            padding: 20px;
         }
+
         .container {
             background: rgba(255, 255, 255, 0.1);
-            padding: 30px 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center;
-            max-width: 600px;
+            max-width: 500px;
             width: 100%;
         }
+
         h1 {
-            font-size: 2.2em;
+            font-size: 2em;
             margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
+
         .menu-section {
-            display: none; /* 預設隱藏所有區塊 */
+            display: none;
         }
+
         .active {
-            display: block; /* 只顯示 active 的區塊 */
+            display: block;
+            animation: fadeIn 0.4s ease-out;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .chapter-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
+
+        /* 櫻桃紅按鈕設定 - Sharp 風格 */
         .chapter-list li a, .main-nav-btn {
             display: block;
-            background-color: rgba(90, 79, 207, 0.7);
-            color: #f0e9ff;
-            padding: 15px 20px;
-            margin-bottom: 15px;
-            border-radius: 10px;
+            /* 櫻桃紅漸層色調 */
+            background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
+            color: #ffffff;
+            padding: 16px 20px;
+            margin-bottom: 18px;
+            border-radius: 12px;
             text-decoration: none;
-            font-size: 1.2em;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 1.15em;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(201, 24, 74, 0.4);
             border: none;
             width: 100%;
             cursor: pointer;
+            box-sizing: border-box;
         }
+
         .chapter-list li a:hover, .main-nav-btn:hover {
-            background-color: rgba(143, 124, 232, 0.9);
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 8px 25px rgba(201, 24, 74, 0.6);
+            background: linear-gradient(135deg, #ff758f 0%, #ff4d6d 100%);
         }
-        /* 主選單按鈕顏色區分 */
+
+        /* 心智圖按鈕 - 保持綠色但優化為 Sharp 感 */
         .btn-mindmap {
-            background-color: rgba(46, 204, 113, 0.6); /* 綠色系區分心智圖 */
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%) !important;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4) !important;
         }
+
         .btn-mindmap:hover {
-            background-color: rgba(46, 204, 113, 0.8);
+            background: linear-gradient(135deg, #55efc4 0%, #2ecc71 100%) !important;
+            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.6) !important;
         }
 
         .back-btn {
-            background-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 18px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
             cursor: pointer;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             font-size: 0.9em;
             transition: 0.3s;
         }
+
         .back-btn:hover {
             background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-5px);
         }
 
         .reset-container {
-            margin-top: 25px;
+            margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         #resetBtn {
-            background-color: #c0392b;
-            color: white;
-            padding: 10px 20px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 8px 15px;
             border-radius: 8px;
-            border: none;
-            font-size: 1em;
-            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.85em;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
         }
+
         #resetBtn:hover {
-            background-color: #e74c3c;
+            background-color: #ff4757;
+            color: white;
+            border-color: #ff4757;
         }
     </style>
 </head>
@@ -121,7 +155,7 @@
 
         <div id="flashcardMenu" class="menu-section">
             <button class="back-btn" onclick="showSection('mainMenu')">← 返回主選單</button>
-            <h1>生物科記憶卡 - 目錄</h1>
+            <h1>記憶卡 - 目錄</h1>
             <ul class="chapter-list">
                 <li><a href="Ch1-4.html">第一至四章</a></li>
                 <li><a href="Ch5-8.html">第五至八章</a></li>
@@ -131,41 +165,37 @@
                 <li><a href="Ch19-21.html">第十九至二十一章</a></li>
             </ul>
             <div class="reset-container">
-                <button id="resetBtn">⚠️ 重設所有學習進度</button>
+                <button id="resetBtn" title="清除所有標記與記錄">⚠️ 重設學習進度</button>
             </div>
         </div>
 
         <div id="mindmapMenu" class="menu-section">
             <button class="back-btn" onclick="showSection('mainMenu')">← 返回主選單</button>
-            <h1>Biology Mindmap - 目錄</h1>
-            <p style="margin-bottom: 20px; color: #ddd;">內容正在準備中...</p>
+            <h1>Mindmap - 目錄</h1>
+            <p style="margin-bottom: 25px; color: rgba(255,255,255,0.7); font-style: italic;">內容正在準備中...</p>
             <ul class="chapter-list">
-                <li><a href="#">單元一：分子生物學 (即將推出)</a></li>
-                <li><a href="#">單元二：遺傳學 (即將推出)</a></li>
+                <li><a href="#" style="opacity: 0.8;">單元一：分子生物學 (即將推出)</a></li>
+                <li><a href="#" style="opacity: 0.8;">單元二：遺傳學 (即將推出)</a></li>
             </ul>
         </div>
 
     </div>
 
     <script>
-        // 切換顯示區塊的函數
         function showSection(sectionId) {
-            // 隱藏所有區塊
             const sections = document.querySelectorAll('.menu-section');
             sections.forEach(s => s.classList.remove('active'));
-            
-            // 顯示指定區塊
             document.getElementById(sectionId).classList.add('active');
         }
 
-        // 原始的重設進度程式碼
         const resetBtn = document.getElementById('resetBtn');
         if (resetBtn) {
             resetBtn.addEventListener('click', function() {
-                const isConfirmed = confirm('您確定要重設所有學習進度嗎？\n\n這個操作將會清除所有課題的困難標記、學習記錄和顏色主題設定，且無法復原！');
+                const isConfirmed = confirm('您確定要重設所有學習進度嗎？\n\n這將清除所有困難標記與記錄，且無法復原。');
                 if (isConfirmed) {
                     localStorage.clear();
-                    alert('所有學習進度已成功重設！');
+                    alert('進度已成功重設！');
+                    location.reload();
                 }
             });
         }
