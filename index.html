@@ -34,7 +34,7 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center;
-            max-width: 500px;
+            max-width: 900px;
             width: 100%;
         }
 
@@ -64,8 +64,15 @@
             list-style: none;
             padding: 0;
             margin: 0;
+            column-count: 2;          /* 分為兩欄 */
+            column-gap: 25px;         /* 左右兩欄的間距 */
+            text-align: left;         /* 內容靠左比較整齊 */
         }
-
+           /* 確保每個按鈕不會被截斷到下一欄 */
+           .chapter-list li {
+            break-inside: avoid;
+            margin-bottom: 5px;       /* 稍微縮小間距讓版面更緊湊 */
+        }
         /* 櫻桃紅按鈕設定 - Sharp 風格 */
         .chapter-list li a, .main-nav-btn {
             display: block;
@@ -142,6 +149,15 @@
             color: white;
             border-color: #ff4757;
         }
+/* 加入這段響應式設定 */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+    .chapter-list {
+        column-count: 1; /* 手機版變回一欄 */
+    }
+}
     </style>
 </head>
 <body>
@@ -173,35 +189,35 @@
     <button class="back-btn" onclick="showSection('mainMenu', true)">← 返回主選單</button>
     <h1>Mindmap - 目錄</h1>
     <ul class="chapter-list">
-        <li><a href="CH2 mindmap.html">CH2:生命的基本單位 (Mindmap)</a></li>
-        <li><a href="CH3 mindmap.html">CH3:物質穿越細胞膜的活動 (Mindmap)</a></li>
-        <li><a href="CH4 mindmap.html">CH4:酶和新陳代謝 (Mindmap)</a></li>
-        <li><a href="CH5 mindmap.html">CH5:食物與人類 (Mindmap)</a></li>
-        <li><a href="CH6 mindmap.html">CH6:人類的營養 (Mindmap)</a></li>
-        <li><a href="CH7 mindmap.html">CH7:人類的氣體交換 (Mindmap)</a></li>
-        <li><a href="CH8 mindmap.html">CH8:人體內物質的轉運 (Mindmap)</a></li>
-        <li><a href="CH9 mindmap.html">CH9:植物的營養與氣體交換 (Mindmap)</a></li>
-        <li><a href="CH10 mindmap.html">CH10:植物的蒸騰、轉運與支持 (Mindmap)</a></li>
-        <li><a href="CH11 mindmap.html">CH11:細胞週期和分裂 (Mindmap)</a></li>
-        <li><a href="CH12 mindmap.html">CH12:有花植物的生殖 (Mindmap)</a></li>
-        <li><a href="CH13 mindmap.html">CH13:人類的生殖 (Mindmap)</a></li>
-        <li><a href="CH14 mindmap.html">CH14:生長和發育 (Mindmap)</a></li>
-        <li><a href="CH15 mindmap.html">CH15:環境狀況的探測 (Mindmap)</a></li>
-        <li><a href="CH16 mindmap.html">CH16:人的神經系統 (Mindmap)</a></li>
-        <li><a href="CH17 mindmap.html">CH17:人體的運動 (Mindmap)</a></li>
-        <li><a href="CH18 mindmap.html">CH18:體內平衡 (Mindmap)</a></li>
-        <li><a href="CH19 mindmap.html">CH19:生態系 (Mindmap)</a></li>
-        <li><a href="CH20 mindmap.html">CH20:光合作用 (Mindmap)</a></li>
-        <li><a href="CH21 mindmap.html">CH21:呼吸作用 (Mindmap)</a></li>
-        <li><a href="CH22 mindmap.html">CH22:非傳染病 (Mindmap)</a></li>
-        <li><a href="CH23 mindmap.html">CH23:傳染病和疾病的預防 (Mindmap)</a></li>
-        <li><a href="CH24 mindmap.html">CH24:身體的防禦機制 (Mindmap)</a></li>
-        <li><a href="CH25 mindmap.html">CH25:基礎遺傳學 (Mindmap)</a></li>
-        <li><a href="CH26 mindmap.html">CH26:分子遺傳學 (Mindmap)</a></li>
-        <li><a href="CH27 mindmap.html">CH27:生物工程 (Mindmap)</a></li>
-        <li><a href="CH28 mindmap.html">CH28:生物多樣性 (Mindmap)</a></li>
-        <li><a href="CH29 mindmap.html">CH29:進化I (Mindmap)</a></li>
-        <li><a href="CH30 mindmap.html">CH30:進化II (Mindmap)</a></li>
+        <li><a href="CH2 mindmap.html">CH2:生命的基本單位</a></li>
+        <li><a href="CH3 mindmap.html">CH3:物質穿越細胞膜的活動</a></li>
+        <li><a href="CH4 mindmap.html">CH4:酶和新陳代謝</a></li>
+        <li><a href="CH5 mindmap.html">CH5:食物與人類</a></li>
+        <li><a href="CH6 mindmap.html">CH6:人類的營養</a></li>
+        <li><a href="CH7 mindmap.html">CH7:人類的氣體交換</a></li>
+        <li><a href="CH8 mindmap.html">CH8:人體內物質的轉運</a></li>
+        <li><a href="CH9 mindmap.html">CH9:植物的營養與氣體交換</a></li>
+        <li><a href="CH10 mindmap.html">CH10:植物的蒸騰、轉運與支持</a></li>
+        <li><a href="CH11 mindmap.html">CH11:細胞週期和分裂</a></li>
+        <li><a href="CH12 mindmap.html">CH12:有花植物的生殖</a></li>
+        <li><a href="CH13 mindmap.html">CH13:人類的生殖</a></li>
+        <li><a href="CH14 mindmap.html">CH14:生長和發育</a></li>
+        <li><a href="CH15 mindmap.html">CH15:環境狀況的探測</a></li>
+        <li><a href="CH16 mindmap.html">CH16:人的神經系統</a></li>
+        <li><a href="CH17 mindmap.html">CH17:人體的運動</a></li>
+        <li><a href="CH18 mindmap.html">CH18:體內平衡</a></li>
+        <li><a href="CH19 mindmap.html">CH19:生態系</a></li>
+        <li><a href="CH20 mindmap.html">CH20:光合作用</a></li>
+        <li><a href="CH21 mindmap.html">CH21:呼吸作用</a></li>
+        <li><a href="CH22 mindmap.html">CH22:非傳染病</a></li>
+        <li><a href="CH23 mindmap.html">CH23:傳染病和疾病的預防</a></li>
+        <li><a href="CH24 mindmap.html">CH24:身體的防禦機制</a></li>
+        <li><a href="CH25 mindmap.html">CH25:基礎遺傳學</a></li>
+        <li><a href="CH26 mindmap.html">CH26:分子遺傳學</a></li>
+        <li><a href="CH27 mindmap.html">CH27:生物工程</a></li>
+        <li><a href="CH28 mindmap.html">CH28:生物多樣性</a></li>
+        <li><a href="CH29 mindmap.html">CH29:進化I</a></li>
+        <li><a href="CH30 mindmap.html">CH30:進化II</a></li>
     </ul>
 </div>
 
@@ -254,5 +270,6 @@
     </script>
 </body>
 </html>
+
 
 
