@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>生物記憶卡</title>
+<style>
+  :root{ /* 預設主題：深紫色 */
+    --primary:#5a4fcf;
+    --primary-2:#8f7ce8;
+    --bg-1:#667eea;
+    --bg-2:#764ba2;
+    --card-1:#a18cd1;
+    --card-2:#fbc2eb;
+    --front-1:#c3aed6;
+    --front-2:#f7d6e0;
+    --back-1:#6a3093;
+    --back-2:#a044ff;
+    --text:#2c2c54;
+    --text-inv:#f0e9ff;
+    --shadow-1: rgba(90, 79, 207, 0.7);
+    --shadow-2: rgba(143, 124, 232, 0.9);
+  }
+  /* --- 新增：定義多套顏色主題 --- */
+  :root.theme-ocean-blue { /* 主題2：海洋藍 */
+    --primary: #0077b6; --primary-2: #0096c7; --bg-1: #005f73; --bg-2: #0a9396;
+    --card-1: #94d2bd; --card-2: #e9d8a6; --front-1: #e9f5db; --front-2: #cfe8e0;
+    --back-1: #001219; --back-2: #005f73; --text: #001219; --text-inv: #e9f5db;
+    --shadow-1: rgba(0, 119, 182, 0.7); --shadow-2: rgba(0, 150, 199, 0.9);
+  }
+  :root.theme-sunset-glow { /* 主題3：日落霞光 */
+    --primary: #e76f51; --primary-2: #f4a261; --bg-1: #e15f41; --bg-2: #e76f51;
+    --card-1: #f4a261; --card-2: #e9c46a; --front-1: #fff8f0; --front-2: #fefae0;
+    --back-1: #d62828; --back-2: #f77f00; --text: #264653; --text-inv: #ffffff;
+    --shadow-1: rgba(231, 111, 81, 0.7); --shadow-2: rgba(244, 162, 97, 0.9);
+  }
+  :root.theme-forest-green { /* 主題4：森林綠 */
+    --primary: #2d6a4f; --primary-2: #40916c; --bg-1: #1b4332; --bg-2: #2d6a4f;
+    --card-1: #74c69d; --card-2: #b7e4c7; --front-1: #d8f3dc; --front-2: #ffffff;
+    --back-1: #081c15; --back-2: #1b4332; --text: #081c15; --text-inv: #d8f3dc;
+    --shadow-1: rgba(45, 106, 79, 0.7); --shadow-2: rgba(64, 145, 108, 0.9);
+  }
+  /* --- 主題定義結束 --- */
+
+  *{box-sizing:border-box}
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    margin: 0; padding: 0;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    color: #f0f0f0;
+    transition: background 0.5s ease;
+  }
+  header {
+  /* 大部分樣式不變，主要是修改排版方式 */
+  background: linear-gradient(90deg, var(--primary), var(--primary-2));
+  width: 100%;
+  padding: 1.1rem 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  position: sticky; top: 0; z-index: 10;
+  transition: background 0.5s ease;
+
+  /* 以下是修改和新增的部分 */
+  display: flex;
+  justify-content: center; /* 讓內容水平置中 */
+  align-items: center;    /* 讓內容垂直置中 */
+  position: relative;     /* 為了讓返回按鈕能定位 */
+}
+.back-link {
+  position: absolute; /* 絕對定位，讓它脫離正常的排版流 */
+  left: 15px;         /* 定位在 header 左邊 15px 的位置 */
+  top: 50%;           /* 垂直置中 */
+  transform: translateY(-50%); /* 確保精確垂直置中 */
+
+  color: var(--text-inv);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.back-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+  main {
+    flex: 1; width: 100%; max-width: 520px;
+    padding: 1rem 1rem 1.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: .75rem;
+  }
+  .chapters {
+    width: 100%; display: flex; gap: .5rem;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem;
+  }
+  .chapters::-webkit-scrollbar{height:6px}
+  .chapters::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:6px}
+  .tab {
+    white-space: nowrap; background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.25); padding: .45rem .75rem;
+    border-radius: 999px; cursor: pointer; transition: all .25s; font-size: .95rem;
+  }
+  .tab:hover { background: rgba(255,255,255,0.25); }
+  .tab.active {
+    background: #ffce6b; color: #2b2b2b; border-color: #ffce6b;
+    box-shadow: 0 2px 10px rgba(255,206,107,0.45);
+  }
+  #flashcardPage {
+    flex-direction: column; align-items: center; display: flex; width: 100%;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-container {
+    perspective: 1000px; width: 100%; height: 240px; outline: none;
+    animation: fadeIn 0.4s ease-out;
+  }
+  .card {
+    width: 100%; height: 240px; position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s, background 0.5s ease;
+    cursor: pointer; border-radius: 16px;
+    background: linear-gradient(135deg, var(--card-1), var(--card-2));
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3); color: var(--text);
+    display: flex; justify-content: center; align-items: center;
+    padding: 1.25rem; font-size: 1.05rem; line-height: 1.45;
+    user-select: none; text-align: left; white-space: pre-wrap;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; width: 100%; height: 100%; border-radius: 16px;
+    backface-visibility: hidden; display: flex; justify-content: center;
+    align-items: flex-start; padding: 1.25rem; box-sizing: border-box;
+    overflow-y: auto;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+  .card-front { background: linear-gradient(135deg, var(--front-1), var(--front-2)); color: var(--text); }
+  .card-back { transform: rotateY(180deg); background: linear-gradient(135deg, var(--back-1), var(--back-2)); color: var(--text-inv); }
+  #cardNumber { margin-top: 0.4rem; font-size: 0.9rem; color: #e9e6ff; text-align: center; }
+  .footer { margin-top: 1rem; width: 100%; display: flex; flex-direction: column; align-items: center; gap: .4rem; }
+  .button-row { display: flex; justify-content: center; gap: .6rem; flex-wrap: wrap; width: 100%; }
+  button {
+    background: var(--primary); border: none; color: white;
+    padding: 0.5rem 0.9rem; font-size: 1rem; border-radius: 10px; cursor: pointer;
+    transition: background 0.25s, transform .05s, box-shadow 0.25s;
+    min-width: 88px;
+    box-shadow: 0 4px 10px var(--shadow-1);
+  }
+  button:hover:not(:disabled) {
+    background: var(--primary-2); box-shadow: 0 6px 14px var(--shadow-2);
+  }
+  button:active:not(:disabled){ transform: translateY(1px); }
+  button:disabled { background: #a0aabe; cursor: default; box-shadow: none; color: #eee; }
+  #summaryBlock {
+    margin-top: 0.9rem; background: rgba(0,0,0,0.35); padding: 1rem; border-radius: 12px;
+    max-height: 340px; overflow-y: auto; width: 100%; text-align: left;
+    transition: all 0.4s ease-out; transform: translateY(20px); opacity: 0;
+  }
+  #summaryBlock:not([hidden]) { transform: translateY(0); opacity: 1; }
+  #summaryBlock h3 { margin: 0 0 .5rem 0; color: var(--text-inv); font-size: 1.05rem; }
+  #summaryBlock .summary-item { margin-bottom: .8rem; background: rgba(255,255,255,0.08); padding: .6rem .7rem; border-radius: 10px; }
+  #summaryBlock .summary-item p { margin: 0.2rem 0; }
+  .toolbar { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  .pill { font-size: .9rem; color: #fff; background: rgba(255,255,255,.15); padding: .35rem .6rem; border-radius: 999px; }
+  @media (max-width: 520px) {
+    .card { height: 210px; font-size: 1rem; padding: 1rem; }
+    .card-face { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html#flashcardMenu" class="back-link">🔙 返回目錄</a>
+  <span id="headerTitle">CH1 生物學入門</span>
+</header>
+<main>
+  <nav class="chapters" aria-label="章節切換">
+    <button class="tab active" data-chapter="CH25" aria-pressed="true">CH25</button>
+    <button class="tab" data-chapter="CH26" aria-pressed="false">CH26</button>
+    <button class="tab" data-chapter="CH27" aria-pressed="false">CH27</button>
+    <button class="tab" data-chapter="CH28" aria-pressed="false">CH28</button>
+  </nav>
+  <div class="toolbar">
+    <span id="chapterInfo" class="pill">目前章節：CH11</span>
+    <button id="themeBtn" aria-label="切換主題" style="min-width: auto; padding: 0.4rem 0.7rem;">🎨 切換主題</button>
+    <span class="pill">操作提示：點卡片或按空白鍵翻轉</span>
+  </div>
+  <section id="flashcardPage" aria-live="polite" aria-atomic="true">
+    <div class="card-container" tabindex="0" aria-label="抽認卡，點擊或按空白鍵翻轉">
+      <div id="card" class="card" role="button" aria-pressed="false" tabindex="0">
+        <div id="cardFront" class="card-face card-front"></div>
+        <div id="cardBack" class="card-face card-back"></div>
+      </div>
+      <div id="cardNumber" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div class="footer">
+      <div class="button-row" id="firstRow">
+        <button id="flipBtn" aria-label="翻轉卡片">🔄 翻轉</button>
+        <button id="hardBtn" aria-label="困難">🤔 困難</button>
+        <button id="mediumBtn" aria-label="一般">🙂 一般</button>
+        <button id="easyBtn" aria-label="容易">😄 容易</button>
+      </div>
+      <div class="button-row" id="secondRow">
+        <button id="prevBtn" aria-label="上一題" disabled>⬅️ 上一題</button>
+        <button id="summaryBtn" aria-label="困難題目小結">📝 困難小結</button>
+      </div>
+    </div>
+    <div id="summaryBlock" aria-live="polite" aria-atomic="true" hidden></div>
+  </section>
+</main>
+<script>
+const PROGRESS_KEY = 'flashcardProgress_25-28'; // <-- 每個檔案都不同！
+const SETTINGS_KEY = 'flashcardSettings';     // <-- 所有檔案都相同！
+// =================================================
+// Local Storage 功能區塊
+// =================================================
+
+// 【用這段新程式碼】替換掉舊的 saveProgress 和 loadProgressAndSettings 函式
+
+// 函式：儲存所有進度到 localStorage
+function saveProgress() {
+  // 1. 儲存【專屬進度】
+  const progressData = {
+    stateByChapter: stateByChapter,
+    currentChapterId: currentChapterId
+  };
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(progressData));
+
+  // 2. 儲存【共用設定】
+  const settingsData = {
+    currentThemeIndex: currentThemeIndex
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
+}
+
+// 函式：從 localStorage 讀取並應用所有進度
+function loadProgressAndSettings() {
+  // 1. 讀取【專屬進度】
+  const progressDataJSON = localStorage.getItem(PROGRESS_KEY);
+  if (progressDataJSON) {
+    try {
+      const progressData = JSON.parse(progressDataJSON);
+      if (progressData.stateByChapter) {
+        Object.assign(stateByChapter, progressData.stateByChapter);
+
+        // 【新增的關鍵修正】：強制重設所有課題的暫時狀態
+        // 無論讀取到什麼，都確保 flipped 和 flipping 是 false
+        for (const chapterId in stateByChapter) {
+          if (stateByChapter[chapterId]) {
+            stateByChapter[chapterId].flipped = false;
+            stateByChapter[chapterId].flipping = false; // <-- 【補上這最重要的一行】
+          }
+        }
+      }
+      
+      // 安全檢查：確認讀取到的章節 ID 是否存在於當前檔案中
+      if (progressData.currentChapterId && chapters.some(c => c.id === progressData.currentChapterId)) {
+        currentChapterId = progressData.currentChapterId;
+      }
+    } catch (e) {
+      console.error("讀取進度資料時出錯:", e);
+    }
+  }
+  
+  // 2. 讀取【共用設定】
+  const settingsDataJSON = localStorage.getItem(SETTINGS_KEY);
+  if (settingsDataJSON) {
+    try {
+      const settingsData = JSON.parse(settingsDataJSON);
+      if (typeof settingsData.currentThemeIndex !== 'undefined') {
+        currentThemeIndex = settingsData.currentThemeIndex;
+        docElem.className = themes[currentThemeIndex];
+      }
+    } catch (e) {
+      console.error("讀取設定資料時出錯:", e);
+    }
+  }
+}
+// =================================================
+// Local Storage 功能區塊結束
+// =================================================
+  // 章節資料定義
+  const chapters = [
+    // ... (所有 chapters 的資料和之前一樣，此處省略以節省篇幅) ...
+    {
+    id: "CH25",
+    title: "CH25 基礎遺傳學",
+    flashcards: [
+      { question: "基因和等位基因有何區別？", answer: "基因是控制性狀的DNA片段，等位基因是同一基因的不同形式。基因決定性狀（如身高），等位基因則是具體特徵（如高或矮）。" },
+      { question: "什麼是純合子和雜合子？", answer: "純合子有相同等位基因的個體（如AA或aa），雜合子有不同等位基因的個體（如Aa）。" },
+      { question: "顯性性狀和隱性性狀有何不同？", answer: "顯性性狀在雜合子中能表現，隱性性狀需純合的情況下才能表現。如雜合子Aa中A（顯性）遮蓋a（隱性）。" },
+      { question: "孟德爾第一定律的核心是什麼？", answer: "分離定律—等位基因在配子形成時分離。每個配子只帶一個等位基因。" },
+      { question: "什麼是單基因遺傳？", answer: "由一對等位基因控制的性狀遺傳，如耳垂離生或連生，只由一個基因決定。" },
+      { question: "測交的目的是什麼？", answer: "確定個體是純合還是雜合（AA或Ａa）。\n解釋: 與隱性純合子雜交，若全部後代均展現顯性性狀，個體則為純合子（AA）。" },
+      { question: "什麼是獨立分配定律？", answer: "不同基因的等位基因在配子形成時獨立分配。（註:只適用於不同染色體上的基因。）" },
+      { question: "ABO血型由什麼控制？", answer: "由多等位基因控制。\n解釋: IA和IB等顯性，i為隱性，決定血型。" },
+      { question: "什麼是性連鎖遺傳？", answer: "由性染色體上的基因控制的遺傳，如導致紅綠色盲的等位基因位於X染色體之上。" },
+      { question: "為什麼男性更容易患X連鎖疾病？", answer: "男性只有一條X染色體，無遮蓋效應。女性需具有兩條隱性等位基因才發病，機率較低。" },
+      { question: "什麼是連續變異？", answer: "性狀中間表現型，如身高。連續變異受多基因和環境影響，無明確分界。" },
+      { question: "什麼是不連續變異？", answer: "性狀有明確類別，如血型。大多由單基因控制，無中間表現型。" },
+      { question: "變異的主要成因有哪些？", answer: "遺傳（基因突變）和環境（營養）。" },
+      { question: "血型O型的基因型是什麼？", answer: "ii。隱性純合子，無A或B抗原。" },
+      { question: "DNA雙螺旋結構有什麼作用？", answer: "穩定結構，保護遺傳信息。" },
+      { question: "什麼是雙基因遺傳？", answer: "由兩對等位基因控制兩個性狀的遺傳，同時討論兩個性狀，如種子形狀和顏色，比例更複雜。" },
+      { question: "什麼是基因？", answer: "基因是染色體上一小段DNA分子，是遺傳的基本單位，控制特定特徵。" },
+      { question: "什麼是等位基因？", answer: "同一基因的不同形式，位於同源染色體的相同基因位點，例如高莖(T)與矮莖(t)是控制豌豆高度的等位基因。" },
+      { question: "孟德爾的分離定律是什麼？", answer: "配子形成時，每對等位基因分離，每個配子只含一個等位基因。故此，後代獲得一半基因來自父親，一半來自母親。" },
+      { question: "獨立分配定律是什麼？", answer: "不同基因的等位基因在配子形成時互相獨立分配，不同性狀的遺傳互不影響。" },
+      { question: "什麼是連鎖基因？", answer: "位於同一條染色體上的基因，通常一起遺傳。連鎖基因不遵守獨立分配定律。" },
+      { question: "人類的ABO血型是怎樣遺傳的？", answer: "由一個基因的多個等位基因控制，Iᴬ和Iᴮ為等顯性，i為隱性。血型由紅血球表面抗原決定。" },
+      { question: "為什麼O型血可供血給所有血型？", answer: "因為O型血無A和B抗原，不會被抗A抗體和抗B抗體攻擊。" },
+      { question: "性別是由哪對染色體決定？", answer: "第23對染色體，即性染色體。 XY為男性，XX為女性。" },
+      { question: "為什麼紅綠色盲多見於男性？", answer: "紅綠色盲是X染色體上的隱性遺傳病，男性只有一條X染色體。\n解釋: 男性缺少第二條X染色體來遮蔽隱性基因。" },
+      { question: "什麼是帶基因者？", answer: "帶有隱性致病基因但無疾病表現的個體。女性帶基因者可將病基因傳給子女。" },
+      { question: "「基因」和「等位基因」有何不同？", answer: "基因：是控制某個特定特徵（如豌豆高度）的遺傳單位。等位基因：是基因的不同形式，決定了該特徵的具體表現（如「高莖」等位基因或「矮莖」等位基因）。\n解釋: 等位基因總是成對存在於同源染色體上。" },
+      { question: "「顯性」等位基因是否代表它比「隱性」等位基因「更強」或「更常見」？", answer: "不是。顯性僅僅意味著當顯性與隱性等位基因同時存在時（雜合子），表現出來的會是顯性等位基因所控制的性狀。它不代表該等位基因在種群中更常見或在生理上更優越。" },
+      { question: "「基因型」和「表現型」指的是什麼？", answer: "基因型：指一個生物體內與某個性狀相關的一對等位基因組合（例如 TT, Tt 或 tt）。表現型：指該基因型所表現出來的、可觀察的身體特徵（例如高莖或矮莖）。基因型是內在的遺傳組成，表現型是外在的性狀展現。" },
+      { question: "控制同一性狀的一對等位基因，它們來自哪裡？", answer: "來自父母雙方。在受精過程中，一個等位基因來自父方的配子（精子），另一個來自母方的配子（卵子），從而組合成子代的一對等位基因。" },
+      { question: "環境因素會影響生物的表現型嗎？", answer: "會。 即使基因型相同，環境因素（如營養、溫度、光照）也會影響最終表現出來的性狀。例如，一對同卵雙胞胎（基因型相同）在不同的營養和生活環境下，其身高和體重可能會出現差異。" },
+      { question: "孟德爾的實驗中，高莖與矮莖的比例總是精準的 3:1 嗎？", answer: "不是。\n解釋: 3:1 是一個理論上的概率比例，是大量實驗數據平均後的結果。單次雜交的後代數量有限，其實際結果可能因機遇而偏離這個比例，就像拋硬幣10次不一定剛好是5次正面一樣。" },
+      { question: "為什麼在孟德爾實驗中，F₁代中消失的隱性性狀（如矮莖），會在F₂代中重新出現？", answer: "因為F₁代的基因型是異合子 (Tt)，雖然只表現出顯性性狀（高莖），但體內仍攜帶著隱性等位基因 (t)。當F₁代自花傳粉時，隱性等位基因有機會再次組合成純合子 (tt)，從而使隱性性狀重現。" },
+      { question: "如何判斷一個表現顯性性狀的個體是純合子 (TT) 還是雜合子 (Tt)？", answer: "進行測交。將該個體與一個隱性純合子 (tt) 進行雜交。 如果後代全部表現顯性性狀，則該個體為純合子 (TT)。如果後代中出現了隱性性狀（比例約1:1），則該個體為異合子 (Tt)。" },
+      { question: "如果一對夫婦沒有遺傳病症狀，但他們誕下了患有隱性遺傳病（如地中海貧血）的嬰兒，這可能嗎？", answer: "可能。這說明夫婦二人都是該遺傳病的雜合子。他們各自攜帶一個正常的顯性等位基因 and 一個致病的隱性等位基因。雖然他們自己不發病，但他們有1/4的機會將兩個隱性等位基因同時遺傳給子女，導致子女患病。" },
+      { question: "孟德爾的「分離定律」是指什麼？", answer: "分離定律指在形成配子（精子和卵子）的過程中，控制同一性狀的一對等位基因會互相分離，並分別進入不同的配子中。\n解釋: 因此，每個配子只含有這對等位基因中的一個。" },
+      { question: "「等顯性」和「完全顯性」有何不同？", answer: "完全顯性：在雜合子中，只有顯性等位基因的性狀會被表現出來。等顯性：在雜合子中，兩個不同的等位基因的性狀會同時被完全表現出來。最典型的例子是人類的ABO血型中的AB型。" },
+      { question: "為什麼ABO血型系統是「多等位基因遺傳」的例子？", answer: "因為在整個人類群體中，控制ABO血型的基因共有三個不同的等位基因（Iᴬ, Iᴮ, i）。\n解釋: 而不像孟德爾豌豆實驗中只有兩種。不過，任何一個個體最多只能擁有其中的兩個等位基因。" },
+      { question: "一個AB型血的父親和一個O型血的母親，可能生出O型血的孩子嗎？", answer: "不可能。\n解釋: AB型父親的基因型是IᴬIᴮ，他只能產生含Iᴬ或Iᴮ的配子。O型母親的基因型是ii，她只能產生含i的配子。他們的子女基因型只可能是Iᴬi（A型）或Iᴮi（B型）。" },
+      { question: "A型血和B型血的夫婦，可能生出什麼血型的孩子？", answer: "可能生出A、B、AB、O四種血型中的任何一種。\n解釋: 如果夫婦二人的基因型都是異合子（分別為Iᴬi和Iᴮi），他們就能產生含Iᴬ、Iᴮ、i的配子，其子女的基因型組合就包括了IᴬIᴮ (AB型), Iᴬi (A型), Iᴮi (B型) 和 ii (O型)。" },
+      { question: "決定子女性別的關鍵，在於父方的精子還是母方的卵子？", answer: "在於父方的精子。\n解釋: 因為母親只能產生含有X染色體的卵子，而父親能產生兩種精子：一種含X染色體，另一種含Y染色體。若含X的精子與卵子結合，則為女孩(XX)；若含Y的精子與卵子結合，則為男孩(XY)。" },
+      { question: "什麼是「性連鎖遺傳」？", answer: "指控制某些性狀的基因位於**性染色體（主要是X染色體）**上，因此這些性狀的遺傳會與性別相關聯。例如紅綠色盲和血友病。" },
+      { question: "為什麼紅綠色盲等X連鎖隱性遺傳病，男性患者遠多於女性？", answer: "因為男性只有一條X染色體。如果這條X染色體上帶有致病的隱性等位基因，男性就會表現出病症。\n解釋: 而女性有兩條X染色體，必須兩條X染色體上都帶有致病基因才會發病。如果只有一條帶有，她會是正常的攜帶者。" },
+      { question: "父親是色盲，他的兒子一定會是色盲嗎？", answer: "不會。\n解釋: 父親的色盲基因位於他的X染色體上。他遺傳給兒子的是Y染色體，而不是X染色體。兒子的X染色體來自母親，因此兒子的色覺是否正常取決於母親。" },
+      { question: "一個表現正常的女性，她的父親是血友病患者。這位女性與一個正常男性結婚，她的兒子患血友病的機率是多少？", answer: "兒子患血友病的機率是50% (或1/2)。\n解釋: 因為她的父親是患者(XʰY)，她必定從父親那裡遺傳到一條帶有致病基因的X染色體(Xʰ)，所以她是攜帶者(XᴴXʰ)。她有50%的機會將這條Xʰ染色體遺傳給她的兒子。" },
+      { question: "如何從一個譜系圖中，初步判斷某遺傳病可能是隱性遺傳？", answer: "一個關鍵特徵是「無中生有」。\n解釋: 即一對表現正常的父母，卻生下了患病的孩子。這表明該病為隱性遺傳，而父母均為雜合子。" },
+      { question: "「變異」指的是什麼？它只由基因決定嗎？", answer: "變異指同一個物種的個體之間存在的差異。\n解釋: 變異的來源有兩個：遺傳因素（在減數分裂和受精過程中，等位基因的重新組合）和環境因素（環境對個體表現型的影響）。" },
+      { question: "連續變異和不連續變異有何不同？請各舉一例。", answer: "不連續變異：性狀有明確的分類，沒有中間類型。通常由單一基因控制。例如：ABO血型（A、B、AB、O型）。\n連續變異：性狀在一系列數值範圍內漸變，存在中間類型。通常由多個基因和環境共同控制。例如：人的身高、體重。\n解釋: 這是根據性狀表現的連續性來區分。" },
+      { question: "為什麼同卵雙生兒是研究遺傳與環境影響的絕佳對象？", answer: "因為同卵雙生兒由同一個受精卵發育而來，他們的基因型完全相同。因此，他們之間表現出的任何差異，都可以歸因於環境因素的影響，這有助於科學家區分先天遺傳和後天環境對人類特徵的作用。" },
+      { question: "羊膜穿刺是如何檢測胎兒是否患有染色體異常的遺傳病？", answer: "該技術是從孕婦的羊水中抽取少量樣本。羊水中含有胎兒脫落的細胞，醫生可以對這些細胞進行培養，然後分析其染色體的數量和結構（核型分析）。從而診斷出如唐氏綜合症等因染色體數目不正常而引起的疾病。" },
+      { question: "繪畫遺傳圖解有什麼常犯錯誤?", answer: "在兩個親本的基因型中間欠缺畫上「×」，代表雜交。欠缺標示「親代」、「配子」、「F1代」。 欠缺標示F1代的表現型。" },
+      { question: "遺傳圖解預測的基因型或表現型的後代比例一定準確嗎?", answer: "由於受精是隨機的，實際的結果可能會與預計的結果不同。如果後代數目龐大，實際的結果便會與預計的結果十分接近。(每次雜交的結果都不會受上一次雜交的結果影響，亦不會影響下一次雜交的結果。)" },
+      { question: "某種狗的毛皮顏色和毛皮上有沒有斑點分別由位於不同同源染色體上的兩個基因控制。黑色毛皮的等位基因B屬顯性，而紅色毛皮的等位基因b屬隱性，純色的等位基因N屬顯性，而有斑點的等位基因n屬隱性。一隻純黑色的狗與另一隻紅色帶斑點的狗交配，產下的小狗有四種：純黑色、純紅色、黑色帶斑點和紅色帶斑點的小狗。兩個親本的基因型是？", answer: "BbNn 和 bbnn" },
+      { question: "豌豆的種子形狀和顏色由兩個位於不同同源染色體上的基因控制，光滑種子的等位基因R屬顯性，皺褶種子的等位基因r屬隱性。黃色種子的等位基因Y屬顯性，綠色種子的等位基因y屬隱性。兩棵基因型分別是RrYY和RrYy的豌豆植株雜交，後代中產生綠色皺褶種子的植株約佔", answer: "0%" },
+      { question: "X染色體和Y染色體是同源染色體嗎?", answer: "X染色體比Y染色體長。X染色體上所攜帶的基因數目比Y染色體多。" },
+      { question: "變異的成因有什麼?", answer: "減數細胞分裂時染色體獨立分配、減數細胞分裂時的互換、受精時配子的隨機組合、突變。" },
+      { question: "核酸的結構是?", answer: "由多個核苷酸連接而成（多核苷酸）。核苷酸由五碳糖、磷酸鹽基和含氮鹼基組成。核酸分為核糖核酸(RNA) 和 脫氧核糖核酸(DNA) 。" },
+      { question: "核酸的結構是?", answer: "由多個核苷酸連接而成（多核苷酸）。核苷酸由五碳糖、磷酸鹽基和含氮鹼基組成。核酸分為核糖核酸(RNA) 和 脫氧核糖核酸(DNA) 。" },
+      { question: "DNA有什麼鹼基的種類?", answer: "腺嘌呤 (A) 、胸腺嘧啶 (T) 、胞嘧啶 (C) 、鳥嘌呤 (G)" },
+      { question: "RNA有什麼鹼基的種類?", answer: "腺嘌呤 (A) 、尿嘧啶 (U)、胞嘧啶 (C) 、鳥嘌呤 (G)" },
+      { question: "DNA如何複製?", answer: "兩條DNA鏈的鹼基之間的氫鍵斷裂，兩條DNA鏈解開。兩條DNA鏈各自成為合成新DNA鏈的模板。游離的核苷酸依模板的鹼基序列，以互補的形式一個一個接上去，A與T配對，C與T配對。在DNA聚合酶的催化下，相鄰的脫氧核糖核苷酸結合，產生新的DNA鏈。最後，兩個相同的DNA分子形成。每個DNA分子內其中一條DNA鏈來自原先的DNA分子，另一條則是新合成的(半保留)。" }
+    ]
+  },
+   {
+    id: "CH26",
+    title: "CH26 分子遺傳學",
+    flashcards: [
+      { question: "什麼是三聯體密碼？", answer: "DNA中每三個鹼基對應一個氨基酸的編碼。\n解釋: 三聯體密碼是遺傳密碼的基本單位，64種組合對應20種氨基酸。" },
+      { question: "什麼是簡併密碼？", answer: "多個三聯體密碼編碼同一種氨基酸。\n解釋: 如UUU和UUC都編碼同一種氨基酸(苯丙氨酸，例子不用背)，這提高了遺傳密碼的容錯性。" },
+      { question: "什麼是基因表達？", answer: "DNA信息轉化為蛋白質的過程，包括轉錄（DNA到mRNA）和轉譯（mRNA到多肽），是分子遺傳學的核心。" },
+      { question: "轉錄發生在哪裡？", answer: "細胞核內。DNA位於細胞核內，mRNA在此合成後運出，此過程常誤認為在細胞質發生。" },
+      { question: "轉譯發生在哪裡？", answer: "細胞質的核糖體上。核糖體是轉譯的場所，mRNA在此被轉譯成多肽。" },
+      { question: "什麼是編碼鏈？", answer: "與mRNA序列相似的DNA鏈（T變U）。編碼鏈不直接參與轉錄，但其序列決定mRNA，常與模板鏈混淆。" },
+      { question: "模板鏈的作用是什麼？", answer: "作為轉錄時mRNA合成的模板。  模板鏈與mRNA互補，RNA聚合酶沿其合成mRNA。" },
+      { question: "tRNA的作用是什麼？", answer: "攜帶特定氨基酸到核糖體。  tRNA的反密碼子與mRNA配對，確保氨基酸正確加入多肽鏈。" },
+      { question: "什麼是反密碼子？", answer: "tRNA上與mRNA密碼子互補的鹼基序列。如mRNA的AUG對應tRNA的UAC，決定氨基酸種類。" },
+      { question: "多肽和蛋白質有何區別？", answer: "多肽是氨基酸鏈，蛋白質是摺疊後的多肽。\n解釋: 轉譯產物是多肽，需捲曲 / 摺疊形成特定立體結構，具功能性蛋白質，常混淆二者。" },
+      { question: "為什麼不同細胞能表達不同基因，不會表達所有基因，如神經元縱使有製造胃蛋白酶的基因，但不會合成胃蛋白酶？", answer: "因應細胞功能需求。如肌肉細胞和神經細胞表達不同蛋白質，實現分工。" },
+      { question: "什麼是基因突變？", answer: "DNA鹼基序列的永久性改變。\n解釋: 基因突變可能導致蛋白質結構和功能的變化。" },
+      { question: "什麼是染色體突變？", answer: "染色體結構或數目的改變，如唐氏綜合症（21號染色體三體），一般影響範圍比基因突變大。" },
+      { question: "什麼是取代突變？", answer: "一個鹼基被另一個鹼基替換。留意：此突變可能對個體無影響，因簡併密碼的特性．也或會改變氨基酸。" },
+      { question: "插入突變的影響是什麼？", answer: "可能導致閱讀框轉移，類似缺失。\n解釋: 插入數量決定影響，若為3的倍數影響較小。" },
+      { question: "什麼是倒位突變？", answer: "DNA序列顛倒，可能影響基因表達，但也不一定改變氨基酸序列。" },
+      { question: "鐮狀細胞性貧血的成因是什麼？", answer: "血紅蛋白基因單鹼基取代（T變A）。導致異常血紅蛋白，氧濃度低時紅血球變鐮狀。" },
+      { question: "什麼是自發突變？", answer: "自然隨機發生的突變。無外部誘因，發生率低但普遍存在。" },
+      { question: "誘發突變的例子有哪些？", answer: "如紫外線、X射線、化學物質（芥子氣）。這些誘變劑增加突變率，可能致癌。" },
+      { question: "什麼是閱讀框轉移？", answer: "插入或缺失非3倍數鹼基，改變密碼子。導致後續氨基酸序列錯誤，影響蛋白質的三維結構，使其失去功能。" },
+      { question: "為什麼突變不一定遺傳給後代？", answer: "體細胞突變不遺傳，生殖細胞突變才遺傳。常誤解所有突變都會遺傳，實際取決於細胞類型。" },
+      { question: "為什麼三聯體密碼是全適的？", answer: "所有生物共用同一套密碼。顯示生物間的共同起源，無例外。" },
+      { question: "為什麼缺失比取代影響更大？", answer: "缺失可能導致閱讀框轉移，影響多個氨基酸。取代通常只影響單一氨基酸，影響範圍較小。" },
+      { question: "DNA、基因和染色體三者之間是什麼關係？", answer: "染色體是由DNA分子緊密纏繞蛋白質而成的結構。基因則是DNA分子上帶有特定遺傳信息的一個片段。可以這樣比喻：染色體是「書」，DNA是書中所有的「文字」，而基因是其中一段有意義的「句子」。" },
+      { question: "DNA 會離開細胞核進入細胞質來製造蛋白質嗎？", answer: "不會。DNA是遺傳的藍圖，它非常重要，通常會一直保留在細胞核內受到保護。在製造蛋白質時，DNA上的遺傳信息會被「複製」到一條稱為mRNA的分子上，由mRNA離開細胞核去指導蛋白質的合成。" },
+      { question: "任何一段DNA序列都算是一個基因嗎？", answer: "不是。只有那些能為特定蛋白質編碼的DNA序列，才被稱為基因。DNA分子上含有大量不為蛋白質編碼的序列，它們可能具有調控或其他功能。" },
+      { question: "DNA複製和轉錄有何不同？", answer: "複製：是為了細胞分裂，以整條DNA鏈為模板，合成一條完全相同的DNA分子。\n解釋: 轉錄：是為了製造蛋白質，只以DNA上的某個基因片段為模板，合成一條mRNA分子。兩者的目的、模板和產物都不同。" },
+      { question: "什麼是遺傳密碼的「三聯體密碼」？", answer: "指在DNA或mRNA鏈上，每三個相鄰的鹼基組成一個密碼子，為一種特定的氨基酸編碼，例如，mRNA上的密碼子AUG為甲硫氨酸編碼。" },
+      { question: "遺傳密碼是「簡併」的，這是什麼意思？", answer: "簡併是指多於一個密碼子可以為同一種氨基酸編碼。\n解釋: 例如，UUA和UUG都為亮氨酸編碼。這在一定程度上能減低基因突變所帶來的影響。" },
+      { question: "轉錄的主要目的是什麼？它在哪裡發生？", answer: "轉錄的主要目的是將DNA上某個基因的遺傳信息複製到一條信使RNA (mRNA) 分子上。這個過程在真核細胞的細胞核內發生。" },
+      { question: "在轉錄過程中，DNA的兩條鏈都會被用作模板嗎？", answer: "不會。對於某一個特定的基因，在轉錄時只會以DNA雙螺旋中的其中一條鏈作為模板來合成mRNA。" },
+      { question: "轉譯的主要目的是什麼？它在哪裡發生？", answer: "轉譯的目的是根據mRNA上的密碼子序列，將特定的氨基酸連接起來，合成一條多肽鏈（蛋白質）。這個過程在細胞質中的核糖體上發生。" },
+      { question: "核糖體、mRNA和tRNA在翻譯過程中各自扮演什麼角色？", answer: "mRNA (信使RNA)：作為模板，攜帶著來自DNA的遺傳密碼。核糖體：作為工場，提供合成蛋白質的場所，並沿著mRNA移動。 tRNA (轉運RNA)：作為運輸工具，負責識別mRNA上的密碼子，並將對應的氨基酸運輸到核糖體。三者協同完成蛋白質合成。" },
+      { question: "tRNA是如何準確地將氨基酸帶到正確位置的？", answer: "依靠tRNA分子上的一個關鍵結構——反密碼子。反密碼子是由三個鹼基組成的序列，它能與mRNA上對應的密碼子進行專一性的鹼基配對，從而確保攜帶特定氨基酸的tRNA能結合到正確的位置。" },
+      { question: "所有的基因突變都是有害的嗎？", answer: "不是。基因突變的影響是多樣的：有害突變（導致蛋白質功能異常，引發疾病，如鐮狀細胞貧血）；中性突變（對生物沒有明顯影響）；有益突變（在特定環境下可能為生物帶來生存優勢，如細菌的抗藥性）。" },
+      { question: "基因突變和染色體突變有何根本區別？", answer: "根本區別在於規模大小。基因突變：是DNA分子上一個或數個鹼基對的改變（插入、缺失或取代）。影響範圍較小，只改變單一基因。染色體畸變：是整條或大段染色體在結構或數量上的改變。影響範圍極大，涉及大量基因。" },
+      { question: "鹼基「取代」和「缺失/插入」哪種突變通常對蛋白質的影響更大？為什麼？", answer: "鹼基缺失或增添的影響通常更大。\n解釋: 因為它會導致突變點之後的所有三聯體密碼發生閱讀框轉移，使得後續的整個氨基酸序列完全錯亂。而鹼基取代通常只會改變一個氨基酸。" },
+      { question: "導致鐮狀細胞貧血的突變基因既然有害，為何能在某些地區（如非洲）以較高頻率被保留下來？", answer: "因為攜帶一個突變基因的異合子個體，對瘧疾具有較高的抵抗力。\n解釋: 在瘧疾流行的地區，這種抵抗力帶來了生存優勢，使得這個有害的等位基因能夠在種群中被自然選擇保留下來。" },
+      { question: "一個人的所有體細胞（如皮膚細胞、肝細胞）都含有相同的DNA嗎？既然如此，為何它們的形態和功能又如此不同？", answer: "是的，同一個人的幾乎所有體細胞都含有完全相同的DNA和基因。它們形態和功能不同，是因為發生了細胞分化，即在不同細胞中，只有一部分特定的基因會被「開啟」或「關閉」（基因選擇性表達），從而製造出不同的蛋白質，決定了細胞的特化功能。" },
+      { question: "蛋白質A由100個氨基酸組成，那麼控制它的基因至少有多少個鹼基對？", answer: "至少有300個鹼基對。因為每個氨基酸由一個含3個鹼基的三聯體密碼所編碼，所以100個氨基酸需要100 x 3 = 300個鹼基。由於DNA是雙鏈的，所以是300個鹼基對。" },
+      { question: "為什麼說基因突變是生物演化的根本來源？", answer: "因為基因突變是產生新等位基因的唯一途徑，它為種群引入了新的遺傳變異。這些變異經過自然選擇的作用，使得有利的性狀得以保留和傳播，從而推動了物種的演化。" },
+      { question: "轉錄的主要產物是什麼？", answer: "mRNA（信使RNA）。mRNA攜帶DNA的遺傳信息，離開細胞核進入細胞質。" },
+      { question: "轉譯的產物是什麼？", answer: "多肽，即蛋白質的組成部分。多肽經折疊成蛋白質，執行細胞功能。" },
+      { question: "DNA的模板鏈和編碼鏈有何不同？", answer: "模板鏈用於合成mRNA，mRNA鹼基與模板鏈互補；編碼鏈與mRNA鹼基序列相同（T換成U）。理解兩鏈的不同有助理解轉錄過程。" },
+      { question: "什麼是基因突變？", answer: "DNA鹼基序列的永久性改變。" },
+      { question: "染色體突變有哪些類型？", answer: "缺失、複製、倒位、易位。\n解釋: 這些變化會影響多個基因，影響較大。" },
+      { question: "什麼是互補鹼基配對？", answer: "A配T，C配G，透過氫鍵連接DNA雙鏈。\n解釋: 互補配對確保DNA準確複製。" },
+      { question: "DNA雙螺旋結構的特點是什麼？", answer: "兩條反向多核苷酸鏈纏繞，鹼基在內側形成互補配對。\n解釋: 結構穩定且便於遺傳信息傳遞。" },
+      { question: "基因表達包括哪兩大過程？", answer: "轉錄（DNA→mRNA）和轉譯（mRNA→多肽）。\n解釋: 這是遺傳信息表達為性狀的核心過程。" },
+      { question: "轉錄過程中，mRNA是如何合成的？", answer: "DNA雙鏈分開，一條作模板，RNA聚合酶合成互補的mRNA。\n解釋: mRNA序列決定蛋白質的氨基酸序列。" },
+      { question: "轉譯過程中tRNA的作用是什麼？", answer: "攜帶特定氨基酸，反密碼子與mRNA密碼子配對，將氨基酸連接成多肽。\n解釋: tRNA是蛋白質合成的橋樑。" },
+      { question: "突變為何使蛋白質無法正常運作?", answer: "突變可能改變蛋白質的三維結構，使蛋白質功能異常。" },
+      { question: "在轉錄過程中，與生成的 mRNA 序列互補（鹼基配對）的 DNA 鏈被稱為?", answer: "模板鏈。" },
+      { question: "已知一段 DNA 的編碼鏈序列為 5'-GATCCA-3'，請問其轉錄出來的 mRNA 序列為何？", answer: "5'-GAUCCA-3'" },
+      { question: "若一段 DNA 模板鏈的序列為 $3'-TACGGGATT-5'$，其對應的 mRNA 序列應為何？", answer: "5'-AUGCCCUAA-3'" },
+      { question: "科學家在實驗室中合成了一段 mRNA，其序列為 AUG-GGG-CCC。這段 mRNA 所對應的 DNA 編碼鏈序列應該是？", answer: "ATG-GGG-CCC" },
+      { question: "當 RNA 聚合酶 (RNA Polymerase) 正在進行轉錄時，它會物理性地與哪一條鏈結合並滑動？", answer: "模板鏈" },
+      { question: "若一段 DNA 的模板鏈 (Template strand) 序列為： AAG-CTC-GTA-ATT 請問轉錄出來的 mRNA 序列為何？", answer: "UUC-GAG-CAU-UAA" },
+      { question: "科學家發現某段 mRNA 的序列為： AUG-CCG-UUA-GAC請問其對應的 DNA 編碼鏈 (Coding strand) 序列為何?", answer: "ATG-CCG-TTA-GAC" },
+      { question: "若已知某個基因的 mRNA 分子中，尿嘧啶 (U) 佔了 28%。請問在該基因的 DNA 編碼鏈 (Coding strand) 中，胸腺嘧啶 (T) 的比例是多少？", answer: "28%" },
+      { question: "如果一段 DNA 的編碼鏈 (Coding strand) 序列是： GCA-TTC-CAG請問這段 DNA 對應的模板鏈 (Template strand) 序列應該為？", answer: "CGT-AAG-GTC" },
+      { question: "某段 DNA 的模板鏈序列原本是 TAC。現在發生了突變，編碼鏈上的對應位置從 $\\text{A}$ 變成了 G。請問突變後的 mRNA 序列會變成什麼？", answer: "GUG" }
+    ]
+  },
+    {
+    id: "CH27",
+    title: "CH27 生物工程",
+    flashcards: [
+      { question: "基因工程中，限制酶和DNA連接酶分別扮演什麼角色？", answer: "可以將它們比喻為「分子剪刀」和「分子膠水」。 ●       限制酶：像剪刀一樣，能識別並切割特定DNA序列，以取出目標基因和切開載體。 ●       DNA連接酶：像膠水一樣，能將已被切開的目標基因和載體重新連接起來，形成重組DNA。解釋: 兩者在重組DNA技術中至關重要。" },
+      { question: "為什麼在切割目標基因和載體時，必須使用「同一種」限制酶？", answer: "因為同一種限制酶切割後，會在目標基因和載體的切口產生互相補足的黏性末端。解釋: 只有切口形狀互補，兩者才能通過鹼基配對有效地連接起來，形成穩定的重組DNA。" },
+      { question: "什麼是「載體」？在基因工程中，最常用的載體是什麼？", answer: "載體是將目標基因運送到宿主細胞（如細菌）內的工具。解釋: 最常用的載體是細菌細胞質中的環狀DNA，稱為質粒。質粒能獨立於細菌的主染色體進行複製。" },
+      { question: "基因工程（基因改造）和傳統育種（例如雜交）有何不同？", answer: "以下為兩項重要的不同之處。 ●       傳統育種：只能在同種或近親物種間進行雜交，將成千上萬的基因混合，結果難以預測。 ●       基因工程：可以跨越物種界限，精確地將一個或數個特定的目標基因從一個物種轉移到另一個物種，基因工程提供了更精準和廣泛的基因操作能力。" },
+      { question: "基因工程技術生產人類胰島素，為什麼通常選擇細菌作為宿主？", answer: "主要原因有二：  繁殖迅速： 細菌的生命週期極短，能在短時間內大量繁殖，從而快速生產出大量的胰島素。  操作簡單： 細菌的遺傳物質（質粒）相對簡單，容易進行基因操作。 解釋: 細菌是高效且易於操控的生產平台。" },
+      { question: "為什麼不能直接從人類胰臟中提取胰島素來滿足所有糖尿病患者的需求？", answer: "因為從逝者胰臟中提取的胰島素數量極其有限，遠遠無法滿足全球大量患者的需求。此外，提取過程複雜且成本高，並可能引起部分病人的排斥反應。基因工程生產的胰島素則純度高、產量大且不會引起排斥。" },
+      { question: "「黃金米」是一種基因改造稻米，它被轉入了什麼基因？目的是什麼？", answer: "「黃金米」被轉入了能合成β-胡蘿蔔素的基因。解釋: β-胡蘿蔔素是維生素A的前體。其目的是為了解決發展中地區因飲食單一而普遍存在的維生素A缺乏症問題。" },
+      { question: "基因治療的基本原理是什麼？", answer: "基因治療的基本原理是將正常的基因導入到患有遺傳病的病人體細胞中。解釋: 以取代或補償有缺陷的基因的功能，從而達到治療疾病的目的。" },
+      { question: "DNA指紋分析是比較整個基因組的所有DNA序列嗎？", answer: "不是。只是比較高變異區域的DNA。DNA指紋分析並非比較全部DNA，而是比較DNA序列中一些特定的重複序列。這些區域在不同個體之間的重複次數差異極大，足以構成獨一無二的「指紋」。" },
+      { question: "在凝膠電泳中，DNA片段是依據什麼原理被分離的？", answer: "依據片段的大小（長度）。解釋: DNA分子帶有負電荷，在電場中會向正極移動。凝膠像一個篩子，較小（較短）的DNA片段能更快更容易地穿過凝膠孔隙，因此移動得更遠；較大的片段則移動得較慢、較近。" },
+      { question: "在親子鑑定中，孩子的DNA圖譜與父母的圖譜有何關係？", answer: "孩子的DNA來自父母雙方，因此他的DNA指紋圖譜中的每一條帶（代表一個DNA片段），都必須能在他母親或父親的圖譜中找到對應的條帶。" },
+      { question: "基因改造農作物可能帶來哪些潛在的生態風險？", answer: "其中一個主要的擔憂是基因流動。抗除草劑或抗蟲害的基因，可能通過花粉意外地轉移到野生的近親植物上，從而創造出難以控制的「超級雜草」，或影響非目標的昆蟲，破壞生態平衡。" },
+      { question: "重組DNA技術的第一步是什麼？", answer: "第一步是獲取含有目標基因的DNA片段。這需要從供體細胞中提取特定的DNA，為後續步驟做準備。" },
+      { question: "質粒在重組DNA技術中扮演什麼角色？", answer: "質粒是環狀DNA，作為載體將目標基因插入宿主細胞。解釋: 它能在細菌中複製，幫助目標基因表達。" },
+      { question: "限制酶有什麼功能？", answer: "限制酶像“分子剪刀”，能在特定位置切割DNA。解釋: 形成黏性末端，便於與載體結合。" },
+      { question: "DNA連接酶的作用是什麼？", answer: "DNA連接酶像“膠水”，將切割後的DNA片段與載體連接起來。解釋: 形成重組DNA分子。" },
+      { question: "重組DNA技術有什麼應用？", answer: "可以用來生產藥物（如胰島素）、製造基因改造生物（如抗病農作物），應用於醫學和農業等範疇。" },
+      { question: "為什麼用重組DNA技術生產胰島素更好？", answer: "比傳統提取方法更快、更便宜，且生產的胰島素與人體一致。解釋: 不易引起免疫反應。" },
+      { question: "什麼是基因改造生物（GMO）？", answer: "GMO是通過重組DNA技術改變基因組的生物，如抗蟲害的玉米。" },
+      { question: "DNA指紋分析的原理是什麼？", answer: "基於個體DNA中高變異區域的長度差異進行分析，每個人的DNA指紋獨一無二（單卵雙胞胎除外）。" },
+      { question: "凝膠電泳如何分離DNA片段？", answer: "凝膠電泳用電場使DNA片段移動。短片段移動快，長片段移動慢，因而形成不同DNA帶。" },
+      { question: "DNA指紋分析在法證科學中怎麼用？", answer: "比較犯罪現場的DNA樣本與嫌疑人的DNA指紋，若犯罪現場的DNA樣本出現不屬於嫌疑人的DNA指紋，則可證明他是無罪。" },
+      { question: "親子鑑定如何利用DNA指紋分析？", answer: "孩子一半DNA帶與母親匹配，另一半與父親匹配，通過比較確定親子關係，若孩子的DNA樣本出現不屬於父親或母親的DNA帶，則可證明他們並非親子關係。" },
+      { question: "什麼是高變異區域？", answer: "高變異區域是DNA中重複序列次數不同的部分。個體間DNA片段長度會有差異，人人不同。" },
+      { question: "人類基因組計劃的目標是什麼？", answer: "測序人類全部DNA，找出所有基因及其功能，為醫學研究提供基礎。" },
+      { question: "人類基因組有多少基因？", answer: "約21,000個基因。遠少於最初估計的10萬個，這是人類基因組計劃的重要發現。" },
+      { question: "為什麼說99.9%的DNA在人與人之間相同？", answer: "人類基因組計劃發現人與人DNA差異僅0.1%。與人體基本代謝功能相關的基因大致相同。這0.1%決定個體差異如外貌。" },
+      { question: "重組DNA技術在農業中有什麼應用？", answer: "提高農作物產量、抗病性或營養價值。解釋: 例如抗洪水的稻米或抗蟲害的玉米。" },
+      { question: "凝膠電泳中DNA片段往哪個方向移動？", answer: "DNA帶負電荷，向正極移動。" },
+      { question: "人類基因組計劃有哪些局限性？", answer: "雖然測出DNA序列，但很多基因功能未知，暫時無法完全解釋所有生物過程。" },
+      { question: "DNA指紋分析可以用來追踪傳染病嗎？", answer: "是的。解釋: 通過分析病原體的DNA指紋，確定傳染源頭，幫助控制疾病傳播。" }
+    ]
+  },
+{
+    id: "CH28",
+    title: "CH28 生物多樣性",
+    flashcards: [
+      { question: "林奈的分類層次由大到小是什麼？", answer: "界、門、綱、目、科、屬、種。層次越小，物種數量越少，相似度越高，這點十分重要。" },
+      { question: "什麼是種？", answer: "能互相交配並產生可生育後代的生物群體。種是分類基本單位。" },
+      { question: "雙名法是什麼？", answer: "用屬名和種名組成的拉丁文學名。 每種生物有唯一學名，便於全球溝通。" },
+      { question: "如何正確書寫學名？", answer: "屬名首字母大寫，種名小寫，斜體或加下底線（作答時務必在答案中加上底線，否則未能取得分數）。規範格式避免混淆，如Homo sapiens。" },
+      { question: "什麼是系統發生關係？", answer: "生物間遺傳相似度，反映進化親緣。遺傳物質越相似，進化關係越近。" },
+      { question: "三域系統包括什麼？", answer: "細菌域（不是真細菌域！！）、古細菌域、真核域。" },
+      { question: "六界系統包括什麼？", answer: "真細菌、古細菌、原生生物、植物、真菌、動物。" },
+      { question: "真細菌的特徵是什麼？", answer: "原核生物，環狀DNA，細胞壁含肽聚糖。" },
+      { question: "古細菌的特徵是什麼？", answer: "原核生物，無肽聚糖細胞壁(有細胞壁但化學成分跟細菌和植物的細胞壁不同)，常在極端環境生存，如高溫、高鹽等環境。" },
+      { question: "原生生物的特徵是什麼？", answer: "真核生物，多為單細胞，包含原生動物、藻、黏菌。原生生物多樣性高，是真核生物早期分支。具有真正的細胞核和其他由膜包圍的細胞器。" },
+      { question: "真菌與植物有什麼不同？", answer: "真菌無葉綠素，細胞壁非纖維素，多腐生，即營養方式和結構與植物區別明顯。" },
+      { question: "植物界的關鍵特徵是什麼？", answer: "真核、自養營養、有葉綠素，細胞壁含纖維素。光合作用是其核心特性。" },
+      { question: "蕨類和有花植物的繁殖有何不同？", answer: "蕨用孢子，有花植物用種子。" },
+      { question: "脊椎動物包括哪五大類？", answer: "魚類、兩棲類、爬行類、鳥類、哺乳類。" },
+      { question: "二叉式檢索表的局限性是什麼？", answer: "僅基於現有資料作區分，未必能識別新物種。資料不足時可能失效，故不是所有生物都能區分，需適時更新。" },
+      { question: "生物多樣性僅僅是指物種的數量多嗎？它包含哪三個層次？", answer: "不是。生物多樣性是一個綜合概念，包含三個層次： 遺傳多樣性： 同一個物種內不同個體間的基因差異。 物種多樣性： 一個區域內物種的種類和數量。 生態系多樣性： 一個地區內生態系的種類，如森林、濕地、海洋等。生物多樣性是一個多層次的綜合概念。" },
+      { question: "生物多樣性如何為人類提供「直接價值」？請舉例說明？", answer: "直接價值指人類可以直接從生物資源中獲取的產品，例如：食物（各種農作物、牲畜和魚類）；藥物（許多藥物的有效成分最初是從植物中發現的）；工業原料（如用於製造紙張和家具的木材）。" },
+      { question: "在「界、門、綱、目、科、屬、種」這七個分類級別中，哪個級別包含的生物種類最多？哪個級別的生物之間親緣關係最近？", answer: "種類最多：界；親緣關係最近：種。解釋: 界是最高級別，包含的生物種類最廣泛；種是最基本的分類單位，同種的生物之間能自然交配並繁殖出具生育能力的後代。" },
+      { question: "真菌（如蘑菇）應歸入植物界嗎？為什麼？", answer: "不應歸入植物界。 解釋: 雖然真菌和植物都不能移動，但牠們的營養方式完全不同。植物能進行光合作用自養；而真菌沒有葉綠素，必須通過分解外界有機物來獲取營養，屬於異養生物，因此自成一界。" },
+      { question: "使用雙名法為物種命名有什麼好處？", answer: "主要好處是全球統一和避免混淆。 解釋: 無論在世界任何地方，使用何種語言，一個物種的學名都是唯一的，這有助於科學家進行精確的學術交流。俗名（如「馬鈴薯」、「土豆」）則可能因地區而異。" },
+      { question: "同一物種的生物有什麼特徵？", answer: "能互相交配並產生可生育後代，構造與遺傳特徵相似。 解釋: 種是分類系統中最基本單位。" },
+      { question: "騾子為什麼不是一個真正的物種？", answer: "騾子染色體數目異常，無法正常繁殖，故不被視為物種。物種定義包含可生育後代能力。" },
+      { question: "原核生物和真核生物的主要差別是什麼？", answer: "原核生物無細胞核及膜包圍細胞器，真核生物有。原核生物如細菌，真核生物如動植物。" },
+      { question: "古細菌與真細菌有何不同？", answer: "古細菌細胞壁和細胞膜成分與真細菌不同，且多生活於極端環境。古細菌比真細菌在系統發生上更接近真核生物。" },
+      { question: "原生生物界包括哪些生物？", answer: "單細胞真核生物，如變形蟲、藻類。他們是真核生物中組織結構最簡單的生物。" },
+      { question: "真菌界的特點是什麼？", answer: "多數為多細胞，無葉綠素，細胞壁由幾丁質組成，靠分解有機物為生。真菌與植物不同，不進行光合作用。" },
+      { question: "針葉樹的特徵是什麼？", answer: "產生裸子具備根、莖、葉和維管組織的植物，葉多為針狀，具毬果 (所以種子並非被果實所包圍)。 解釋: 針葉樹適應寒冷乾燥環境。" },
+      { question: "有花植物如何分類？", answer: "分為單子葉植物和雙子葉植物，依子葉數目和葉脈結構區分。 解釋: 單子葉平行葉脈，雙子葉網狀葉脈。" },
+      { question: "真菌和植物還是動物的系統發生關係較接近？", answer: "動物。基因研究表明真菌與動物的親緣關係比與植物更近。" },
+      { question: "原生生物和植物還是動物的系統發生關係較接近？", answer: "植物。部分原生生物被認為是植物的祖先。" },
+      { question: "某新發現的生物Y，具有一雙眼睛和少於六足，但不能用現有檢索表鑑定它。解釋為什麼會有這個問題。", answer: "檢索表是根據現有物種的形態特徵而建立 (1) / 檢索表沒有列出該門的所有形態特徵" },
+      { question: "除使用檢索表以鑑定在同一門內的生物外，有什麼方法可以搜集更多資料來決定某生物是否屬於某個門。", answer: "比較生物和同屬的其他生物的蛋白的氮基酸 / 對應mRNA / 對應DNA序列以建立牠們之間的種系關係" },
+      { question: "二叉式檢索表能顯示不同生物的進化關係，你同意嗎？", answer: "不同意，因為二叉式檢索表是按照可觀察的 / 外在形態特徵去鑑定一組生物，而這些特徵未必與進化 / 系統發育關係相關(1)" }
+    ]
+  }
+    ];
+  // 狀態管理：每章節各自維護學習狀態
+  const stateByChapter = {};
+  function initChapterState(chapterId){
+    const chapter = chapters.find(c=>c.id===chapterId);
+    stateByChapter[chapterId] = {
+      cardsWithWeights: chapter.flashcards.map(c => ({ ...c, weight: 1, hardCount: 0 })),
+      currentIndex: 0, flipped: false, flipping: false, history: [0], historyPos: 0
+    };
+  }
+  chapters.forEach(ch => initChapterState(ch.id));
+  
+  // 目前章節 & 主題
+  let currentChapterId = "CH25";
+  const themes = ['', 'theme-ocean-blue', 'theme-sunset-glow', 'theme-forest-green'];
+  let currentThemeIndex = 0;
+
+  // UI 元素
+  const docElem = document.documentElement;
+  const headerTitle = document.getElementById('headerTitle');
+  const chapterInfo = document.getElementById('chapterInfo');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const card = document.getElementById('card');
+  const cardFront = document.getElementById('cardFront');
+  const cardBack = document.getElementById('cardBack');
+  const cardNumber = document.getElementById('cardNumber');
+  const flipBtn = document.getElementById('flipBtn');
+  const hardBtn = document.getElementById('hardBtn');
+  const mediumBtn = document.getElementById('mediumBtn');
+  const easyBtn = document.getElementById('easyBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const summaryBtn = document.getElementById('summaryBtn');
+  const summaryBlock = document.getElementById('summaryBlock');
+  const themeBtn = document.getElementById('themeBtn');
+
+  function getChapter(){ return chapters.find(c=>c.id===currentChapterId); }
+  function getState(){ return stateByChapter[currentChapterId]; }
+  
+  function updateHeader(){
+    const ch = getChapter();
+    headerTitle.textContent = ch.title;
+    document.title = ch.title;
+    chapterInfo.textContent = `目前章節：${ch.id}`;
+  }
+  
+  function renderCard() {
+    const cardContainer = document.querySelector('.card-container');
+    cardContainer.style.animation = 'none';
+    void cardContainer.offsetHeight; // 觸發瀏覽器重繪 (reflow)
+    cardContainer.style.animation = '';
+
+    const st = getState();
+    st.flipped = false;
+    card.classList.remove("flipped");
+    card.setAttribute("aria-pressed", "false");
+    const item = st.cardsWithWeights[st.currentIndex];
+    cardFront.textContent = item.question;
+    cardBack.textContent = item.answer;
+    cardNumber.textContent = `卡片 ${st.currentIndex + 1} / ${st.cardsWithWeights.length}`;
+    prevBtn.disabled = (st.historyPos <= 0);
+    summaryBlock.hidden = true;
+    summaryBlock.innerHTML = "";
+  }
+  
+  function flipCard() {
+    const st = getState();
+    if (st.flipping) return;
+    st.flipping = true;
+    st.flipped = !st.flipped;
+    card.classList.toggle("flipped", st.flipped);
+    card.setAttribute("aria-pressed", st.flipped ? "true" : "false");
+    setTimeout(() => { st.flipping = false; }, 600);
+  }
+  
+  function updateWeight(difficulty) {
+    const st = getState();
+    const cardObj = st.cardsWithWeights[st.currentIndex];
+    if (difficulty === "hard") { cardObj.weight += 2; cardObj.hardCount++; }
+    else if (difficulty === "medium") { /* 不變 */ }
+    else if (difficulty === "easy") { cardObj.weight = Math.max(1, cardObj.weight - 1); }
+  }
+  
+  function weightedRandomIndex() {
+    const st = getState();
+    const totalWeight = st.cardsWithWeights.reduce((sum, c) => sum + c.weight, 0);
+    if (totalWeight <= 0) return 0;
+    let r = Math.random() * totalWeight;
+    for (let i = 0; i < st.cardsWithWeights.length; i++) {
+      r -= st.cardsWithWeights[i].weight;
+      if (r < 0) return i;
+    }
+    return 0;
+  }
+  
+  function nextCard(difficulty) {
+    const st = getState();
+    updateWeight(difficulty);
+    const nextIdx = weightedRandomIndex();
+    st.currentIndex = nextIdx;
+    if (st.historyPos < st.history.length - 1) {
+      st.history = st.history.slice(0, st.historyPos + 1);
+    }
+    st.history.push(st.currentIndex);
+    st.historyPos++;
+    renderCard();
+    saveProgress();
+  }
+  
+  function prevCard() {
+    const st = getState();
+    if (st.historyPos <= 0) return;
+    st.historyPos--;
+    st.currentIndex = st.history[st.historyPos];
+    renderCard();
+  }
+  
+  function showHardSummary() {
+    const st = getState();
+    let sortedCards = [...st.cardsWithWeights]
+      .filter(c => c.hardCount > 0)
+      .sort((a,b) => b.hardCount - a.hardCount)
+      .slice(0,5);
+    if (sortedCards.length === 0) {
+      summaryBlock.innerHTML = "<h3>尚無標記為困難的題目</h3>";
+      summaryBlock.hidden = false;
+      return;
+    }
+    let html = "<h3>困難題目小結（前5題）</h3>";
+    sortedCards.forEach((c,i) => {
+      html += `<div class="summary-item">
+        <p><strong>題目 ${i + 1}：</strong>${c.question}</p>
+        <p><strong>答案：</strong>${c.answer}</p>
+        <p><strong>困難標記次數：</strong>${c.hardCount}</p>
+      </div>`;
+    });
+    summaryBlock.innerHTML = html;
+    summaryBlock.hidden = false;
+  }
+  
+  function switchChapter(newId){
+    if (newId === currentChapterId) return;
+    tabs.forEach(t=>{
+      const active = t.dataset.chapter === newId;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    currentChapterId = newId;
+    updateHeader();
+    renderCard();
+    card.focus();
+    saveProgress(); 
+  }
+  
+ // =================================================
+// 初始設定與渲染
+// =================================================
+
+loadProgressAndSettings(); // <-- 新增：在渲染前，先讀取儲存的進度與設定
+  updateHeader();
+  renderCard();
+  
+  // 事件綁定
+  flipBtn.addEventListener("click", flipCard);
+  hardBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("hard"); });
+  mediumBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("medium"); });
+  easyBtn.addEventListener("click", () => { const st = getState(); if (!st.flipped) flipCard(); nextCard("easy"); });
+  prevBtn.addEventListener("click", prevCard);
+  summaryBtn.addEventListener("click", showHardSummary);
+  
+  themeBtn.addEventListener('click', () => {
+    currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+    const newTheme = themes[currentThemeIndex];
+    docElem.className = newTheme;
+    saveProgress();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.code === "Space" || e.key === " ") && document.activeElement === card) {
+      e.preventDefault(); flipCard(); return;
+    }
+    if (e.key === "1") { const st=getState(); if(!st.flipped) flipCard(); nextCard("hard"); }
+    if (e.key === "2") { const st=getState(); if(!st.flipped) flipCard(); nextCard("medium"); }
+    if (e.key === "3") { const st=getState(); if(!st.flipped) flipCard(); nextCard("easy"); }
+    if (e.key === "ArrowLeft") { prevCard(); }
+    if (e.key?.toLowerCase?.() === "s") { showHardSummary(); }
+  });
+  
+  card.addEventListener('click', flipCard);
+  tabs.forEach(tab => tab.addEventListener('click', () => switchChapter(tab.dataset.chapter)));
+  
+  // 為了簡化，我移除了之前版本中 chapters 資料的省略部分，將完整的資料放入
+  // 這確保了程式碼的完整性和可運行性
+</script>
+<script src="tracking.js"></script></body>
+</html>
+
