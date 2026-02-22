@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提出假說</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; font-size: 1.5em; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .scenario-box { background-color: #f8fafc; padding: 15px; border-left: 5px solid #64748b; margin-bottom: 20px; font-size: 0.95em; }
+        .question-part { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
+        .question-text { font-weight: bold; color: #1e40af; margin-bottom: 10px; }
+        
+        details { margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+        summary { background-color: #f1f5f9; padding: 12px 15px; font-weight: bold; cursor: pointer; list-style: none; display: flex; justify-content: space-between; font-size: 0.9em; }
+        summary::-webkit-details-marker { display: none; }
+        details[open] summary { background-color: #e2e8f0; border-bottom: 1px solid #cbd5e1; }
+        .content { padding: 15px; background-color: #fff; font-size: 0.95em; }
+        .keyword { color: #d97706; font-weight: bold; }
+        
+        /* 導航按鈕區域 */
+        .navigation { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 15px; }
+        .nav-btn { background-color: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .nav-btn:hover { background-color: #475569; }
+        .nav-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+        
+        /* AI 對話框區域 (新增) */
+        .ai-container { margin-top: 30px; padding: 25px 20px; border-radius: 12px; background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%); border: 1px solid #c7d2fe; }
+        .ai-title { color: #4338ca; font-size: 1.2em; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
+        textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #a5b4fc; border-radius: 8px; font-size: 1em; font-family: inherit; box-sizing: border-box; resize: vertical; margin-bottom: 10px; }
+        textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .submit-btn { background-color: #4f46e5; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background 0.3s; }
+        .submit-btn:hover { background-color: #4338ca; }
+        .submit-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        
+        /* AI 回覆顯示區 (新增) */
+        #ai-response-box { margin-top: 15px; padding: 15px; background-color: white; border-radius: 8px; border-left: 4px solid #8b5cf6; display: none; font-size: 0.95em; line-height: 1.5; color: #334155;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🧬 DSE 生物：假說推論特訓</h1>
+    
+    <div id="quiz-container"></div>
+
+    <div class="navigation">
+        <button id="prev-btn" class="nav-btn" onclick="changeQuestion(-1)" disabled>⬅️ 上一題</button>
+        <span id="question-counter" style="line-height: 40px; font-weight: bold; color: #64748b;"></span>
+        <button id="next-btn" class="nav-btn" onclick="changeQuestion(1)">下一題 ➡️</button>
+    </div>
+
+    <div class="ai-container">
+        <div class="ai-title">🤖 AI 星級改卷員</div>
+        <p style="font-size: 0.9em; color: #475569; margin-top: 0;">覺得自己嘅答案都啱？打出嚟等 AI 幫你批改！<br>(你可以指明答緊 a 還是 b，或者就咁問 Concept)</p>
+        
+        <textarea id="student-input" placeholder="例如：因為尿素進入後，所以細胞漲大..."></textarea>
+        <button id="submit-btn" class="submit-btn" onclick="submitToAI()">📤 送出答案</button>
+        
+        <div id="ai-response-box">
+            <strong>🤖 AI 導師：</strong>
+            <div id="ai-response-text" style="margin-top: 8px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 🔗 請在這裡貼上你剛才拿到的 Google Apps Script 網址！
+    // ==========================================
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHgAw0JSs_vr9PqrvkGZnNNUieLERFwDExthnUSDw8KeKq15c6xfz_C5WPu8JzfWluMA/exec";
+
+    // 保留你完整無缺的 23 題題庫
+    const questionsDatabase = [
+    {
+        "id": 1,
+        "title": "實戰演練 #1-植物生理：氣孔開閉機制",
+        "scenario": "研究人員將兩種生長狀態相同的盆栽植物分為兩組。A 組的葉片被均勻噴灑了一種名為化學物 X 的溶液，而 B 組的葉片則噴灑等量的蒸餾水作對照。處理後，兩組植物被放置在完全缺乏水分供應的溫室環境中。<br><br>三天後，觀察發現 B 組植物的莖葉出現嚴重的凋萎現象，而 A 組植物的莖葉依然保持挺立，沒有明顯缺水徵狀。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋 A 組植物沒有凋萎的現象。（1 分）",
+                "hint": "【原因】：化學物X對葉片表皮的甚麼細胞起了作用？<br>【機制】：這如何導致保衛細胞水分改變及氣孔的開閉狀態變化？<br>【結果】：這如何減少了植物體內水分流失的情況？",
+                "answer": "化學物 X 促使<span class='keyword'>保衛細胞</span>失去水分而令<span class='keyword'>氣孔關閉</span>（機制），從而減少植物透過<span class='keyword'>蒸騰作用</span>流失水分（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "撕取兩組植物的葉表皮製成玻片標本並在<span class='keyword'>顯微鏡</span>下觀察（1 分），預期 A 組葉片的氣孔大部分呈<span class='keyword'>關閉狀態</span>，而 B 組的氣孔<span class='keyword'>張開程度較大</span>（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "title": "實戰演練 #2-人體生理：膽鹽的物理作用",
+        "scenario": "在兩個試管中分別加入等量的花生油和脂肪酶。試管甲額外加入了膽鹽溶液，試管乙則加入了等量的蒸餾水。兩支試管均放置在 37°C 的水浴中並保持靜置。<br><br>30 分鐘後，量度兩支試管的 pH 值，發現試管甲的 pH 值下降幅度顯著大於試管乙。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋試管甲 pH 值下降較快的原因。（1 分）",
+                "hint": "【原因】：膽汁裡的膽鹽對大脂肪滴能產生哪一種物理作用？<br>【機制】：這物理作用如何增加了脂肪與脂肪酶接觸的條件？<br>【結果】：這如何加快了脂肪分解為脂肪酸的速度，導致 pH 快速下降？",
+                "answer": "膽鹽能將大脂肪滴<span class='keyword'>乳化</span>成微細脂肪滴以<span class='keyword'>增加</span>脂肪酶作用的<span class='keyword'>表面積</span>（機制），從而<span class='keyword'>加快</span>脂肪被分解成<span class='keyword'>脂肪酸</span>的速率（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "在不加入脂肪酶的情況下重複上述實驗，靜置後在<span class='keyword'>顯微鏡</span>下觀察兩支試管內的混合液（1 分），預期試管甲內出現的脂肪滴<span class='keyword'>體積明顯比試管乙細小</span>且<span class='keyword'>數量較多</span>（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "title": "實戰演練 #3-細胞與分子：主動轉運的能量來源",
+        "scenario": "將生長狀態相同的植物根部切段分為兩組，分別放入含有相同濃度硝酸鹽的溶液中，並提供充足氧氣。第一組溶液中加入了呼吸作用抑制劑（阻斷線粒體功能），第二組則不作處理作對照。<br><br>一段時間後，量度溶液中硝酸鹽的剩餘濃度。結果顯示，第二組溶液的硝酸鹽濃度顯著下降，而第一組溶液的硝酸鹽濃度幾乎沒有改變。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋第一組植物根部無法吸收硝酸鹽的原因。（1 分）",
+                "hint": "【原因】：植物根毛細胞吸收礦物質（如硝酸鹽）通常屬於哪一種轉運機制？<br>【機制】：抑制呼吸作用如何切斷了該轉運所需的能量來源，影響了細胞膜上蛋白質的運作？<br>【結果】：這為何導致根部完全無法吸取外界的硝酸鹽？",
+                "answer": "根毛細胞吸收硝酸鹽是一個需要消耗 <span class='keyword'>ATP</span> 的<span class='keyword'>主動轉運</span>過程（機制），抑制<span class='keyword'>呼吸作用</span>會切斷 ATP 的供應，導致細胞膜上的<span class='keyword'>載體蛋白</span>無法運作（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "測量未經處理的正常根部切段在吸收硝酸鹽期間的<span class='keyword'>氧氣消耗率</span>（1 分），預期當硝酸鹽<span class='keyword'>吸收速率增加</span>時，氧氣消耗率亦會相應<span class='keyword'>急劇上升</span>，證明該過程依賴<span class='keyword'>需氧呼吸</span>（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 4,
+        "title": "實戰演練 #4-植物生理：開花誘發機制（機械壓力信號）",
+        "scenario": "某種生長於強風高山環境的植物，通常在春季日照時間超過 12 小時後便會開花。研究人員在溫室中給予該植物每天 14 小時的光照。植物被分為兩組：控制組不作任何干擾；實驗組每天接受 10 分鐘的輕微機械性摩擦（模擬強風吹拂的物理壓力）。<br><br>結果顯示，即使光照與溫度條件完全一致且充足，實驗組的開花時間比控制組延遲了整整三週。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋實驗組開花延遲的現象。（1 分）",
+                "hint": "【原因】：機械性的摩擦物理刺激導致植物體內產生了甚麼化學物質？<br>【機制】：這化學物質傳遞至頂端後，如何干擾分生組織的正常發育？<br>【結果】：這如何導致花原基無法順利形成及開花延遲？",
+                "answer": "機械性摩擦的物理刺激促使植物產生了一種<span class='keyword'>抑制性</span>的化學信號/植物激素（機制），該化學物質傳遞至頂芽並阻礙了<span class='keyword'>頂端分生組織</span>發育成<span class='keyword'>花原基</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "提取曾受機械摩擦的植物的<span class='keyword'>汁液</span>，並<span class='keyword'>注射</span>入未受干擾且處於 14 小時光照的植物體內（1 分），預期被注射汁液的植物其開花時間亦會出現<span class='keyword'>顯著延遲</span>的現象（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 5,
+        "title": "實戰演練 #5-微生物：不同抗生素的抑菌原理",
+        "scenario": "科學家在深海火山口發現了一種新型細菌 Z。在海平面的常壓環境下，抗生素 Y 能有效抑制細菌 Z 的生長。然而，當細菌 Z 被放置於模擬深海極高壓環境的培養皿時，抗生素 Y 完全失去抑菌效果。<br><br>生化分析顯示，高壓環境下和常壓環境下的細菌 Z 的代謝速率和基因序列完全相同，沒有發生突變。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "排除基因突變的因素後，提出一個合理的假說以解釋細菌 Z 在高壓下對抗生素 Y 產生抗性的原因。（1 分）",
+                "hint": "【原因】：極高壓的物理環境可能誘導了細菌最外層結構產生甚麼物理或生理變化？<br>【機制】：更厚或結構改變的外層如何影響抗生素分子的通透性？<br>【結果】：這為何使得抗生素 Y 無法發揮抑菌作用？",
+                "answer": "極高壓的物理環境誘導細菌 Z 表現出不同的生理特徵，合成<span class='keyword'>更厚</span>或<span class='keyword'>結構改變</span>的<span class='keyword'>細胞壁</span>（機制），從而<span class='keyword'>阻擋</span>了抗生素 Y 進入細胞內發揮其抑制作用（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "利用特定溶菌酶<span class='keyword'>去除</span>處於高壓環境下的細菌 Z 的<span class='keyword'>細胞壁</span>（形成原生質體），然後在高壓下重新加入抗生素 Y（1 分），預期抗生素 Y 能<span class='keyword'>恢復抑菌效果</span>，導致細菌 Z 的原生質體<span class='keyword'>死亡</span>或<span class='keyword'>停止分裂</span>（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 7,
+        "title": "實戰演練 #7-生態學：非生物因子對分佈的影響",
+        "scenario": "在岩岸生態系統中，藤壺物種甲主要分佈在低潮區，而物種乙則分佈在高潮區。野外實驗中，研究員將物種乙從高潮區的岩石上全部移除。<br><br>隨後觀察發現，物種甲的幼體雖然能隨海水附著在該高潮區的岩石上，但在夏季連續幾天退潮暴露於烈日下後，這些物種甲全數死亡。調查顯示各個潮區的捕食者分佈和數量並無顯著差異。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋物種甲無法在高潮區存活的原因。（1 分）",
+                "hint": "【原因】：高潮區的非生物環境具有甚麼特徵，而物種甲缺乏相應的構造來應對？<br>【機制】：長時間暴露於空氣及烈日下，這導致物種甲體內水分發生甚麼狀況？<br>【結果】：這如何造成物種甲死亡並限制了牠們的分佈？",
+                "answer": "物種甲缺乏緊閉外殼以<span class='keyword'>防止水分散失</span>的構造或生理機制（機制），在夏季高潮區長時間<span class='keyword'>暴露於空氣</span>時，會因過度蒸發<span class='keyword'>失水</span>而無法忍受<span class='keyword'>乾燥</span>的非生物環境（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "在實驗室中將物種甲和物種乙的成體同時暴露於<span class='keyword'>乾燥的高溫空氣</span>中並定時量度其<span class='keyword'>重量</span>（1 分），預期物種甲的<span class='keyword'>重量下降（水分流失）速率</span>明顯<span class='keyword'>高於</span>物種乙（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 8,
+        "title": "實戰演練 #8-細胞與分子：質壁分離與復原",
+        "scenario": "學生將紫鴨跖草的葉表皮撕下並分成兩組，分別浸入 0.5 M 的蔗糖溶液（甲組）和 0.5 M 的尿素溶液（乙組）中。<br><br>在顯微鏡下觀察，兩組細胞在首 5 分鐘內均出現了明顯的質壁分離現象。然而 30 分鐘後，乙組細胞的液泡逐漸膨脹並恢復至原本的緊緻狀態（質壁分離復原），而甲組細胞則維持質壁分離的狀態。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋乙組細胞出現質壁分離復原的現象。（1 分）",
+                "hint": "【原因】：尿素分子有甚麼特性能讓它穿過細胞膜？<br>【機制】：這如何改變細胞內外環境的水勢差距？<br>【結果】：這如何導致水分的淨移動方向改變，令細胞恢復膨脹？",
+                "answer": "尿素分子能透過<span class='keyword'>擴散作用</span>穿過細胞膜進入細胞液，從而<span class='keyword'>降低</span>細胞內的<span class='keyword'>水勢</span>（機制），導致外部水分隨後透過<span class='keyword'>滲透作用</span>重新<span class='keyword'>進入</span>細胞，令細胞恢復<span class='keyword'>膨脹</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "將復原後的乙組細胞取出，放入<span class='keyword'>更高濃度</span>（如 1.0 M）的蔗糖溶液中（1 分），預期細胞會<span class='keyword'>再次發生質壁分離</span>。這能證明細胞膜依然保持<span class='keyword'>半透性</span>，排除了「尿素破壞了細胞膜導致水分湧入」的干擾可能性（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 9,
+        "title": "實戰演練 #9-酶的抑制作用",
+        "scenario": "在兩個試管中分別加入等量的澱粉酶和澱粉溶液。試管 A 為對照組；試管 B 則額外加入了一種重金屬離子 Y。兩支試管均維持在最佳溫度 37°C 及最佳 pH 值。<br><br>結果顯示，試管 B 的澱粉分解速率極低。隨後，研究員向試管 B 加入大量額外的澱粉溶液，但其分解速率依然沒有任何提升。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋加入大量澱粉仍無法提升試管 B 反應速率的原因。（1 分）",
+                "hint": "【原因】：重金屬離子對酶的蛋白質結構造成了甚麼影響？<br>【機制】：這如何改變了酶活性部位的立體形狀？<br>【結果】：為何即使增加基質濃度，也無法增加酶與基質的結合並形成複合物？",
+                "answer": "重金屬離子 Y <span class='keyword'>永久性地破壞</span>了澱粉酶<span class='keyword'>活性部位</span>的立體形狀（<span class='keyword'>非競爭性抑制</span> / <span class='keyword'>蛋白質變性</span>）（機制），導致無論<span class='keyword'>基質</span>（澱粉）濃度多高，都無法再與酶結合形成<span class='keyword'>酶-基質複合物</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "將試管 B 內的混合液轉移至<span class='keyword'>透析管</span>（Visking tubing / 威斯康管） 內，並將其浸泡在大量流動的蒸餾水中一段時間，讓細小的重金屬離子 Y <span class='keyword'>擴散離開</span>混合液（1 分）。<br>隨後取出管內的澱粉酶溶液並重新加入新鮮澱粉，預期澱粉依然<span class='keyword'>無法被分解</span>（或反應極慢），證明該酶的結構已被重金屬<span class='keyword'>永久性破壞（變性）</span>，即使移除了抑制劑也無法恢復活性（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 10,
+        "title": "實戰演練 #10-微生物：發酵速率的限制",
+        "scenario": "將等量的酵母菌分別放入兩個發酵瓶中進行缺氧呼吸。P 瓶加入 5% 的葡萄糖溶液，Q 瓶則加入 40% 的高濃度葡萄糖溶液。<br><br>干擾數據： 兩瓶的溫度均嚴格控制在最佳的 30°C，且 pH 值均被緩衝液維持在中性。<br><br>兩小時後，P 瓶產生了大量二氧化碳氣泡，但擁有更多「食物」的 Q 瓶，其二氧化碳產生率卻極低。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "排除溫度和酸鹼值的影響，提出一個合理的假說以解釋 Q 瓶酵母菌發酵速率極低的原因。（1 分）",
+                "hint": "【原因】：40% 的高濃度葡萄糖溶液形成了一個怎樣的水勢環境？<br>【機制】：這會導致酵母菌細胞內的水分發生甚麼移動？<br>【結果】：細胞嚴重缺水如何影響了缺氧呼吸相關酶的活性？",
+                "answer": "40% 的葡萄糖溶液形成了一個極度<span class='keyword'>低水勢</span>的環境（<span class='keyword'>高滲環境</span>），導致酵母菌細胞透過<span class='keyword'>滲透作用大量失水</span>（機制），細胞缺水使<span class='keyword'>酶的活性大幅降低</span>，從而<span class='keyword'>抑制</span>了缺氧呼吸的速率（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "抽取 Q 瓶中的酵母菌樣本，製作成玻片標本在<span class='keyword'>光學顯微鏡</span>下觀察（1 分），預期會觀察到酵母菌細胞出現明顯的<span class='keyword'>萎縮</span>（或<span class='keyword'>質壁分離</span>）現象（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 11,
+        "title": "實戰演練 #11-遺傳與進化：自然選擇對物種分佈的影響",
+        "scenario": "某森林中棲息著一種飛蛾，分為淺色和深色兩種表現型。原本淺色飛蛾佔群族的 90%。一次火山爆發後，森林中的樹幹被深灰色的火山灰廣泛覆蓋。<br><br>兩年後調查發現，深色飛蛾的比例急升至 85%。<br><br>干擾數據： 實驗室數據顯示，在沒有捕食者的受控環境下，淺色和深色飛蛾的壽命、耐熱能力及繁殖率完全相同。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋火山爆發後深色飛蛾比例急升的原因。（1 分）",
+                "hint": "【原因】：深灰色樹幹對於深色飛蛾而言，提供了甚麼生存優勢？<br>【機制】：這優勢如何降低了牠們被天敵（視覺捕食者）發現的機率？<br>【結果】：這如何導致相關的等位基因被大量遺傳至下一代？",
+                "answer": "深灰色樹幹為深色飛蛾提供了極佳的<span class='keyword'>偽裝（保護色）</span>，使其較難被視覺<span class='keyword'>捕食者</span>（如鳥類）發現（機制），相比淺色飛蛾擁有<span class='keyword'>更高的存活率</span>及<span class='keyword'>繁殖機會</span>，從而將<span class='keyword'>深色等位基因</span>傳給下一代（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "在佈滿深灰色火山灰的野外樹幹上，放置<span class='keyword'>等數量</span>且做了標記的淺色及深色飛蛾模型（或死體）（1 分），一段時間後觀察並統計，預期<span class='keyword'>淺色飛蛾</span>模型被鳥類啄食或破壞的數量會<span class='keyword'>顯著多於</span>深色飛蛾（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 12,
+        "title": "實戰演練 #12-生態學與植物生理：非生物因子（鹽分）對分佈的影響",
+        "scenario": "蘆葦（植物甲）和紅樹（植物乙）均生長於沿海地區。在河口淡水區，植物甲的生長極為繁茂；但在極高鹽分的泥灘，則只有植物乙能存活。<br><br>溫室實驗中，研究員將甲和乙分別種植在含高濃度氯化鈉（鹽分）的土壤中，並提供相同光照。一週後，植物甲嚴重枯萎並死亡，而植物乙仍能挺立並正常生長。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋植物乙能在高鹽土壤中存活而不會枯萎的原因。（1 分）",
+                "hint": "【原因】：植物乙具有甚麼特化的構造或機制來處理體內過多的鹽分？<br>【機制】：這如何幫助細胞維持一個比高鹽土壤更低的水勢環境？<br>【結果】：這如何讓植物能持續從土壤中獲取水分而不枯萎？",
+                "answer": "植物乙具有特化的<span class='keyword'>排鹽構造</span>或能<span class='keyword'>主動</span>將鹽分積聚在細胞<span class='keyword'>液泡</span>中（機制），使其細胞<span class='keyword'>水勢</span>能維持在<span class='keyword'>低於</span>高鹽土壤的水平，從而能持續透過<span class='keyword'>滲透作用</span>從土壤中<span class='keyword'>吸收水分</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "收集植物乙在高鹽環境下生長時的葉片表面<span class='keyword'>分泌物</span>進行<span class='keyword'>化學測試</span>，或在<span class='keyword'>顯微鏡</span>下觀察其<span class='keyword'>葉表皮</span>（1 分），預期會檢測到<span class='keyword'>高濃度的鹽分</span>/觀察到排出的<span class='keyword'>鹽晶體</span>（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 13,
+        "title": "實戰演練 #13-人體生理：激素對血糖的精確調節",
+        "scenario": "兩組健康大鼠在禁食 12 小時後被餵食等量的高糖食物。實驗組大鼠在餵食前 30 分鐘被預先注射了一種名為「化學物 X」的溶液，控制組則注射等量生理鹽水。<br><br>血液分析顯示，兩組大鼠餐後的胰島素分泌量相同且均有正常上升，但實驗組大鼠的血糖濃度在餐後兩小時依然維持在極高水平，未能像控制組般回落至正常值。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋實驗組大鼠血糖無法下降的現象。（1 分）",
+                "hint": "【原因】：既然胰島素分泌正常，化學物 X 可能對肝臟或肌肉細胞膜上的甚麼結構造成了破壞？<br>【機制】：這如何導致靶細胞無法接收胰島素的刺激信號？<br>【結果】：這為何使得血液中的葡萄糖無法被有效攝取並轉化為糖原？",
+                "answer": "化學物 X 阻斷或破壞了肝臟（或肌肉）細胞膜上的<span class='keyword'>胰島素受體</span>（機制），導致靶細胞<span class='keyword'>無法受到胰島素刺激</span>而增加對葡萄糖的<span class='keyword'>攝取</span>及轉化為<span class='keyword'>糖原</span>，使血液中的葡萄糖<span class='keyword'>無法被清除</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "提取實驗組大鼠的<span class='keyword'>肝臟細胞</span>，置於含有<span class='keyword'>放射性標記葡萄糖</span>及<span class='keyword'>高濃度胰島素</span>的培養液中（1 分），預期這些細胞內合成的<span class='keyword'>放射性糖原量</span>會<span class='keyword'>顯著低於</span>正常大鼠的肝臟細胞（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 14,
+        "title": "實戰演練 #14-細胞與分子：酶的競爭性抑制作用",
+        "scenario": "研究員在試管 A 加入新鮮豬肝提取液（含有過氧化氫酶）和過氧化氫溶液，試管內迅速產生大量氣泡。<br><br>在試管 B 中，加入了等量的豬肝提取液、過氧化氫溶液，以及少量的化合物氰化物 (Cyanide)。結果試管 B 幾乎沒有任何氣泡產生。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋化合物氰化物停止氣泡產生的機制。（1 分）",
+                "hint": "【原因】：氰化物的分子形狀與過氧化氫有甚麼相似之處？<br>【機制】：這使得氰化物能佔據過氧化氫酶的甚麼位置？<br>【結果】：這如何阻礙了正常基質與酶的結合，導致無法進行分解反應？",
+                "answer": "氰化物的<span class='keyword'>分子形狀與過氧化氫相似</span>，佔據了過氧化氫酶的<span class='keyword'>活性部位</span>（<span class='keyword'>競爭性抑制</span>）（機制），阻礙了過氧化氫與酶結合形成<span class='keyword'>酶-基質複合物</span>，從而無法催化分解反應產生氧氣（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "向試管 B 中加入<span class='keyword'>極大量（超高濃度）的過氧化氫溶液</span>並觀察氣泡產生速率（1 分），若氣泡產生速率<span class='keyword'>能恢復</span>，則預期/證實氰化物為<span class='keyword'>競爭性抑制劑</span>，因高濃度基質能<span class='keyword'>克服</span>此類抑制（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 15,
+        "title": "實戰演練 #15-植物生理：種子萌發的內源因子",
+        "scenario": "某種生長於沙漠極端環境的植物種子，在溫室中被放置於濕潤的土壤上，並提供最佳的溫度及充足的氧氣。<br><br>干擾數據： 測試證實其種皮對水分和氧氣具有極高的透性，胚胎亦具備完全的活性（並非物理性休眠）。然而，種子放置了一個月仍未萌發。<br><br>隨後，研究員模擬沙漠罕見的暴雨，用大量流水持續沖洗該批種子數小時後再重新播種，結果種子在三天內全部萌發。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋該種子為何必須經過大量流水沖洗才能萌發。（1 分）",
+                "hint": "【原因】：既然非物理性休眠，種子內部可能含有哪種抑制萌發的化學物質？<br>【機制】：大量流水對這種水溶性物質產生了甚麼作用？<br>【結果】：這如何解除了化學性休眠，讓胚胎順利啟動生長？",
+                "answer": "種子內部含有高濃度的<span class='keyword'>水溶性萌發抑制劑</span>（如<span class='keyword'>脫落酸</span>）（機制），必須經過大量流水沖刷將其<span class='keyword'>洗去</span>或<span class='keyword'>稀釋</span>至無效濃度，胚胎才能解除化學性休眠並<span class='keyword'>啟動生長程序</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "收集沖洗過該沙漠植物種子的<span class='keyword'>流水（洗液）</span>，並將其澆灌在其他正常且易於萌發的植物種子（如綠豆）上（1 分），預期這些正常種子的<span class='keyword'>萌發率會顯著降低</span>或<span class='keyword'>萌發時間被明顯延遲</span>（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 16,
+        "title": "實戰演練 #16-微生物與工業應用：發酵速率的限制",
+        "scenario": "一種用於工業生產乙醇的基因改造酵母菌 (Strain K)，在含有 10% 純葡萄糖的標準培養基中發酵效率極高。研究員嘗試利用一種富含纖維素的農業廢棄物（已預先用酶完全分解，確認內含 10% 葡萄糖）作為平價培養基。<br><br>干擾數據： 該廢棄物培養基的 pH 值、溫度、氧氣含量及基本礦物質均被調校至與標準培養基完全相同。但 Strain K 在廢棄物培養基中的發酵（缺氧呼吸）速率卻急劇下降至接近零。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋酵母菌在廢棄物培養基中發酵受阻的原因。（1 分）",
+                "hint": "【原因】：農業廢棄物在被分解的過程中，可能產生了甚麼額外的物質？<br>【機制】：這種物質對酵母菌或其體內的特定酶造成了甚麼負面影響？<br>【結果】：這如何導致酵母菌的缺氧呼吸作用無法進行？",
+                "answer": "農業廢棄物在被酶分解的過程中產生了某種<span class='keyword'>有毒的副產物</span>或<span class='keyword'>抑菌化學物質</span>（機制），該物質<span class='keyword'>毒害了酵母菌</span>或<span class='keyword'>抑制</span>了其負責缺氧呼吸的特定酶的活性，導致發酵作用無法進行（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "將標準培養基和農業廢棄物培養基按<span class='keyword'>不同比例混合</span>（例如 9:1, 5:5, 1:9），並接種 Strain K 觀察其產氣速率（1 分），預期隨著廢棄物培養基比例的增加，發酵速率會<span class='keyword'>呈正比例下降</span>，證實其中存在抑制物質（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 17,
+        "title": "實戰演練 #17-植物生理：光合作用的限速因子與極端環境",
+        "scenario": "某種海洋微藻被培養在一個全封閉的透明光反應器中以生產生物燃料。研究員在中午時分將照明系統調至最高強度（模擬極強的烈日曝曬）。<br><br>干擾數據： 反應器內的溫度被冷卻系統精確維持在最佳的 25°C，二氧化碳被刻意維持在極度飽和的水平，水分和礦物質也源源不絕。<br><br>然而，在超強光持續照射 30 分鐘後，微藻的光合作用速率急劇下降至幾乎停頓。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "排除所有常規限速因子的影響後，提出一個合理的假說以解釋微藻光合作用急劇下降的現象。（1 分）",
+                "hint": "【原因】：當光照強度遠超負荷時，會對微藻體內的葉綠體造成甚麼影響？<br>【機制】：這如何實質上破壞了負責吸收光能的葉綠素分子或蛋白質？<br>【結果】：這為何導致光反應無法進行，進而令整個光合作用停頓？",
+                "answer": "極度過強的光照<span class='keyword'>物理性地破壞</span>了微藻葉綠體內的<span class='keyword'>葉綠素分子</span>或光反應相關的<span class='keyword'>蛋白質/酶</span>（<span class='keyword'>光抑制現象</span>）（機制），導致即使其他環境因子充足，光反應亦<span class='keyword'>無法進行</span>，從而令整體光合作用停頓（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "在超強光照射導致光合作用停頓後，將微藻移回<span class='keyword'>正常適宜的光照環境</span>中重新測量其光合作用速率（1 分），預期在短期內光合速率<span class='keyword'>無法立即恢復</span>，證明光合構造已受到<span class='keyword'>實質性的破壞</span>，而非單純的動態限速（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 18,
+        "title": "實戰演練 #18-細胞與分子：溫度對細胞膜透性的影響",
+        "scenario": "學生將大小相同的新鮮紅菜頭組織圓柱體分為兩組，分別放入裝有等量蒸餾水的試管中。A 組試管維持在 20°C，B 組試管則浸入 70°C 的熱水浴中。<br><br>30 分鐘後，A 組的蒸餾水維持透明無色，而 B 組的蒸餾水則變成深紅色。顯微鏡觀察顯示，紅菜頭的紅色色素原本只存在於細胞的液泡中。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋 B 組蒸餾水變紅的原因。（1 分）",
+                "hint": "【原因】：70°C 的高溫會對細胞膜和液泡膜上的甚麼成分造成破壞？<br>【機制】：這改變如何影響了膜的透性？<br>【結果】：這如何導致原本被困在液泡中的紅色色素出現在周圍的水中？",
+                "answer": "70°C 的高溫使細胞膜及液泡膜上的<span class='keyword'>蛋白質變性</span>（或破壞了<span class='keyword'>磷脂雙分子層</span>的結構）（機制），導致膜的<span class='keyword'>透性大幅增加</span>，令原本無法穿過膜的紅色色素<span class='keyword'>擴散</span>至周圍的水中（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "將 B 組的紅菜頭圓柱體移出並放入<span class='keyword'>全新的 20°C 蒸餾水</span>中觀察（1 分），預期水會<span class='keyword'>繼續變紅</span>，證明高溫對細胞膜造成的破壞是<span class='keyword'>永久性/不可逆轉</span>的（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 19,
+        "title": "實戰演練 #19-人體生理：氣體交換與表面積",
+        "scenario": "兩組年齡和體能相若的運動員在跑步機上進行相同強度的輕度運動。甲組為非吸煙者，乙組為長期吸煙並患有初期肺氣腫（肺泡壁破損）的患者。<br><br>數據顯示，運動期間甲組的呼吸速率只微升了 15%，但乙組的呼吸速率卻急升了 60% 以維持體能，且表現出氣喘。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋乙組運動員需要急劇提升呼吸速率的原因。（1 分）",
+                "hint": "【原因】：肺氣腫導致肺泡壁破損，這對肺部進行氣體交換的構造有何影響？<br>【機制】：這如何影響了氧氣擴散入血液的速率？<br>【結果】：為了彌補這個缺陷以滿足肌肉對氧氣的需求，身體必須作出身甚麼代償性反應？",
+                "answer": "肺氣腫導致肺泡壁破損，大幅減少了肺部氣體交換的<span class='keyword'>總表面積</span>（機制），乙組必須透過急劇<span class='keyword'>增加呼吸速率</span>來彌補較慢的<span class='keyword'>氧氣擴散速率</span>，以滿足運動時肌肉對<span class='keyword'>氧氣的需求</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "測量兩組運動員在靜息狀態及運動期間<span class='keyword'>血液中的氧氣濃度</span>（1 分），預期乙組在運動時血液氧濃度的<span class='keyword'>下降幅度比甲組更大</span>，證實其氣體交換<span class='keyword'>效率較低</span>（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 20,
+        "title": "實戰演練 #20-生態學：氮循環中的非生物因子",
+        "scenario": "農夫在兩個相鄰且原本土壤成分相同的農田中種植同一種農作物。農田 X 排水良好，土壤疏鬆；農田 Y 則因為地勢低窪而長期嚴重積水。<br><br>兩個月後，農田 Y 的農作物生長嚴重受阻，葉片變黃（缺氮徵狀）；而農田 X 的農作物則生長茂盛。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據上述的結果，提出一個合理的假說以解釋農田 Y 土壤缺氮的原因。（1 分）",
+                "hint": "【原因】：長期積水的土壤在氣體成分上與正常土壤有何不同？<br>【機制】：這會促進哪一種參與氮循環的細菌活躍起來？牠們將甚麼物質轉化成了甚麼？<br>【結果】：這如何導致土壤中可供植物吸收的氮源減少？",
+                "answer": "長期積水導致土壤<span class='keyword'>缺乏氧氣</span>，營造了<span class='keyword'>缺氧環境</span>，促進了<span class='keyword'>反硝化細菌</span>（脫氮細菌）的活動（機制），將土壤中的<span class='keyword'>硝酸鹽</span>大量轉化為<span class='keyword'>氮氣</span>流失至空氣中，減少了植物<span class='keyword'>可吸收的氮源</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "抽取兩塊農田的土壤樣本，測量並比較其<span class='keyword'>硝酸鹽濃度</span>及<span class='keyword'>反硝化細菌的數量</span>（1 分），預期農田 Y 的硝酸鹽濃度<span class='keyword'>顯著較低</span>，而反硝化細菌的數量<span class='keyword'>顯著較多</span>（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 21,
+        "title": "實戰演練 #21-植物生理：韌皮部的易位作用",
+        "scenario": "科學家向植物的其中一片成熟葉片提供含有放射性碳-14 的二氧化碳，讓其進行光合作用。隨後，科學家將植物主莖分為上下兩段進行溫度控制：上半段莖維持在 25°C，下半段莖被冷卻至 2°C。<br><br>干擾數據： 儀器監測證實，木質部的水分向上運輸在 2°C 下依然完全正常，沒有結冰。然而，追蹤放射性蔗糖的移動路徑時發現，蔗糖從葉片向下運輸，但到達 2°C 的莖段時便完全停止。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "排除水分運輸的影響，提出一個合理的假說以解釋低溫阻礙蔗糖向下運輸的原因。（1 分）",
+                "hint": "【原因】：低溫對伴細胞內負責呼吸作用的酶產生了甚麼影響？<br>【機制】：韌皮部的易位作用本質上是一個需要消耗甚麼的過程？<br>【結果】：這如何導致蔗糖在到達冷卻莖段時停止了運輸？",
+                "answer": "韌皮部的<span class='keyword'>易位作用</span>是一個需要消耗 ATP 的<span class='keyword'>主動過程</span>（機制），2°C 的低溫大幅<span class='keyword'>降低了伴細胞內呼吸酶的活性</span>，導致<span class='keyword'>缺乏 ATP 提供能量</span>，從而<span class='keyword'>停止</span>了蔗糖的運輸（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "將下半段莖的溫度<span class='keyword'>恢復至 25°C</span>，並在其韌皮部注入<span class='keyword'>呼吸作用抑制劑</span>（如氰化物）（1 分），預期蔗糖的向下運輸<span class='keyword'>依然會被阻斷</span>，證明該過程依賴<span class='keyword'>呼吸作用釋放能量</span>而非單純的溫度物理影響（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 22,
+        "title": "實戰演練 #22-生態學：極端環境中的群落演替",
+        "scenario": "一座火山爆發後形成了一個只有堅硬裸岩（Bare rock）的全新島嶼。幾年後，隨風飄來的植物甲孢子和地衣乙孢子同時降落在岩石上。<br><br>干擾數據： 兩者對陽光和溫度的需求完全相同，且島上目前沒有任何草食性動物。觀察發現，植物甲發芽後幾天內便枯萎死亡，而地衣乙卻成功附著在裸岩上並開始大面積繁殖。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "提出一個合理的假說以解釋為何只有地衣乙能在沒有土壤的裸岩上生存。（1 分）",
+                "hint": "【原因】：地衣具有分泌甚麼特定化學物質的獨特能力？<br>【機制】：這物質對堅硬的裸岩產生了甚麼物理/化學作用？<br>【結果】：這如何幫助地衣在缺乏土壤的環境中獲取維持生命的必需品？",
+                "answer": "地衣乙具有<span class='keyword'>分泌酸性物質</span>的能力（機制），能溶解堅硬的裸岩並從中釋放/提取維持生命所需的<span class='keyword'>無機礦物質</span>（結果），而植物甲缺乏此能力，因此無法在無土壤的環境中獲取養分而死亡。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "在實驗室中將地衣乙放置在含有<span class='keyword'>酸鹼指示劑</span>的無營養洋菜膠（Agar）或特製岩石表面上培養（1 分），預期會觀察到地衣周圍的指示劑<span class='keyword'>顏色發生變化</span>，證明其有<span class='keyword'>酸性物質分泌</span>以改變微環境（1 分）。"
+            }
+        ]
+    },
+    {
+        "id": 23,
+        "title": "實戰演練 #23-遺傳與進化：極端黑暗環境的自然選擇",
+        "scenario": "在一個與世隔絕、絕對無光的深海地下洞穴中，棲息著一種名為「盲魚」的特有物種。化石證據顯示，牠們的祖先是擁有正常發達眼睛的表層魚類。<br><br>干擾數據： 該地下洞穴水質純淨，沒有任何會破壞眼睛的化學物質；同時洞穴內也沒有會特意攻擊魚類眼睛的捕食者。 目前該種盲魚的眼球結構已完全退化消失（只剩皮膚覆蓋）。",
+        "parts": [
+            {
+                "label": "(a)",
+                "question": "根據自然選擇學說，提出一個合理的假說以解釋在絕對黑暗環境中，眼睛退化反而成為一種生存優勢的原因。（1 分）",
+                "hint": "【原因】：在絕對無光的環境中，發育和維持無用的眼睛會造成甚麼資源浪費？<br>【機制】：發生突變而不長眼睛的個體，能將節省下來的資源用於何處？<br>【結果】：這如何讓牠們在種群中獲得更大的生存與繁殖優勢？",
+                "answer": "在絕對無光環境下，眼睛是毫無作用的構造。發生基因突變而不發育眼睛的個體，能<span class='keyword'>節省</span>發育和維持視覺神經系統所需的<span class='keyword'>大量能量</span>（機制），將這些能量轉移用於生長、<span class='keyword'>繁殖</span>或強化其他感官（如側線），從而在競爭中獲得<span class='keyword'>生存優勢</span>並將<span class='keyword'>突變基因遺傳</span>（結果）。（1 分）"
+            },
+            {
+                "label": "(b)",
+                "question": "簡述一個可以驗證上述假說的進一步探究方法或觀察。（2 分）",
+                "hint": "",
+                "answer": "在實驗室的黑暗環境中，同時飼養一組具有正常眼睛的近親表層魚類和一組盲魚，並提供<span class='keyword'>相同且有限的食物</span>（1 分），預期盲魚的<span class='keyword'>生長速率</span>及<span class='keyword'>繁殖數量</span>會<span class='keyword'>顯著高於</span>有眼魚類，證明其<span class='keyword'>能量運用效率更高</span>（1 分）。"
+            }
+        ]
+    }
+    ];
+
+    let currentQuestionIndex = 0;
+
+    // 保留你聰明的 renderQuestion 函數 (隱藏空貼士)，並加入清空 AI 對話框的功能
+    function renderQuestion() {
+        const q = questionsDatabase[currentQuestionIndex];
+        let htmlContent = `
+            <div class="scenario-box">
+                <h3 style="margin-top:0; color: #334155;">${q.title}</h3>
+                <p><strong>情境：</strong> ${q.scenario}</p>
+            </div>
+        `;
+
+        q.parts.forEach(part => {
+            // 你的完美邏輯：如果這個 part 的 hint 不是空的，才生成貼士按鈕
+            let hintHTML = ""; 
+            if (part.hint && part.hint.trim() !== "") {
+                const formattedHint = part.hint.replace(/\n/g, '<br>');
+                hintHTML = `
+                    <details>
+                        <summary>💡 俾個貼士我 <span>▼</span></summary>
+                        <div class="content">${formattedHint}</div>
+                    </details>
+                `;
+            }
+            
+            htmlContent += `
+                <div class="question-part">
+                    <div class="question-text">${part.label} ${part.question}</div>
+                    ${hintHTML}
+                    <details>
+                        <summary>👀 睇參考答案 <span>▼</span></summary>
+                        <div class="content">${part.answer}</div>
+                    </details>
+                </div>
+            `;
+        });
+
+        document.getElementById('quiz-container').innerHTML = htmlContent;
+        document.getElementById('question-counter').innerText = `${currentQuestionIndex + 1} / ${questionsDatabase.length}`;
+        
+        document.getElementById('prev-btn').disabled = currentQuestionIndex === 0;
+        document.getElementById('next-btn').disabled = currentQuestionIndex === questionsDatabase.length - 1;
+
+        // 【新增】：切換題目時，自動清空舊的 AI 對話紀錄
+        document.getElementById('student-input').value = "";
+        document.getElementById('ai-response-box').style.display = "none";
+    }
+
+    function changeQuestion(step) {
+        currentQuestionIndex += step;
+        renderQuestion();
+    }
+
+    // 【新增】：將資料打包並送給 AI 伺服器的非同步函數
+    async function submitToAI() {
+        const studentInput = document.getElementById('student-input').value;
+        if (!studentInput.trim()) {
+            alert("同學，請先輸入你的答案或者問題！");
+            return;
+        }
+
+        const btn = document.getElementById('submit-btn');
+        const responseBox = document.getElementById('ai-response-box');
+        const responseText = document.getElementById('ai-response-text');
+
+        // 改變按鈕狀態，顯示正在思考
+        btn.disabled = true;
+        btn.innerText = "⏳ AI 正在批改中，請稍候...";
+        responseBox.style.display = "block";
+        responseText.innerHTML = "<span style='color:#64748b;'><em>思考中... (通常需要 3-5 秒)</em></span>";
+
+        // 自動打包目前的題目情境與標準答案給 AI
+        const q = questionsDatabase[currentQuestionIndex];
+        let contextData = "【情境】：\n" + q.scenario.replace(/<br>/g, "\n") + "\n\n";
+        let answerData = "";
+        q.parts.forEach(p => {
+            contextData += p.label + " " + p.question + "\n";
+            answerData += p.label + " " + p.answer.replace(/<[^>]*>?/gm, '') + "\n"; // 移除 HTML 標籤
+        });
+
+        try {
+            // 呼叫你的 Google Apps Script
+            const response = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    studentAnswer: studentInput,
+                    questionContext: contextData,
+                    standardAnswer: answerData
+                })
+            });
+
+            const data = await response.json();
+            
+            // 顯示 AI 的回覆（將 \n 換成 <br> 以利排版）
+            responseText.innerHTML = data.reply.replace(/\n/g, '<br>');
+
+        } catch (error) {
+            responseText.innerHTML = "<span style='color:red;'>❌ 連線失敗。請檢查你的網絡，或確保 GAS 網址已正確貼上。</span>";
+            console.error(error);
+        } finally {
+            // 恢復按鈕
+            btn.disabled = false;
+            btn.innerText = "📤 再次送出 / 追問";
+        }
+    }
+
+    window.onload = renderQuestion;
+</script>
+
+</body>
+</html>
