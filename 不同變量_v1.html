@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>不同變量</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; font-size: 1.5em; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .scenario-box { background-color: #f8fafc; padding: 15px; border-left: 5px solid #64748b; margin-bottom: 20px; font-size: 0.95em; }
+        .question-part { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
+        .question-text { font-weight: bold; color: #1e40af; margin-bottom: 10px; }
+        
+        details { margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+        summary { background-color: #f1f5f9; padding: 12px 15px; font-weight: bold; cursor: pointer; list-style: none; display: flex; justify-content: space-between; font-size: 0.9em; }
+        summary::-webkit-details-marker { display: none; }
+        details[open] summary { background-color: #e2e8f0; border-bottom: 1px solid #cbd5e1; }
+        .content { padding: 15px; background-color: #fff; font-size: 0.95em; }
+        .keyword { color: #d97706; font-weight: bold; }
+        
+        /* 導航按鈕區域 */
+        .navigation { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 15px; }
+        .nav-btn { background-color: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .nav-btn:hover { background-color: #475569; }
+        .nav-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+        
+        /* AI 對話框區域 (新增) */
+        .ai-container { margin-top: 30px; padding: 25px 20px; border-radius: 12px; background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%); border: 1px solid #c7d2fe; }
+        .ai-title { color: #4338ca; font-size: 1.2em; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
+        textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #a5b4fc; border-radius: 8px; font-size: 1em; font-family: inherit; box-sizing: border-box; resize: vertical; margin-bottom: 10px; }
+        textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .submit-btn { background-color: #4f46e5; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background 0.3s; }
+        .submit-btn:hover { background-color: #4338ca; }
+        .submit-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        
+        /* AI 回覆顯示區 (新增) */
+        #ai-response-box { margin-top: 15px; padding: 15px; background-color: white; border-radius: 8px; border-left: 4px solid #8b5cf6; display: none; font-size: 0.95em; line-height: 1.5; color: #334155;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+<a href="index.html#scientificMenu" class="back-btn">← 返回目錄</a>
+    <h1>🧬 DSE 生物：不同變量特訓</h1>
+    
+    <div id="quiz-container"></div>
+
+    <div class="navigation">
+        <button id="prev-btn" class="nav-btn" onclick="changeQuestion(-1)" disabled>⬅️ 上一題</button>
+        <span id="question-counter" style="line-height: 40px; font-weight: bold; color: #64748b;"></span>
+        <button id="next-btn" class="nav-btn" onclick="changeQuestion(1)">下一題 ➡️</button>
+    </div>
+
+    <div class="ai-container">
+        <div class="ai-title">🤖 AI 星級改卷員</div>
+        <p style="font-size: 0.9em; color: #475569; margin-top: 0;">覺得自己嘅答案都啱？打出嚟等 AI 幫你批改！<br>(你可以指明答緊 a 還是 b，或者就咁問 Concept)</p>
+        
+        <textarea id="student-input" placeholder="例如：因為尿素進入後，所以細胞漲大..."></textarea>
+        <button id="submit-btn" class="submit-btn" onclick="submitToAI()">📤 送出答案</button>
+        
+        <div id="ai-response-box">
+            <strong>🤖 AI 導師：</strong>
+            <div id="ai-response-text" style="margin-top: 8px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 🔗 請在這裡貼上你剛才拿到的 Google Apps Script 網址！
+    // ==========================================
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHgAw0JSs_vr9PqrvkGZnNNUieLERFwDExthnUSDw8KeKq15c6xfz_C5WPu8JzfWluMA/exec";
+
+    // 保留你完整無缺的 23 題題庫
+const questionsDatabase = [
+    {
+        title: "【第 1 題】",
+        scenario: "一名學生設計了一個探究實驗，以比較不同 pH 值對唾液澱粉酶活性的影響。他準備了五支試管，每支試管分別加入 5 mL 濃度為 1% 的澱粉溶液，以及 2 mL 不同 pH 值（pH 3, 5, 7, 9, 11）的緩衝溶液。隨後，他在每支試管中加入 1 mL 相同濃度的唾液澱粉酶溶液。每隔 30 秒，他從各試管中取出一滴混合物，並與碘液混合，直至混合物不再呈現藍黑色，並記錄所需的時間。<br><br><b>【探究目的 / 假說】</b>：找出唾液澱粉酶發揮最高活性的最適 pH 值。",
+        parts: [
+            {
+                label: "(a)",
+                question: "寫出這項實驗的自變量和因變量。（2分）",
+                answer: "自變量：緩衝溶液的<span class='keyword'>pH 值</span> (1)<br>因變量：<span class='keyword'>酶活性</span>，量度方法為測量澱粉完全被分解（或碘液不再呈藍黑色）所需的<span class='keyword'>時間</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究中必須控制的兩個變量。（2分）",
+                answer: "下列任何兩項：<br>澱粉溶液的<span class='keyword'>體積 / 濃度</span> (1)<br>唾液澱粉酶溶液的<span class='keyword'>體積 / 濃度</span> (1)<br>實驗進行時的<span class='keyword'>溫度</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 2 題】",
+        scenario: "為了研究光強度對光合作用的影響，學生將一段水蘊草（水生植物）放入盛有 0.1% 碳酸氫鈉溶液的沸水管中。沸水管放置在一個盛滿清水的燒杯中。學生使用一盞 100 W 的燈泡作為唯一光源，並將燈泡放置在距離沸水管 10 cm、20 cm、30 cm 及 40 cm 的位置。在每個距離下，學生記錄水蘊草在 5 分鐘內釋出的氣泡數目。<br><br><b>【探究目的 / 假說】</b>：探究光強度如何影響水生植物的光合作用速率。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出實驗的自變量？（1分）",
+                answer: "自變量：<span class='keyword'>光強度</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋為甚麼需要將盛有水蘊草的沸水管放置在盛滿清水的燒杯中（即水浴裝置）。這個裝置控制了甚麼變量？（2分）",
+                answer: "盛滿清水的燒杯能<span class='keyword'>吸收燈泡發出的熱能</span> (1)<br>控制了實驗裝置內的<span class='keyword'>溫度</span>（避免溫度改變影響光合作用速率）(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 3 題】",
+        scenario: "研究人員發現某種本地植物的提取物可能具有抗菌特性。為了驗證此假說，他們準備了塗有大腸桿菌的瓊脂培養碟。他們將三個大小相同的無菌濾紙圓片分別進行以下處理：<br>圓片 A：浸入 100% 植物提取物<br>圓片 B：浸入標準抗生素溶液（盤尼西林）<br>圓片 C：浸入無菌蒸餾水<br>將三個圓片放在同一培養碟上，並在 37°C 下培養 24 小時。之後，量度並記錄每個圓片周圍「抑制區域」（透明圈）的直徑。<br><br><b>【探究目的 / 假說】</b>：比較該植物提取物與標準抗生素對抑制大腸桿菌生長的效用。",
+        parts: [
+            {
+                label: "(a)",
+                question: "寫出這項探究的因變量和因變量量度方法。（1分）",
+                answer: "因變量為抗生素的<span class='keyword'>抑制能力</span>，量度方法為抑制區域（透明圈）的<span class='keyword'>直徑 / 面積</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "指出並解釋圓片 C 的功能和目的。（2分）",
+                answer: "證明大腸桿菌生長受到抑制（或抑制區域的形成）(1)<br>僅僅是由於<span class='keyword'>植物提取物 / 抗生素</span>所引起，而非由於濾紙圓片或水分所引起 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 4 題】",
+        scenario: "為探究鳥類是否偏好啄食特定顏色的果實以協助散播種子，生態學家在一個有大量本地鳥類的樹林中進行野外實驗。他們製作了相同的麵團漿果模型。其中一半模型被塗成鮮紅色，另一半被塗成暗綠色。這兩組模型被隨機且均勻地懸掛在樹林中不同樹木的樹枝上。三天後，生態學家收回所有模型，並計算每種顏色模型上留下的鳥類啄痕數量。<br><br><b>【探究目的 / 假說】</b>：驗證鳥類是否更容易被紅色的果實（視覺刺激）吸引而進行採食。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的自變量。（1分）",
+                answer: "果實模型的外觀 / <span class='keyword'>顏色</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究中的兩個控制變量。（2分）",
+                answer: "下列任何兩項：<br>果實模型的<span class='keyword'>大小 / 體積</span> (1)<br>果實模型的<span class='keyword'>形狀</span> (1)<br>果實模型的<span class='keyword'>氣味</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 5 題】",
+        scenario: "農業研究員希望探究根瘤菌（一種固氮細菌）對大豆植株生長的影響。他們將 50 粒品種相同、質量相若的大豆種子分為兩組。<br>實驗組：種子表面塗有活的根瘤菌培養液，種植於經過高溫滅菌且缺乏氮肥的土壤中。<br>對照組：需要由學生推斷設定。<br>所有植株在溫室中相同的光照強度、溫度和澆水量下生長 8 星期。最後，研究員將植株連根拔起，洗淨烘乾後量度其平均乾質量。<br><br><b>【探究目的 / 假說】</b>：測定根瘤菌的共生固氮作用能否增加大豆植株的生物量（乾質量）。",
+        parts: [
+            {
+                label: "(a)",
+                question: "試描述對照組應採用的具體處理方法，以確保實驗的有效性。（2分）",
+                answer: "將種子塗上經煮沸 / <span class='keyword'>殺死的根瘤菌培養液</span>（或塗上等量無菌水）(1)<br>種植於相同的<span class='keyword'>高溫滅菌且缺乏氮肥</span>的土壤中 (1)"
+            },
+            {
+                label: "(b)",
+                question: "為甚麼研究員選擇量度「乾質量」而非「鮮質量」作為生長指標？（1分）",
+                answer: "水分含量會隨環境條件（如蒸騰作用速率）而波動，<span class='keyword'>乾質量</span>能更準確反映植物實際累積的有機物 / 生物量 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 6 題】",
+        scenario: "科學家利用呼吸計裝置探究土壤中微生物的呼吸作用。裝置包含兩個密閉的錐形瓶（X 和 Y），兩者均透過玻璃管連接至盛有紅色墨水的 U 型毛細管。<br>錐形瓶 X：裝有 50 g 從野外新鮮採集的土壤。<br>錐形瓶 Y：裝有 50 g 經過高溫滅菌（121°C 處理 20 分鐘）的同源土壤。<br>兩個錐形瓶內均懸掛了一個盛有氫氧化鉀（KOH）溶液的小管。實驗裝置放置在恆溫箱中 2 小時，觀察並記錄 U 型毛細管內紅色墨水滴的移動方向及距離。<br><br><b>【探究目的 / 假說】</b>：證明土壤耗氧現象是由於土壤內活的微生物進行有氧呼吸所致。",
+        parts: [
+            {
+                label: "(a)",
+                question: "在實驗開始前，為甚麼必須確保整個裝置密不透氣？（1分）",
+                answer: "避免外界<span class='keyword'>氣壓變化或氣體泄漏</span>影響毛細管內液面的移動 (1)"
+            },
+            {
+                label: "(b)",
+                question: "根據實驗裝置的設計，指出受物理條件限制而受控的兩個變量。（2分）",
+                answer: "下列任何兩項：<br>封閉空間內的<span class='keyword'>空氣體積</span> / 錐形瓶的容量 (1)<br>氫氧化鉀（KOH）溶液的<span class='keyword'>體積 / 濃度</span> (1)<br>土壤的<span class='keyword'>質量</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 7 題】",
+        scenario: "為研究甲狀腺素對兩棲類變態發育的影響，研究員將 60 隻處於相同發育階段、體型相若的蝌蚪平均分為兩組，分別放入水箱 P 和水箱 Q 中。<br>水箱 P：注入 10 L 含有低濃度甲狀腺素的池水。<br>水箱 Q：注入 10 L 正常的池水（無添加激素）。<br>研究員每天餵飼等量的藻類，並將兩個水箱置於同一室溫環境下。他們每天觀察蝌蚪的發育情況，並記錄每組蝌蚪完全發育成幼蛙所需的平均日數。<br><br><b>【探究目的 / 假說】</b>：驗證甲狀腺素能加速蝌蚪的變態發育過程。",
+        parts: [
+            {
+                label: "(a)",
+                question: "寫出這項探究的自變量。（1分）",
+                answer: "甲狀腺素的<span class='keyword'>有無 / 濃度</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "如果水箱 P 中的甲狀腺素是溶解在 1 mL 的酒精中再加入水裡，水箱 Q（對照裝置）的池水中必須加入甚麼以作公平測試？（1分）",
+                answer: "1 mL 的<span class='keyword'>酒精</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明使用 30 隻蝌蚪（而非 1 隻）進行每組測試的科學原因。（1分）",
+                answer: "減少個體遺傳差異 / <span class='keyword'>隨機變異</span>對實驗結果的影響，增加實驗結果的可靠性（信度）(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 8 題】",
+        scenario: "一名學生利用過氧化氫酶（存在於新鮮豬肝臟中）來探究受質濃度對酶活性的影響。他準備了五支大試管，分別加入 10 mL 濃度為 0.5%、1.0%、1.5%、2.0% 及 2.5% 的過氧化氫溶液。在每支試管中，他加入一塊質量精確為 2.0 g 的新鮮豬肝臟碎塊，並立即塞上連接氣筒的橡膠塞。實驗在 25°C 的室溫下進行。他記錄了每支試管在首 3 分鐘內收集到的氣體體積。<br><br><b>【探究目的】</b>：探究不同受質濃度對過氧化氫酶活性的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：過氧化氫溶液的<span class='keyword'>濃度</span> (1)<br>因變量：過氧化氫酶的活性 / 過氧化氫的分解速率 (1)<br>因變量的量度方法：首 3 分鐘內收集到的<span class='keyword'>氧氣（或氣體）體積</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究中必須保持不變的兩個控制變量。（2分）",
+                answer: "下列任何兩項：<br>豬肝臟碎塊的<span class='keyword'>質量 / 表面積</span> (1)<br>過氧化氫溶液的<span class='keyword'>體積</span> (1)<br>實驗進行時的<span class='keyword'>溫度</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明應如何為這項實驗設置一個適當的對照裝置。（2分）",
+                answer: "將相同體積及指定濃度的過氧化氫溶液，與一塊質量為 2.0 g 且經<span class='keyword'>高溫煮沸並冷卻</span>的豬肝臟（或等質量的玻璃珠）混合 (1)<br>在相同的室溫及時間限制下進行氣體收集與量度 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 9 題】",
+        scenario: "學生將一段水蘊草（水生植物）放入盛滿 1% 碳酸氫鈉溶液的沸水管中。沸水管放置在一個盛滿清水的燒杯內。學生使用一盞 100 W 的燈泡作為唯一光源，並將燈泡放置在距離沸水管 10 cm、20 cm、30 cm、40 cm 及 50 cm 的位置。在每一個距離設定下，學生先讓植物適應 5 分鐘，然後記錄水蘊草在隨後 5 分鐘內釋出的氣泡數目。<br><br><b>【假說】</b>：光強度越高，水生植物的光合作用速率越高。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：<span class='keyword'>光強度</span> （控制方法為燈泡與沸水管的距離） (1)<br>因變量：植物的<span class='keyword'>光合作用速率</span> (1)<br>因變量的量度方法：5 分鐘內水蘊草釋出的<span class='keyword'>氣泡數目</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋為甚麼需要將盛有水蘊草的沸水管放置在「盛滿清水的燒杯」中。這安排控制了甚麼變量？（2分）",
+                answer: "盛滿清水的燒杯（水浴）能<span class='keyword'>吸收燈泡發出的熱能</span> (1)<br>控制了實驗裝置內的<span class='keyword'>溫度</span>，確保光合作用速率的改變不由溫度變化引起 (1)"
+            },
+            {
+                label: "(c)",
+                question: "試指出使用 1% 碳酸氫鈉溶液（而非純水）作為培養液的原因，並說明它作為控制變量的意義。（2分）",
+                answer: "碳酸氫鈉溶液能為水蘊草的光合作用提供充足的<span class='keyword'>二氧化碳</span> (1)<br>這控制了二氧化碳濃度維持在穩定及充足的水平，使其<span class='keyword'>不會成為限制因素</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 10 題】",
+        scenario: "生態學家為了研究某種雙子葉植物葉片的氣孔分佈特徵，從同一植株剪下四片大小、形狀和發育階段相若的葉片（A、B、C 及 D）。他在葉片的切口處塗上凡士林以密封切口，並對葉片表面進行以下處理：<br>葉片 A：在整個上表皮塗上凡士林<br>葉片 B：在整個下表皮塗上凡士林<br>葉片 C：在上下表皮均塗上凡士林<br>葉片 D：上下表皮均不塗凡士林<br>隨後，他利用精確的電子天平量度每片葉片的初始質量，並將它們用細線懸掛在同一個通風良好、恆溫且有光照的溫室內。24 小時後，他再次量度每片葉片的最終質量，並計算其質量的下降百分比。<br><br><b>【探究目的】</b>：比較該雙子葉植物葉片上表皮與下表皮的氣孔密度。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：凡士林塗抹的位置 / <span class='keyword'>氣孔被堵塞的表皮位置</span> (1)<br>因變量：上表皮與下表皮的<span class='keyword'>氣孔密度</span> (1)<br>因變量的量度方法：葉片在 24 小時後質量的<span class='keyword'>下降百分比</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "葉片 C 和葉片 D 均屬於對照裝置。試解釋設置「葉片 C」的具體目的。（2分）",
+                answer: "葉片 C（上下表皮均塗凡士林）作為對照，證明葉片內的水分主要（或只能）透過<span class='keyword'>無凡士林覆蓋的表皮（氣孔）</span>散失 (1)<br>而非透過表皮以外的其他途徑（如角質層或被密封的切口）散失 (1)"
+            },
+            {
+                label: "(c)",
+                question: "若要確保實驗結果具較高的可靠性（信度），實驗設計上應作甚麼改善？（1分）",
+                answer: "<span class='keyword'>重複實驗</span>多次（例如每種處理使用 10 片葉片），並計算<span class='keyword'>平均值</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 11 題】",
+        scenario: "醫學實驗室人員發現一種能對抗枯草桿菌的新型抗生素 X。為測試其效能，他們準備了五個均勻塗布枯草桿菌的無菌瓊脂培養碟。他們將抗生素 X 稀釋成四種不同濃度（2 μg/mL、4 μg/mL、8 μg/mL 及 16 μg/mL）。在每個培養碟的中央，放置一塊直徑為 5 mm、浸透了特定濃度抗生素 X 溶液的無菌濾紙圓片；第五個培養碟則放置浸透了無菌蒸餾水的濾紙圓片。所有培養碟倒置放入 37°C 培養箱中 48 小時。最後，量度每個濾紙圓片周圍透明圈（抑制區域）的直徑。<br><br><b>【結果】</b>：抗生素 X 的濃度越高，對枯草桿菌生長的抑制效能越強。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：抗生素 X 溶液的<span class='keyword'>濃度</span> (1)<br>因變量：抗生素對枯草桿菌生長的<span class='keyword'>抑制效能</span> (1)<br>因變量的量度方法：濾紙圓片周圍透明圈（抑制區域）的<span class='keyword'>直徑</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "指出放置「浸透無菌蒸餾水濾紙圓片」的對照裝置目的。（2分）",
+                answer: "作為陰性對照，證明細菌生長受到抑制（透明圈的出現）(1)<br>完全是由於<span class='keyword'>抗生素 X 引起</span>，而非由濾紙圓片或水分本身引起 (1)"
+            },
+            {
+                label: "(c)",
+                question: "寫出一個與細菌培養過程相關，且必須嚴格受控的控制變量（不包括溫度及時間）。（1分）",
+                answer: "塗布在瓊脂培養碟上的枯草桿菌的<span class='keyword'>初始數量 / 濃度</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 12 題】",
+        scenario: "農業研究員希望找出最適合釀酒酵母進行發酵的糖類。他們準備了四個裝有單向排氣閥的發酵瓶。在每個發酵瓶中加入 50 mL 活酵母菌懸浮液，並分別加入 50 mL、濃度均為 10% 的四種不同糖溶液：葡萄糖（單糖）、果糖（單糖）、蔗糖（雙糖）及澱粉（多糖）。為確保發酵在無氧狀態下進行，液面覆蓋了一層液體石蠟油。所有發酵瓶置於 35°C 的恆溫水浴箱中。研究員利用數據收集器連接氣壓感應器，連續 2 小時記錄發酵瓶內氣壓的變化。<br><br><b>【探究目的】</b>：比較釀酒酵母利用不同種類的碳水化合物進行缺氧呼吸的速率。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：糖溶液（碳水化合物/受質）的<span class='keyword'>種類</span> (1)<br>因變量：酵母菌的缺氧呼吸速率 / <span class='keyword'>發酵速率</span> (1)<br>因變量的量度方法：發酵瓶內 2 小時內氣壓的<span class='keyword'>增加量 / 速率</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "實驗裝置中，液體石蠟油的作用是控制哪一個變量？解釋其重要性。（2分）",
+                answer: "控制裝置內的<span class='keyword'>氧氣供應</span>（阻隔空氣中的氧氣溶入混合物中） (1)<br>確保酵母菌只能進行無氧呼吸（發酵），防止其進行有氧呼吸而影響結果 (1)"
+            },
+            {
+                label: "(c)",
+                question: "為什麼研究員必須確保所有糖溶液的濃度（10%）和體積（50 mL）相同？（1分）",
+                answer: "受質（糖）的濃度和總量是另一個能影響反應速率的變量，保持不變以確保反應速率的差異<span class='keyword'>僅由糖的種類引起</span>（公平測試） (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 13 題】",
+        scenario: "為優化溫室農作物的產量，農業學家進行了一項複合實驗，同時探究兩種環境因素對生菜生長的影響。實驗使用了 9 個獨立受控的溫室。<br>學家設定了三個二氧化碳濃度水平：正常（0.04%）、中等增強（0.10%）及高度增強（0.20%）。同時，設定了三個光強度水平：低（200 單位）、中（500 單位）及高（800 單位）。學家將這兩組條件交叉配對（即 3 × 3 = 9 組設定），並在每個溫室中種植 50 株發育階段相同的生菜幼苗。<br>實驗進行了四周，期間所有溫室的溫度均維持在 25°C，並提供等量及相同成分的營養液。四周後，學家將所有生菜連根拔起，完全烘乾後量度其平均質量。<br><br><b>【探究目的】</b>：探究光強度與二氧化碳濃度兩者的相互作用對生長速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "實驗有多少個自變量？指出這項探究的自變量、一個因變量，以及該因變量的量度方法。（4分）",
+                answer: "自變量一：<span class='keyword'>光強度</span> (1)<br>自變量二：<span class='keyword'>二氧化碳濃度</span> (1)<br>因變量：生菜的<span class='keyword'>生長速率</span> (1)<br>因變量的量度方法：四周後生菜植株的<span class='keyword'>平均乾質量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "指出這項探究中，受實驗設計嚴格控制的兩個環境變量（不包括溫室大小）。（2分）",
+                answer: "下列任何兩項：<br>溫室內的<span class='keyword'>氣溫</span> (1)<br>溫室內營養液的<span class='keyword'>成分 / 體積</span> (1)<br>每天<span class='keyword'>光照的時間</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "為什麼學家選擇量度生菜的「乾質量」作為生長指標，而不直接量度收割時的「鮮質量」？（1分）",
+                answer: "鮮質量包含的水分含量會隨環境條件（如收割前的蒸騰速率）而產生巨大波動，而乾質量排除了水分變化的誤差，能更準確地反映植物實際累積的<span class='keyword'>有機物 / 生物量</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 14 題】",
+        scenario: "醫院感染控制小組測試一種新型表面消毒劑對抗抗藥性金黃葡萄球菌（MRSA）的效能。他們製備了含有相同數量 MRSA 的液體培養物。<br>小組準備了三組試管，分別加入濃度為 1%、5% 及 10% 的新型消毒劑。加入消毒劑後，小組分別在接觸時間為 5 分鐘、15 分鐘及 30 分鐘時，從各試管中抽取 1 mL 樣本。抽取出的樣本立即加入中和劑（以停止消毒劑的作用），然後均勻塗布在瓊脂培養碟上，放置於 37°C 培養 24 小時。最後，小組點算每個培養碟上存活的 MRSA 細菌群落數量。<br><br><b>【假說】</b>：增加消毒劑的濃度及延長消毒劑與細菌的接觸時間，能提高對抗藥性金黃葡萄球菌的殺菌效能。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究有多少個自變量？列出當中的自變量、因變量，以及該因變量的量度方法。（4分）",
+                answer: "自變量一：消毒劑的<span class='keyword'>濃度</span> (1)<br>自變量二：消毒劑與細菌的<span class='keyword'>接觸時間</span> (1)<br>因變量：消毒劑對 MRSA 的<span class='keyword'>殺菌效能</span> (1)<br>因變量的量度方法：培養 24 小時後瓊脂培養碟上存活的<span class='keyword'> MRSA 群落數量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "為了證明細菌數量的減少是由新型消毒劑引起，而非由於自然死亡或實驗操作，請描述應如何設置一個對照裝置，並指明何時抽取樣本。（2分）",
+                answer: "準備一組含有相同數量 MRSA 的液體培養物，但加入等體積的<span class='keyword'>無菌蒸餾水</span>以代替消毒劑 (1)<br>同樣在 5 分鐘、15 分鐘及 30 分鐘（或與實驗組相同的接觸時間）抽取樣本並進行培養點算 (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明實驗中加入「中和劑」以停止消毒劑作用，對於準確控制哪一個自變量至關重要？（1分）",
+                answer: "中和劑能精確控制<span class='keyword'>「接觸時間」</span>這個自變量 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 15 題】",
+        scenario: "一名學生利用新鮮馬鈴薯（含有過氧化氫酶）來探究溫度對酶活性的影響。 他準備了五個分別設定為 10°C、20°C、30°C、40°C 及 50°C 的恆溫水浴箱。他在五支試管中各加入 5 mL、濃度為 3% 的過氧化氫溶液，並將它們分別放入五個水浴箱中放置 5 分鐘。隨後，他在每支試管中加入一塊直徑為 1 cm、長度為 2 cm 的新鮮馬鈴薯圓柱體，並立即塞上連接針筒的橡膠塞。他記錄了每支試管在首 2 分鐘內收集到的氣體體積。<br><br><b>【探究目的】</b>：探究不同溫度對馬鈴薯過氧化氫酶活性的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：反應混合物（或水浴箱）的<span class='keyword'>溫度</span> (1)<br>因變量：過氧化氫酶的<span class='keyword'>活性</span> (1)<br>因變量的量度方法：在首 2 分鐘內收集到的<span class='keyword'>氧氣（或氣體）體積</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究中必須保持不變的兩個控制變量。（2分）",
+                answer: "下列任何兩項：<br>過氧化氫溶液的<span class='keyword'>體積 / 濃度</span> (1)<br>馬鈴薯圓柱體的<span class='keyword'>表面積 / 體積 / 質量</span> (1)<br>反應進行的<span class='keyword'>時間</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明如何為這項實驗設置一個對照裝置。（2分）",
+                answer: "將相同體積及濃度的過氧化氫溶液與一塊經<span class='keyword'>煮沸後冷卻</span>的馬鈴薯圓柱體混合 (1)<br>在相同的溫度設定（或任一指定的測試溫度）下進行相同的量度程序 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 16 題】",
+        scenario: "研究人員在實驗室測試三種新提取的植物化合物（X、Y、Z）對抗金黃葡萄球菌的效能。他們在均勻塗布了金黃葡萄球菌的瓊脂培養碟上，放置了五個大小相同的無菌濾紙圓片。<br>圓片 1：浸有 10 mg/mL 化合物 X<br>圓片 2：浸有 10 mg/mL 化合物 Y<br>圓片 3：浸有 10 mg/mL 化合物 Z<br>圓片 4：浸有 10 mg/mL 標準盤尼西林溶液（已知有效的抗生素）<br>圓片 5：浸有等量無菌蒸餾水<br>培養碟在 37°C 培養箱中放置 24 小時。最後，研究員量度每個濾紙圓片周圍透明圈的直徑。<br><br><b>【探究目的】</b>：比較化合物 X、Y、Z 對抑制金黃葡萄球菌生長的效能。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：抗菌化合物/物質的<span class='keyword'>種類</span> (1)<br>因變量：對金黃葡萄球菌生長的抑制效能 / <span class='keyword'>抗菌能力</span> (1)<br>因變量的量度方法：濾紙圓片周圍的抑制區域（透明圈）的<span class='keyword'>直徑</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋圓片5的目的。（2分）",
+                answer: "作為對照證明金黃葡萄球菌生長受到抑制（或透明圈的出現）(1)<br>完全是由於<span class='keyword'>抗菌化合物引起</span>，而非由濾紙圓片本身或水分引起 (1)"
+            },
+            {
+                label: "(c)",
+                question: "寫出一個與濾紙圓片相關的控制變量。（1分）",
+                answer: "濾紙圓片的<span class='keyword'>大小 / 厚度 / 吸水量</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 17 題】",
+        scenario: "生態學家利用呼吸計裝置探究土壤中微生物的呼吸作用。 裝置包含兩個密閉的錐形瓶（A 和 B），兩者均透過玻璃管連接至盛有紅色墨水的 U 型毛細管。<br>錐形瓶 A：裝有 50 g 從野外新鮮採集的泥土。<br>錐形瓶 B：裝有 50 g 經過高溫滅菌（121°C 處理 20 分鐘）的同源泥土。<br>兩個錐形瓶內均懸掛了一個盛有氫氧化鉀（KOH）溶液的小管。實驗裝置放置在恆溫箱中，2 小時後觀察並記錄 U 型毛細管內紅色墨水滴移動的距離。<br><br><b>【探究目的】</b>：證明土壤耗氧現象是由於土壤內活的微生物進行需氧呼吸所致。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：泥土中活微生物的有無（或泥土是否經過<span class='keyword'>高溫滅菌</span>） (1)<br>因變量：土壤微生物的<span class='keyword'>需氧呼吸速率</span> (1)<br>因變量的量度方法：2 小時內 U 型毛細管中紅色墨水滴<span class='keyword'>移動的距離</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "根據實驗裝置的設計，指出受物理條件限制而受控的兩個變量。（2分）",
+                answer: "下列任何兩項：<br>封閉空間內的<span class='keyword'>空氣體積</span> / 錐形瓶的容量 (1)<br>氫氧化鉀（KOH）溶液的<span class='keyword'>體積/濃度</span> (1)<br>泥土的<span class='keyword'>質量</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "解釋懸掛氫氧化鉀（KOH）溶液的目的，以及它如何確保量度方法的準確性。（2分）",
+                answer: "吸收微生物呼吸作用釋放出的<span class='keyword'>二氧化碳</span> (1)<br>確保錐形瓶內氣壓的下降完全是由於<span class='keyword'>氧氣被消耗</span>所引起，使墨水滴的移動能準確反映耗氧量 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 18 題】",
+        scenario: "為了研發能減少農作物在乾旱期失水的噴灑劑，農業研究員利用脫落酸（ABA，一種植物激素）進行測試。 他準備了兩組大小、葉片數量及品種完全相同的盆栽植物。<br>實驗組：在植物所有葉片均勻噴灑 20 mL 的 10 ppm ABA 溶液。<br>對照組：在植物所有葉片均勻噴灑 20 mL 的蒸餾水。<br>研究員將兩組植物的泥土表面及花盆用黑色塑膠袋緊緊包裹並密封於莖部。然後，他將兩組盆栽分別放在兩個相同的電子天平上，放置在同一個光線充足、通風良好的溫室中。他連續 6 小時，每小時記錄一次整個裝置的總質量。<br><br><b>【假說】</b>：噴灑脫落酸溶液能促進氣孔關閉，從而降低植物的蒸騰作用速率。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：葉面上脫落酸 (ABA) 溶液的<span class='keyword'>有無</span> (1)<br>因變量：植物的<span class='keyword'>蒸騰作用速率</span> (1)<br>因變量的量度方法：整個實驗裝置總質量在 6 小時內的<span class='keyword'>下降量 / 下降速率</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "說明將泥土表面及花盆用黑色塑膠袋緊緊密封的目的。（2分）",
+                answer: "確保裝置質量的下降完全是因為水分由葉面透過<span class='keyword'>蒸騰作用散失</span> (1)<br>防止泥土表面的水分<span class='keyword'>直接蒸發</span>到空氣中而導致質量減少 (1)"
+            },
+            {
+                label: "(c)",
+                question: "解釋設置對照組（噴灑蒸餾水）的目的。（1分）",
+                answer: "證明蒸騰速率的改變/質量的下降差異僅由<span class='keyword'>脫落酸引起</span>，而不是由噴灑的水分物理覆蓋葉面所引起 (1)"
+            }
+        ]
+    },
+{
+        title: "【第 19 題】",
+        scenario: "學生利用玉米胚芽鞘進行一項關於向性的實驗。他準備了兩組（各 10 株）發育程度相若的玉米胚芽鞘。<br>實驗組：放置在一個以每小時轉動一圈的恆速回轉儀（clinostat）上。<br>對照組：放置在一個靜止不動的平台上。<br>兩組裝置均放置在暗室中，並從正右方給予相同強度的單側光照射。48 小時後，學生量度並記錄每株胚芽鞘頂端向右彎曲的角度。<br><br><b>【探究目的】</b>：探究消除單側光刺激的單一方向性後，對玉米胚芽鞘向光生長的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：單側光刺激<span class='keyword'>是否均勻分佈</span>（或回轉儀是否轉動） (1)<br>因變量：胚芽鞘的<span class='keyword'>向光性反應 / 不對稱生長</span> (1)<br>因變量的量度方法：48 小時後胚芽鞘頂端<span class='keyword'>彎曲的角度</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究中必須保持不變的兩個控制變量。（2分）",
+                answer: "下列任何兩項：<br>單側光的<span class='keyword'>強度 / 波長（顏色）</span> (1)<br>實驗進行時的<span class='keyword'>溫度</span> (1)<br>玉米胚芽鞘的<span class='keyword'>初始長度 / 年齡 / 品種</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明為何每組需要使用 10 株胚芽鞘，而不是只使用 1 株。（1分）",
+                answer: "減少因個別胚芽鞘的<span class='keyword'>遺傳差異 / 健康狀況</span>（隨機變異）對實驗結果造成的影響，增加結果的可靠性 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 20 題】",
+        scenario: "學生設計了一個實驗來模擬人體小腸內的脂質消化。他準備了兩支試管（A 和 B），均加入 5 mL 全脂牛奶、1 mL 碳酸鈉溶液（提供鹼性環境）及 5 滴酚酞指示劑（在鹼性下呈粉紅色，在中性/酸性下呈無色）。<br>試管 A：加入 1 mL 2% 膽鹽溶液。<br>試管 B：加入 1 mL 蒸餾水。<br>隨後，他在兩支試管中同時加入 1 mL 脂肪酶溶液，充分攪拌後放入 37°C 的水浴箱中。他記錄每支試管的混合物由粉紅色完全轉為白色/無色所需的時間。<br><br><b>【假說】</b>：膽鹽能將脂質乳化成小油滴，從而加快脂肪酶消化脂質的速率。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：<span class='keyword'>膽鹽的有無</span> (1)<br>因變量：脂質的<span class='keyword'>消化速率</span> (1)<br>因變量的量度方法：混合物由粉紅色完全轉為無色所需的<span class='keyword'>時間</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "試解釋設置試管 B 的目的。（2分）",
+                answer: "作為<span class='keyword'>對照</span>證明脂質消化速率的增加（或褪色時間的縮短） (1)<br>完全是由於<span class='keyword'>膽鹽的乳化作用</span>引起，而非單純由脂肪酶或加入的水分引起 (1)"
+            },
+            {
+                label: "(c)",
+                question: "碳酸鈉溶液有何重要性？（1分）",
+                answer: "提供並控制一個穩定的<span class='keyword'>鹼性環境</span>，確保脂肪酶在最佳 pH 值下運作，避免因初始 pH 值不同而影響酶的活性 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 21 題】",
+        scenario: "海洋生物學家在深海熱泉發現了一種能高度富集特定重金屬離子（如鋅離子）的特殊細菌。為探究其吸收機制，科學家將該細菌培養在鋅離子濃度極低的溶液中。<br>科學家將細菌平均分為兩組。實驗組加入了一定濃度的「氰化物（Cyanide）」，這是一種能專一性抑制細胞需氧呼吸的化學物質；對照組則加入等體積的生理鹽水。兩組細菌均放置在相同的深海模擬壓力艙及 4°C 環境下。2 小時後，科學家將細菌從溶液中離心分離，並利用光譜儀量度細菌細胞內的鋅離子濃度。<br><br><b>【探究目的】</b>：證明該深海細菌吸收鋅離子的過程依賴於需氧呼吸所提供的能量。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：是否含有<span class='keyword'>需氧呼吸抑制劑</span>（氰化物）(1)<br>因變量：細菌對鋅離子的吸收速率 / <span class='keyword'>主動轉運速率</span> (1)<br>因變量的量度方法：2 小時後細菌細胞內的<span class='keyword'>鋅離子濃度</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究中與「細菌」本身特性相關，且必須受控的兩個控制變量。（2分）",
+                answer: "下列任何兩項：<br>實驗開始時細菌的<span class='keyword'>數量 / 質量 / 濃度</span> (1)<br>細菌的<span class='keyword'>種類 / 菌株</span> (1)<br>細菌的<span class='keyword'>生長階段</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "若實驗結果顯示實驗組的鋅離子吸收量接近零，這如何支持「吸收過程是主動轉運」的結論？（2分）",
+                answer: "氰化物抑制了有氧呼吸，使細胞無法產生 <span class='keyword'>ATP（能量）</span> (1)<br>缺乏能量導致鋅離子吸收停止，證明該吸收過程<span class='keyword'>需要消耗能量</span>，即為主動轉運 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 22 題】",
+        scenario: "為研究極地紫外線對植物抗氧化劑含量的影響，植物學家在溫室中模擬極地環境種植了一批「北極果」。這批果實被分為兩組：一組在發育期間暴露於「高強度紫外線」下，另一組則暴露於「低強度紫外線」下。<br>收成後，學家從兩組果實中分別榨取 50 mL 新鮮果汁。學家準備了多支試管，每支裝有 2.0 mL 標準濃度（1%）的藍色 DCPIP 溶液。學家利用微型滴定管，將高強度紫外線組的果汁逐滴加入 DCPIP 溶液中並輕輕搖晃，直至藍色剛好完全褪去，記錄所需的果汁體積。隨後，對低強度紫外線組的果汁重複相同的滴定步驟。<br><br><b>【假說】</b>：果實發育期間接受的紫外線強度越高，其合成的維生素 C 濃度越高。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：果實發育期間接受的<span class='keyword'>紫外線強度</span> (1)<br>因變量：果實（或果汁）中的<span class='keyword'>維生素 C 濃度</span> / 含量 (1)<br>因變量的量度方法：使 2.0 mL 的 1% DCPIP 溶液完全褪色所需的<span class='keyword'>果汁體積</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "若假說成立，預期哪一組果汁在滴定時所需的體積較少？試解釋原因。（2分）",
+                answer: "<span class='keyword'>高強度紫外線組</span>所需的果汁體積較少 (1)<br>因為該組果汁的維生素 C 濃度較高，只需較少體積便能提供足夠的抗壞血酸來<span class='keyword'>還原（褪色）</span>固定分量的 DCPIP (1)"
+            },
+            {
+                label: "(c)",
+                question: "列出在進行 DCPIP 滴定程序時，受實驗裝置或化學條件限制而必須受控的兩個變量。（2分）",
+                answer: "下列任何兩項：<br>DCPIP 溶液的<span class='keyword'>體積</span> (1)<br>DCPIP 溶液的<span class='keyword'>初始濃度</span> (1)<br>滴定時環境的<span class='keyword'>溫度</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 23 題】",
+        scenario: "生態學家在一個封閉的石灰岩洞穴中發現了一種缺乏視覺器官的新品種盲步甲（一種昆蟲）。為探究其對環境濕度的偏好，學家設計了一個大型的「選擇室」。選擇室被均分為左右兩半，中間有通道相連。<br>學家在左半部的底層鋪滿強效乾燥劑（矽膠），並蓋上透氣網紋膠板；在右半部的底層鋪滿浸透蒸餾水的棉花，同樣蓋上透氣網紋膠板。學家將 100 隻盲步甲放入選擇室正中央，蓋上不透光的頂蓋以確保內部完全黑暗。實驗維持在恆溫 20°C。1 小時後，學家迅速打開頂蓋，記錄選擇室左右兩半部的盲步甲數量。<br><br><b>【探究目的】</b>：測定該洞穴盲步甲對環境相對濕度的行為偏好。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "自變量：環境的<span class='keyword'>相對濕度</span> (1)<br>因變量：盲步甲的<span class='keyword'>行為偏好</span> (1)<br>因變量的量度方法：1 小時後選擇室左右兩半部（乾燥區與潮濕區）的<span class='keyword'>盲步甲數量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋為何必須「蓋上不透光的頂蓋以確保內部完全黑暗」。（這是為了控制什麼？）（2分）",
+                answer: "<span class='keyword'>光線強度</span>是另一個可能影響昆蟲分佈的變量 (1)<br>保持完全黑暗能確保分佈結果<span class='keyword'>僅由濕度差異引起</span>，避免昆蟲因避光行為而產生干擾 (1)"
+            },
+            {
+                label: "(c)",
+                question: "指出實驗中設置「透氣網紋膠板」的作用，這如何確保測量的是動物對氣候因子的反應而非對物理接觸的反應？（2分）",
+                answer: "網紋膠板將盲步甲與底層物質（矽膠或濕棉花）<span class='keyword'>物理隔開</span> (1)<br>確保盲步甲只對空氣中的濕度作出反應，而非對<span class='keyword'>接觸固體水滴或化學乾燥劑的觸覺 / 化學刺激</span>作出反應 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 24 題】",
+        scenario: "環境工程師正優化污水處理廠的生物反應器，以提升亞硝化單胞菌（一種將銨轉化為亞硝酸鹽的硝化細菌）的效能。工程師設計了一個包含兩個變量的交叉實驗：<br>初始銨離子濃度：設定為 20 mg/L、50 mg/L 及 100 mg/L。<br>曝氣量（供氧速率）：設定為「低曝氣（1.0 L/min）」及「高曝氣（5.0 L/min）」。<br>這產生了 6 組不同的反應器設定（例如：20 mg/L + 低曝氣、20 mg/L + 高曝氣...等）。所有反應器均接種了相同質量的亞硝化單胞菌，並維持在 25°C 及 pH 7.5。連續運行 7 天後，工程師抽取樣本，利用化學測試量度各反應器中「亞硝酸鹽的最終濃度」。<br><br><b>【探究目的】</b>：探究初始銨離子濃度與曝氣量兩者的相互作用對硝化細菌進行硝化作用速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（4分）",
+                answer: "自變量一：初始<span class='keyword'>銨離子濃度</span> (1)<br>自變量二：<span class='keyword'>曝氣量 / 供氧速率</span> (1)<br>因變量：亞硝化單胞菌的<span class='keyword'>硝化作用速率</span> / 代謝活性 (1)<br>因變量的量度方法：7 天後反應器中<span class='keyword'>亞硝酸鹽的最終濃度</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋為何工程師選擇量度「亞硝酸鹽的濃度」來代表硝化作用的速率，而不直接量度細菌的總質量？（1分）",
+                answer: "亞硝酸鹽是硝化作用（將銨氧化）的直接產物，能專一且準確地反映該代謝過程的速率，而細菌總質量可能受其他<span class='keyword'>非硝化的代謝或死亡率</span>影響 (1)"
+            },
+            {
+                label: "(c)",
+                question: "若只改變初始銨離子濃度，但所有反應器完全停止曝氣（密封無氧），預期亞硝酸鹽的產量會如何？試以生物學原理解釋。（2分）",
+                answer: "亞硝酸鹽產量為<span class='keyword'>零 / 極低</span> (1)<br>因為硝化作用（將銨轉化為亞硝酸鹽）是一個氧化過程，<span class='keyword'>必須依賴氧氣</span>作為反應物 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 25 題】",
+        scenario: "運動生理學家研究人體呼吸系統對環境與活動的調節機制。研究招募了 20 名年齡及體能相若的健康成年人，測試他們在兩種不同身體狀態及三種吸入氣體條件下的反應。<br>身體狀態設定：靜止坐著（Rest）或 在跑步機上以時速 8 公里跑步（Exercise）。<br>吸入氣體二氧化碳濃度設定：正常空氣（0.04% CO2）、輕度提升（2.00% CO2）或高度提升（4.00% CO2）。<br>在每種交叉配對的設定下（共 6 種），受試者戴上面罩呼吸 10 分鐘以達到穩定狀態。儀器會自動記錄受試者在最後 1 分鐘內的「潮氣量（每次呼吸的氣體體積）」及「呼吸頻率（每分鐘呼吸次數）」，並將兩者相乘得出「每分鐘肺換氣率（L/min）」。<br><br><b>【假說】</b>：體能活動與吸入的二氧化碳濃度增加能產生協同效應，大幅提升人體的每分鐘肺換氣率。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（4分）",
+                answer: "自變量一：<span class='keyword'>體能活動水平</span> (1)<br>自變量二：吸入氣體的<span class='keyword'>二氧化碳濃度</span> (1)<br>因變量：人體的<span class='keyword'>肺換氣率</span> / 呼吸系統的通氣量 (1)<br>因變量的量度方法：受試者在最後 1 分鐘內量度得出的<span class='keyword'>每分鐘肺換氣率</span>（潮氣量 × 呼吸頻率） (1)"
+            },
+            {
+                label: "(b)",
+                question: "指出這項探究中「靜止坐著 + 正常空氣（0.04% CO2）」這一組設定的目的。（2分）",
+                answer: "作為基準 / <span class='keyword'>對照裝置</span> (1)<br>提供受試者在沒有額外活動或化學刺激下的正常換氣率數據，以比較並證明換氣率的增加是<span class='keyword'>由運動或高 CO2 引起</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "為何實驗中將「受試者的體能水平」列為控制變量？（1分）",
+                answer: "體能較佳的運動員其心肺效率較高，在相同運動強度或 CO2 刺激下的換氣率增加幅度可能較一般人小，這會產生誤差並<span class='keyword'>降低實驗結果的可靠性</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 26 題】",
+        scenario: "學生利用透析管（一種半透膜）來探究濃度梯度對水分轉運的影響。 他準備了兩套完全相同的裝置（裝置 A 和裝置 B）。每套裝置均包含一段末端打結的透析管，頂部緊密連接至一根附有刻度的玻璃毛細管。<br>裝置 A：透析管內注入 10 mL 濃度為 10% 的蔗糖溶液。<br>裝置 B：透析管內注入 10 mL 濃度為 30% 的蔗糖溶液。<br>學生將兩組透析管同時浸入盛有 500 mL 蒸餾水的大燒杯中。實驗在 25°C 的室溫下進行。他記錄了每組裝置在 30 分鐘內，玻璃毛細管中液面上升的距離。<br><br><b>【探究目的】</b>：探究不同濃度梯度的蔗糖溶液對滲透作用速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：透析管內蔗糖溶液的<span class='keyword'>濃度</span> (1)<br>因變量： <span class='keyword'>滲透作用速率</span> (1)<br>因變量的量度方法：30 分鐘內玻璃毛細管中<span class='keyword'>液面上升的距離</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究中受實驗裝置本身限制，而必須保持不變的兩個控制變量。（2分）",
+                answer: "下列任何兩項：<br>實驗進行時的<span class='keyword'>溫度</span> (1)<br>透析管的<span class='keyword'>表面積 / 大小 / 材質</span> (1)<br>大燒杯內蒸餾水的<span class='keyword'>體積</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明為何毛細管中的液面會上升。（1分）",
+                answer: "燒杯內蒸餾水的水勢高於透析管內的蔗糖溶液，<span class='keyword'>水分透過滲透作用淨流入透析管</span>，導致體積增加而推高液面 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 27 題】",
+        scenario: "學生進行一項關於人體反應時間的實驗。他要求受試者將手臂靠在桌邊，拇指與食指分開 2 cm。學生手持一把半米長的直尺，使其零刻度剛好位於受試者的兩指之間。 學生進行了兩組測試，每組重複 5 次：<br>測試一（視覺刺激）：受試者張開眼睛看著直尺。學生在無預警下鬆開直尺，受試者看到直尺下落便立即將其夾住。<br>測試二（聽覺刺激）：受試者戴上眼罩。 學生在鬆開直尺的瞬間大喊「捉！」，受試者聽到聲音便立即將其夾住。<br>學生記錄每次受試者夾住直尺時，手指所在的刻度。<br><br><b>【假說】</b>：人體對聽覺刺激的反應時間比對視覺刺激的反應時間長。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：<span class='keyword'>感官刺激的種類</span>（視覺或聽覺） (1)<br>因變量：神經系統的反應時間 / <span class='keyword'>神經脈衝的傳遞及處理速率</span> (1)<br>因變量的量度方法：受試者夾住直尺時，直尺下落的<span class='keyword'>距離（刻度）</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究的兩個控制變量。（2分）",
+                answer: "下列任何兩項：<br>拇指與食指<span class='keyword'>初始分開的距離</span> (1)<br>釋放直尺時<span class='keyword'>零刻度的初始位置</span> (1)<br>測試由<span class='keyword'>同一位受試者</span>進行（或受試者的精神狀態/疲勞程度） (1)"
+            },
+            {
+                label: "(c)",
+                question: "解釋為何每組測試需要重複 5 次並計算平均值。（1分）",
+                answer: "反應時間容易受受試者的注意力或隨機誤差影響，重複測試能減少誤差，<span class='keyword'>增加實驗結果的可靠性</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 28 題】",
+        scenario: "生態學家在一個草原保護區研究某種特有野鼠的生存率。為進行「捕捉-標誌-重捕法」，學家捕捉了 200 隻健康的野鼠，並將牠們平均分為兩組進行標誌。<br>組一：在野鼠背部塗上「鮮艷的反光螢光顏料」。<br>組二：在野鼠背部塗上「與泥土顏色相近的迷彩顏料」。<br>學家將這 200 隻野鼠釋放回原本的棲息地。一個月後，學家在同一區域設置陷阱進行重捕，並記錄兩組野鼠各自被重捕到的數量。<br><br><b>【探究目的】</b>：確定標誌物的顏色是否會改變野鼠被天敵捕食的風險。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：標誌物（顏料）的<span class='keyword'>顏色</span> (1)<br>因變量：野鼠的存活率 / <span class='keyword'>被捕食的風險</span> (1)<br>因變量的量度方法：一個月後重捕到的<span class='keyword'>各組野鼠數量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "指出採用「與泥土顏色相近的迷彩顏料」裝置的目的。（2分）",
+                answer: "作為<span class='keyword'>對照</span>，證明野鼠存活率的下降是由於鮮艷顏色吸引了天敵 (1)<br>而非由於標誌顏料的<span class='keyword'>化學毒性或標誌過程造成的物理傷害</span>所引起 (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明在釋放野鼠後，為何必須等待「一個月」才進行重捕，而不是第二天立即重捕。（1分）",
+                answer: "確保被標誌的野鼠有足夠時間<span class='keyword'>與原有種群完全均勻混合</span>（並讓捕食壓力有足夠時間發揮作用） (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 29 題】",
+        scenario: "農業科學家為找出儲存鮮榨果汁的最佳方法，進行了一項關於維生素 C 降解的探究。學家從同一批次的新鮮橙中榨取大量果汁，並將其平均分配到四個完全密封的玻璃瓶中。<br>四個玻璃瓶分別被存放在 4°C、15°C、25°C 及 35°C 的無光恆溫箱中。7 天後，學家從每個瓶中取出果汁樣本，利用標準濃度（1%）的 DCPIP 溶液進行滴定。<br>學家在錐形瓶中加入 2.0 mL 的 DCPIP 溶液，逐滴加入果汁並搖勻，記錄使 DCPIP 溶液的藍色剛好完全褪去所需的果汁體積。<br><br><b>【假說】</b>：儲存溫度越高，果汁中維生素 C 被破壞（降解）的速率越快。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：果汁<span class='keyword'>儲存的溫度</span> (1)<br>因變量：維生素 C 的<span class='keyword'>降解速率</span> (1)<br>因變量的量度方法：使用 2.0 mL 的 1% DCPIP 溶液完全褪色所需的<span class='keyword'>果汁體積</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "若假說成立，預期在 35°C 下儲存的果汁，其滴定所需的體積會較大還是較小？試解釋原因。（2分）",
+                answer: "滴定所需的<span class='keyword'>體積會較大</span> (1)<br>因為在高溫下維生素 C 降解較快，果汁中剩餘的維生素 C 濃度較低，因此需要較多體積的果汁才能提供<span class='keyword'>足夠的維生素 C 來還原/褪色</span>固定分量的 DCPIP (1)"
+            },
+            {
+                label: "(c)",
+                question: "列出這項探究中，與「果汁儲存條件」相關的兩個控制變量（不包括溫度）。（2分）",
+                answer: "下列任何兩項：<br>儲存期間的<span class='keyword'>光照強度</span>（無光環境） (1)<br>玻璃瓶的<span class='keyword'>密封程度</span> (1)<br>儲存的<span class='keyword'>時間</span>（7天） (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 30 題】",
+        scenario: "為研究土壤物理狀態對豆科植物生長的影響，植物學家將 40 株帶有根瘤（內含固氮細菌）的健康大豆幼苗，平均種植在兩組大型溫室培養槽中。培養槽內使用的是經過高溫滅菌且完全缺乏氮肥的沙質土壤。<br>實驗組（水浸組）：每天大量澆水，使土壤完全被水分浸沒，阻絕空氣進入。<br>對照組（透氣組）：每天適量澆水，保持土壤濕潤但具有良好的通氣孔隙。<br>兩組幼苗在相同光照和溫度的溫室中生長 8 星期。最後，學家將大豆植株連根拔起，洗淨並完全烘乾後，量度每株植物的總乾質量。<br><br><b>【探究目的】</b>：證明土壤中的氧氣供應對根瘤細菌的固氮效率具有關鍵影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：土壤的<span class='keyword'>供氧量</span> (1)<br>因變量：根瘤細菌的<span class='keyword'>固氮效率</span> (1)<br>因變量的量度方法：8 星期後大豆植株的<span class='keyword'>平均乾質量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋為何實驗必須使用「缺乏氮肥的沙質土壤」作為控制變量。（2分）",
+                answer: "確保植物無法從土壤中<span class='keyword'>直接吸收硝酸鹽或其他氮化物</span> (1)<br>證明植物生長所需的氮源完全依賴於根瘤細菌的<span class='keyword'>固氮作用</span>，確保實驗結果的有效性 (1)"
+            },
+            {
+                label: "(c)",
+                question: "預期哪一組的大豆植株乾質量較低？試以氮循環原理解釋。（2分）",
+                answer: "<span class='keyword'>實驗組（水浸組）</span>的乾質量較低 (1)<br>因為固氮作用是一個高度消耗能量的過程，根瘤菌需要充足的氧氣進行有氧呼吸以產生 ATP；缺氧會抑制固氮作用，導致植物<span class='keyword'>缺乏合成蛋白質的氮源</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 31 題】",
+        scenario: "運動生理學家探究不同環境濕度與運動強度對人體心血管系統的綜合壓力。研究招募了 10 名體能相若的馬拉松運動員，在大型氣候控制室內進行跑步機測試。<br>實驗設定如下：<br>跑步機坡度（代表運動強度）：設定為「平地（0% 坡度）」及「上坡（10% 坡度）」。<br>環境相對濕度：設定為「低濕度（30%）」及「高濕度（85%）」。<br>這產生了 4 組交叉設定。每位運動員需在不同日子完成所有 4 組測試。每次測試為時 30 分鐘，氣溫恆定在 32°C。運動員佩戴了心率監測胸帶，儀器自動記錄他們在測試最後 5 分鐘內的平均心跳率（每分鐘心跳次數）。<br><br><b>【探究目的】</b>：探究運動強度與環境濕度兩者的相互作用對人體心臟負荷的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（4分）",
+                answer: "自變量一：<span class='keyword'>運動強度 / 跑步機的坡度</span> (1)<br>自變量二：環境<span class='keyword'>相對濕度</span> (1)<br>因變量：心血管系統的負荷 / <span class='keyword'>心搏率的增加程度</span> (1)<br>因變量的量度方法：測試最後 5 分鐘內的<span class='keyword'>平均心跳率</span>（每分鐘心跳次數） (1)"
+            },
+            {
+                label: "(b)",
+                question: "在設計這項實驗時，學家嚴格控制了「氣溫恆定在 32°C」及「運動員體能相若」。試解釋這兩個控制變量對確保數據準確性的重要性。（2分）",
+                answer: "氣溫會影響散熱需求，進而影響皮膚血管舒張及心跳率；體能較佳者心輸出量較高，心跳率上升幅度較小 (1)<br>保持這兩個變量恆定，能確保心跳率的差異<span class='keyword'>僅由運動強度及濕度的改變引起</span>，實現公平測試 (1)"
+            },
+            {
+                label: "(c)",
+                question: "為什麼學家選擇記錄「最後 5 分鐘」的數據，而非測試開始時首 5 分鐘的數據？（1分）",
+                answer: "確保身體已經適應了該運動強度及環境壓力，心跳率已<span class='keyword'>達到穩定狀態</span>，能真實反映該條件下的生理負荷 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 32 題】",
+        scenario: "植物生理學家利用水耕栽培法，探究農作物根部毛細胞吸收硝酸鹽的機制。學家準備了一批發育相同的粟米幼苗，並將牠們的根部浸泡在含有相同初始濃度硝酸鹽的營養液中。<br>實驗設計如下：<br>營養液的氧氣供應：分為「持續打氣曝氧」及「充入氮氣以排走氧氣」。<br>ATP 合成抑制劑的存在：分為「加入抑制劑溶液」及「加入等體積蒸餾水」。<br>這產生了 4 組獨立的水耕培養裝置。所有裝置均放置在恆溫且沒有光照的環境中（以防止光合作用干擾）。24 小時後，學家抽取營養液樣本，利用光譜儀量度營養液中硝酸鹽濃度的下降量。<br><br><b>【假說】</b>：根部吸收硝酸鹽是一個需要消耗 ATP且依賴需氧呼吸的過程。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（4分）",
+                answer: "自變量一：營養液中的<span class='keyword'>氧氣供應量</span> (1)<br>自變量二：<span class='keyword'>ATP 合成抑制劑</span>的有無 (1)<br>因變量：根部毛細胞<span class='keyword'>吸收硝酸鹽的速率</span> (1)<br>因變量的量度方法：24 小時後營養液中<span class='keyword'>硝酸鹽濃度的下降量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "指出這項探究中，「持續打氣曝氧 + 加入等體積蒸餾水」這一組設定的目的。（2分）",
+                answer: "作為對照 / <span class='keyword'>正常基準對照</span> (1)<br>提供在最理想（有氧且無毒素）狀態下的最高吸收速率數據，用作與缺氧或加入抑制劑的組別比較，以<span class='keyword'>證明兩者造成的抑制效應</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "實驗將裝置放置在「沒有光照」的環境中作為控制變量。試解釋若幼苗進行光合作用，會如何產生誤差影響對「吸收過程依賴需氧呼吸」的推論？（1分）",
+                answer: "若進行光合作用，葉片可能會產生氧氣並轉運至根部，這會<span class='keyword'>抵消「排走氧氣」的缺氧設定效果</span>，導致無法準確評估需氧呼吸對吸收礦物質的必要性 (1)"
+            }
+        ]
+    },
+{
+        title: "【第 33 題】",
+        scenario: "學生探究不同濃度的蔗糖溶液對白蘿蔔組織水分移動的影響。他利用開孔器切出 15 條長度、直徑完全相同的白蘿蔔圓柱體，並用濾紙輕輕吸乾表面水分，然後利用電子天平準確量度每條的初始質量。 他準備了五個燒杯，分別加入 50 mL 濃度為 0.2 M、0.4 M、0.6 M、0.8 M 及 1.0 M 的蔗糖溶液。他將白蘿蔔圓柱體平均分配（每組 3 條）放入五個燒杯中。兩小時後，他取出所有圓柱體，再次用濾紙吸乾表面水分並量度最終質量，然後計算每組的平均質量變化百分比。<br><br><b>【探究目的】</b>：探究外部溶液的蔗糖濃度對白蘿蔔細胞滲透作用速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：外部蔗糖溶液的<span class='keyword'>濃度</span> (1)<br>因變量：<span class='keyword'>滲透作用速率</span> (1)<br>因變量的量度方法：兩小時後白蘿蔔圓柱體的<span class='keyword'>平均質量變化百分比</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "列出這項探究中必須保持不變的兩個控制變量。（2分）",
+                answer: "下列任何兩項：<br>蔗糖溶液的<span class='keyword'>體積</span> (1)<br>實驗進行時的<span class='keyword'>溫度</span> (1)<br>白蘿蔔圓柱體的<span class='keyword'>初始表面積 / 來源 / 年齡</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明應如何為這項實驗設置一個適當的對照裝置，以證明質量的改變是依賴於活細胞的細胞膜。（2分）",
+                answer: "將相同大小的白蘿蔔圓柱體經<span class='keyword'>高溫煮沸並冷卻</span>（以破壞細胞膜及殺死細胞） (1)<br>放入相同濃度的蔗糖溶液中，並進行相同的量度程序 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 34 題】",
+        scenario: "學生利用恆速回轉儀來探究重力對蠶豆幼根生長的影響。 他準備了兩組（各 5 粒）剛萌發、胚根長度相若的蠶豆種子，並將它們用大頭針固定在濕潤的軟木板上，確保所有胚根均水平放置。<br>組一：軟木板連接到一個每小時轉動一圈的恆速回轉儀上。<br>組二：軟木板連接到一個靜止不動的回轉儀上。<br>兩組裝置均放置在一個溫度適宜且「完全黑暗」的保溫箱內。三天後，學生觀察並記錄每粒種子胚根的生長方向。<br><br><b>【假說】</b>：單一方向的重力牽引會導致蠶豆胚根向下彎曲生長。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：重力刺激的<span class='keyword'>方向性</span>（單向或均勻分佈） (1)<br>因變量：胚根的<span class='keyword'>向地性反應</span> (1)<br>因變量的量度方法：三天後胚根頂端<span class='keyword'>彎曲的角度 / 生長方向</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋為何必須將兩組裝置放置在「完全黑暗」的環境中。（2分）",
+                answer: "單側光是另一個能引發植物向性（向光性）的刺激變量 (1)<br>保持完全黑暗能確保胚根的生長方向<span class='keyword'>僅受重力影響</span>，避免光線造成的誤差 (1)"
+            },
+            {
+                label: "(c)",
+                question: "預期組一的胚根會呈現怎樣的生長方向？試簡述原因。（2分）",
+                answer: "胚根會繼續<span class='keyword'>水平生長</span>（不會向下彎曲） (1)<br>因為回轉儀的轉動使胚根各面均勻受力，<span class='keyword'>消除了單一方向的重力刺激</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 35 題】",
+        scenario: "法醫實驗室測試一種從某種熱帶豬籠草捕蟲籠液體中提取的新型蛋白酶。為測試其效能，研究員使用了塗有明膠（Gelatin，一種蛋白質）的攝影膠片。 明膠層含有黑色銀粒，當明膠被消化分解時，膠片會由黑色變成透明。 研究員準備了四支試管，每支放入一塊大小為 1 cm x 1 cm 的黑色攝影膠片，並分別加入以下混合物：<br>試管 A：3 mL pH 3 緩衝液 + 1 mL 豬籠草提取液<br>試管 B：3 mL pH 3 緩衝液 + 1 mL 煮沸過的豬籠草提取液<br>試管 C：3 mL pH 3 緩衝液 + 1 mL 蒸餾水<br>試管 D：3 mL pH 3 緩衝液 + 1 mL 澱粉酶溶液<br>所有試管放置在 35°C 的水浴箱中。研究員記錄每塊膠片完全變成透明所需的時間。<br><br><b>【探究目的】</b>：證明豬籠草提取液中含有具備活性的蛋白酶。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項探究的因變量，以及該因變量的量度方法。（2分）",
+                answer: "因變量：蛋白酶的<span class='keyword'>活性</span> (1)<br>因變量的量度方法：黑色攝影膠片完全變成<span class='keyword'>透明所需的時間</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "試管 D 在此實驗設計中代表對照裝置。試解釋設置試管 D 的具體目的。（2分）",
+                answer: "證明明膠的消化（膠片變透明）需要<span class='keyword'>專一的蛋白酶</span> (1)<br>而不能被其他種類的酶（如澱粉酶）所分解，展現酶的<span class='keyword'>受質專一性</span> (1)"
+            },
+            {
+                label: "(c)",
+                question: "列出這項探究中與「攝影膠片」相關，且必須嚴格受控的兩個變量。（2分）",
+                answer: "下列任何兩項：<br>攝影膠片的<span class='keyword'>表面積 / 大小</span> (1)<br>攝影膠片上明膠層的<span class='keyword'>厚度</span> (1)<br>攝影膠片的<span class='keyword'>來源 / 批次</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 36 題】",
+        scenario: "生態學家探究「光線」對潮蟲（一種陸生甲殼類動物）分佈的影響。他設計了一個直徑 30 cm 的圓形選擇室。 選擇室的底層鋪滿均勻微濕的紙巾，以保持整體濕度一致。 選擇室的頂蓋被分為兩半：一半用不透明的黑紙完全遮蓋，另一半則是透明的塑膠。生態學家將 50 隻健康的潮蟲從小孔放入選擇室的正中央，然後放置在有均勻頂部照明的實驗室桌面上。靜置 30 分鐘後，生態學家記錄選擇室「黑暗區」和「透光區」內的潮蟲數量。<br><br><b>【假說】</b>：潮蟲具備避光行為，偏好停留在黑暗的環境中。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：環境的<span class='keyword'>光強度</span> (1)<br>因變量：潮蟲的<span class='keyword'>行為偏好</span> (1)<br>因變量的量度方法：30 分鐘後黑暗區和透光區內的<span class='keyword'>潮蟲數量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "在設計這項實驗時，學家在整個底層「鋪滿均勻微濕的紙巾」。試說明控制這個變量的目的。（2分）",
+                answer: "濕度是另一個能顯著影響潮蟲分佈（避乾行為）的環境變量 (1)<br>保持全區濕度一致，能確保潮蟲的分佈結果<span class='keyword'>僅由光線差異引起</span>，實現公平測試 (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明為何要將 50 隻潮蟲從「選擇室的正中央」放入，而非從其中一側放入。（1分）",
+                answer: "確保所有潮蟲到達黑暗區和透光區的<span class='keyword'>距離相同</span>，消除初始位置帶來的偏差 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 37 題】",
+        scenario: "環境保護署的化驗師研究農田土壤受銅離子（Cu2+）污染後，對土壤中硝化細菌（將亞硝酸鹽轉化為硝酸鹽的細菌）活性的影響。 化驗師準備了五個錐形瓶，每個均加入 100 mL 含有相同濃度硝化細菌的營養液（內含固定濃度的亞硝酸鹽作為受質）。然後，他分別向五個瓶中加入濃度為 0 ppm、10 ppm、20 ppm、30 ppm 及 40 ppm 的硫酸銅溶液。所有錐形瓶放置在 25°C 且持續充入空氣的搖床中培養。48 小時後，他抽取樣本，利用化學試劑量度各瓶中硝酸鹽的濃度。<br><br><b>【探究目的】</b>：確定不同濃度的銅離子污染對土壤硝化細菌硝化作用速率的抑制程度。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（3分）",
+                answer: "一個自變量：硫酸銅（或銅離子）溶液的<span class='keyword'>濃度</span> (1)<br>因變量：<span class='keyword'>硝化作用速率</span> (1)<br>因變量的量度方法：48 小時後營養液中<span class='keyword'>硝酸鹽的濃度 / 增加量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "實驗裝置被放置在「持續充入空氣的搖床中」培養。試解釋此設計的重要性。（2分）",
+                answer: "硝化作用是一個需要耗氧的過程，持續充氣能<span class='keyword'>提供充足氧氣</span> (1)<br>搖床能確保氧氣、細菌與銅離子均勻混合，控制了<span class='keyword'>溶氧量及接觸機會</span>保持一致 (1)"
+            },
+            {
+                label: "(c)",
+                question: "寫出這項探究中對照裝置的設定。（1分）",
+                answer: "加入濃度為 <span class='keyword'>0 ppm</span> 硫酸銅溶液（或等體積蒸餾水）的錐形瓶 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 38 題】",
+        scenario: "食品科學家希望找出保存鮮榨番石榴汁抗氧化劑的最佳條件。 他的探究如下：<br>氧氣接觸：分為「密封玻璃瓶（隔絕空氣）」及「敞口玻璃瓶（接觸空氣）」。<br>儲存溫度：設定為「4°C（冷藏）」及「25°C（室溫）」。<br>這產生了 4 組交叉設定（例如：密封+4°C，敞口+25°C等）。科學家從同一批番石榴榨取果汁，平均分配到這 4 組裝置中，並放置在無光環境中。3 天後，科學家從每組取出 5 mL 果汁，滴入 2.0 mL 標準濃度的藍色 DCPIP 溶液中，記錄使 DCPIP 溶液剛好完全褪色所需的果汁滴數（或體積）。<br><br><b>【探究目的】</b>：探究氧氣接觸量與儲存溫度兩者的相互作用對番石榴汁中維生素 C 降解速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（4分）",
+                answer: "自變量一：<span class='keyword'>氧氣接觸情況</span>（密封或敞口） (1)<br>自變量二：<span class='keyword'>儲存溫度</span> (1)<br>因變量：維生素 C 的<span class='keyword'>降解速率</span> (1)<br>因變量的量度方法：3 天後使 2.0 mL DCPIP 溶液完全褪色所需的<span class='keyword'>果汁滴數 / 體積</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "若實驗結果顯示「敞口+25°C」這一組需要滴入最多體積的果汁才能令 DCPIP 褪色，這反映了該組果汁內的維生素 C 濃度有何變化？試解釋原因。（2分）",
+                answer: "反映該組果汁內的維生素 C 濃度<span class='keyword'>最低</span> (1)<br>因為高溫和充足氧氣加速了維生素 C 的氧化/破壞，故需要<span class='keyword'>極大體積</span>的果汁才能提供足夠的維生素 C 進行還原反應 (1)"
+            },
+            {
+                label: "(c)",
+                question: "列出進行 DCPIP 滴定時，為確保準確比較，必須受控的兩個變量。（2分）",
+                answer: "下列任何兩項：<br>DCPIP 溶液的<span class='keyword'>初始濃度</span> (1)<br>DCPIP 溶液的<span class='keyword'>體積</span>（2.0 mL） (1)<br>滴定操作時的<span class='keyword'>環境溫度</span> (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 39 題】",
+        scenario: "植物生理學家利用水耕栽培法，探究大麥根部吸收鉀離子（K+）的機制。實驗設計如下：<br>營養液的氧氣供應：分為「持續泵入空氣（高氧）」及「持續泵入純氮氣（缺氧）」。<br>營養液的溫度：設定為「5°C」、「15°C」及「25°C」。<br>這產生了 6 組獨立的水耕培養裝置。所有裝置均加入了初始濃度相同的鉀離子營養液，並放入質量及發育階段完全相同的大麥幼苗。實驗在黑暗中進行 5 小時。最後，學家抽取各裝置的營養液，利用離子分析儀量度溶液中鉀離子濃度的下降量。<br><br><b>【假說】</b>：根部吸收鉀離子依賴有氧呼吸提供能量，因此受氧氣供應及溫度雙重限制。",
+        parts: [
+            {
+                label: "(a)",
+                question: "探究中有多少個自變量？指出這項探究的自變量、因變量，以及該因變量的量度方法。（4分）",
+                answer: "自變量一：營養液中的<span class='keyword'>氧氣供應量</span> (1)<br>自變量二：營養液的<span class='keyword'>溫度</span> (1)<br>因變量：大麥根部<span class='keyword'>吸收鉀離子的速率</span> (1)<br>因變量的量度方法：5 小時後營養液中<span class='keyword'>鉀離子濃度的下降量</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋為何持續泵入「純氮氣」的裝置的功用。（1分）",
+                answer: "氮氣能驅散營養液中的氧氣，創造<span class='keyword'>缺氧環境</span>，從而抑制根部細胞的有氧呼吸，以驗證吸收過程是否依賴有氧呼吸產生的 ATP (1)"
+            }
+        ]
+    }
+    ];
+
+    let currentQuestionIndex = 0;
+
+    // 保留你聰明的 renderQuestion 函數 (隱藏空貼士)，並加入清空 AI 對話框的功能
+    function renderQuestion() {
+        const q = questionsDatabase[currentQuestionIndex];
+        let htmlContent = `
+            <div class="scenario-box">
+                <h3 style="margin-top:0; color: #334155;">${q.title}</h3>
+                <p><strong>情境：</strong> ${q.scenario}</p>
+            </div>
+        `;
+
+        q.parts.forEach(part => {
+            // 你的完美邏輯：如果這個 part 的 hint 不是空的，才生成貼士按鈕
+            let hintHTML = ""; 
+            if (part.hint && part.hint.trim() !== "") {
+                const formattedHint = part.hint.replace(/\n/g, '<br>');
+                hintHTML = `
+                    <details>
+                        <summary>💡 俾個貼士我 <span>▼</span></summary>
+                        <div class="content">${formattedHint}</div>
+                    </details>
+                `;
+            }
+            
+            htmlContent += `
+                <div class="question-part">
+                    <div class="question-text">${part.label} ${part.question}</div>
+                    ${hintHTML}
+                    <details>
+                        <summary>👀 睇參考答案 <span>▼</span></summary>
+                        <div class="content">${part.answer}</div>
+                    </details>
+                </div>
+            `;
+        });
+
+        document.getElementById('quiz-container').innerHTML = htmlContent;
+        document.getElementById('question-counter').innerText = `${currentQuestionIndex + 1} / ${questionsDatabase.length}`;
+        
+        document.getElementById('prev-btn').disabled = currentQuestionIndex === 0;
+        document.getElementById('next-btn').disabled = currentQuestionIndex === questionsDatabase.length - 1;
+
+        // 【新增】：切換題目時，自動清空舊的 AI 對話紀錄
+        document.getElementById('student-input').value = "";
+        document.getElementById('ai-response-box').style.display = "none";
+    }
+
+    function changeQuestion(step) {
+        currentQuestionIndex += step;
+        renderQuestion();
+    }
+
+    // 【新增】：將資料打包並送給 AI 伺服器的非同步函數
+    async function submitToAI() {
+        const studentInput = document.getElementById('student-input').value;
+        if (!studentInput.trim()) {
+            alert("同學，請先輸入你的答案或者問題！");
+            return;
+        }
+
+        const btn = document.getElementById('submit-btn');
+        const responseBox = document.getElementById('ai-response-box');
+        const responseText = document.getElementById('ai-response-text');
+
+        // 改變按鈕狀態，顯示正在思考
+        btn.disabled = true;
+        btn.innerText = "⏳ AI 正在批改中，請稍候...";
+        responseBox.style.display = "block";
+        responseText.innerHTML = "<span style='color:#64748b;'><em>思考中... (通常需要 3-5 秒)</em></span>";
+
+        // 自動打包目前的題目情境與標準答案給 AI
+        const q = questionsDatabase[currentQuestionIndex];
+        let contextData = "【情境】：\n" + q.scenario.replace(/<br>/g, "\n") + "\n\n";
+        let answerData = "";
+        q.parts.forEach(p => {
+            contextData += p.label + " " + p.question + "\n";
+            answerData += p.label + " " + p.answer.replace(/<[^>]*>?/gm, '') + "\n"; // 移除 HTML 標籤
+        });
+
+        try {
+            // 呼叫你的 Google Apps Script
+            const response = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    studentAnswer: studentInput,
+                    questionContext: contextData,
+                    standardAnswer: answerData
+                })
+            });
+
+            const data = await response.json();
+            
+            // 顯示 AI 的回覆（將 \n 換成 <br> 以利排版）
+            responseText.innerHTML = data.reply.replace(/\n/g, '<br>');
+
+        } catch (error) {
+            responseText.innerHTML = "<span style='color:red;'>❌ 連線失敗。請檢查你的網絡，或確保 GAS 網址已正確貼上。</span>";
+            console.error(error);
+        } finally {
+            // 恢復按鈕
+            btn.disabled = false;
+            btn.innerText = "📤 再次送出 / 追問";
+        }
+    }
+
+    window.onload = renderQuestion;
+</script>
+<script src="tracking.js"></script>
+</body>
+</html>

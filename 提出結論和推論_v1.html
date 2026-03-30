@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>結論和推論</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; font-size: 1.5em; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .scenario-box { background-color: #f8fafc; padding: 15px; border-left: 5px solid #64748b; margin-bottom: 20px; font-size: 0.95em; }
+        .question-part { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
+        .question-text { font-weight: bold; color: #1e40af; margin-bottom: 10px; }
+        
+        details { margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+        summary { background-color: #f1f5f9; padding: 12px 15px; font-weight: bold; cursor: pointer; list-style: none; display: flex; justify-content: space-between; font-size: 0.9em; }
+        summary::-webkit-details-marker { display: none; }
+        details[open] summary { background-color: #e2e8f0; border-bottom: 1px solid #cbd5e1; }
+        .content { padding: 15px; background-color: #fff; font-size: 0.95em; }
+        .keyword { color: #d97706; font-weight: bold; }
+        
+        /* 導航按鈕區域 */
+        .navigation { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 15px; }
+        .nav-btn { background-color: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .nav-btn:hover { background-color: #475569; }
+        .nav-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+        
+        /* AI 對話框區域 (新增) */
+        .ai-container { margin-top: 30px; padding: 25px 20px; border-radius: 12px; background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%); border: 1px solid #c7d2fe; }
+        .ai-title { color: #4338ca; font-size: 1.2em; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
+        textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #a5b4fc; border-radius: 8px; font-size: 1em; font-family: inherit; box-sizing: border-box; resize: vertical; margin-bottom: 10px; }
+        textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .submit-btn { background-color: #4f46e5; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background 0.3s; }
+        .submit-btn:hover { background-color: #4338ca; }
+        .submit-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        
+        /* AI 回覆顯示區 (新增) */
+        #ai-response-box { margin-top: 15px; padding: 15px; background-color: white; border-radius: 8px; border-left: 4px solid #8b5cf6; display: none; font-size: 0.95em; line-height: 1.5; color: #334155;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+<a href="index.html#scientificMenu" class="back-btn">← 返回目錄</a>
+    <h1>🧬 DSE 生物：結論和推論特訓</h1>
+    
+    <div id="quiz-container"></div>
+
+    <div class="navigation">
+        <button id="prev-btn" class="nav-btn" onclick="changeQuestion(-1)" disabled>⬅️ 上一題</button>
+        <span id="question-counter" style="line-height: 40px; font-weight: bold; color: #64748b;"></span>
+        <button id="next-btn" class="nav-btn" onclick="changeQuestion(1)">下一題 ➡️</button>
+    </div>
+
+    <div class="ai-container">
+        <div class="ai-title">🤖 AI 星級改卷員</div>
+        <p style="font-size: 0.9em; color: #475569; margin-top: 0;">覺得自己嘅答案都啱？打出嚟等 AI 幫你批改！<br>(你可以指明答緊 a 還是 b，或者就咁問 Concept)</p>
+        
+        <textarea id="student-input" placeholder="例如：因為尿素進入後，所以細胞漲大..."></textarea>
+        <button id="submit-btn" class="submit-btn" onclick="submitToAI()">📤 送出答案</button>
+        
+        <div id="ai-response-box">
+            <strong>🤖 AI 導師：</strong>
+            <div id="ai-response-text" style="margin-top: 8px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 🔗 請在這裡貼上你剛才拿到的 Google Apps Script 網址！
+    // ==========================================
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHgAw0JSs_vr9PqrvkGZnNNUieLERFwDExthnUSDw8KeKq15c6xfz_C5WPu8JzfWluMA/exec";
+
+    // 保留你完整無缺的 23 題題庫
+const questionsDatabase = [
+    {
+        title: "【第 1 題 】",
+        concept: "細胞與物質轉運",
+        scenario: "將兩組大小、質量相同的植物根部組織，分別放置在含有相同濃度礦物質離子 K⁺ 的充氧營養液中。其中一組加入了呼吸作用抑制劑（氰化物）。兩小時後，量度根部組織內 K⁺ 的累積濃度。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>根部組織內 K⁺ 濃度 (任意單位)</th></tr><tr><td style='padding: 5px;'>A</td><td style='padding: 5px;'>含氧營養液</td><td style='padding: 5px;'>65</td></tr><tr><td style='padding: 5px;'>B</td><td style='padding: 5px;'>含氧營養液 + 呼吸作用抑制劑</td><td style='padding: 5px;'>8</td></tr></table>",
+        purpose: "探究植物根部細胞吸收礦物質離子 K⁺ 的機制。",
+        parts: [
+            {
+                label: "(a)",
+                question: "比較組別 A 和 B 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>組別 B（加入呼吸抑制劑）的根部組織內 K⁺ 濃度顯著低於組別 A（無添加抑制劑的對照組）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示抑制呼吸作用會大幅減少根部對 K⁺ 的吸收，由此得出根部吸收 K⁺ 是依賴需要消耗能量的主動轉運機制。"
+            },
+            {
+                label: "(b)",
+                question: "就這項實驗設計而言，組別 A 的設計有什麼目的？ (1 分)",
+                answer: "作為<span class='keyword'>對照裝置</span>，以證明根部吸收 K⁺ 濃度的下降純粹是由加入呼吸抑制劑（缺乏能量）所引起的。"
+            }
+        ]
+    },
+    {
+        title: "【第 2 題 】",
+        concept: "植物生理學",
+        scenario: "科學家選取了兩株同一品種、大小和葉片數量相若的盆栽植物，放置在光照、溫度和濕度相同的環境中。向它們的葉片噴灑不同的液體後，使用蒸騰計連續量度 4 小時內的總蒸騰失水量。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>4 小時內總蒸騰失水量 (g)</th></tr><tr><td style='padding: 5px;'>甲</td><td style='padding: 5px;'>在葉片表面均勻噴灑 20 mL 蒸餾水</td><td style='padding: 5px;'>18.5</td></tr><tr><td style='padding: 5px;'>乙</td><td style='padding: 5px;'>在葉片表面均勻噴灑 20 mL 脫落酸 (ABA) 溶液</td><td style='padding: 5px;'>4.2</td></tr></table>",
+        purpose: "探究脫落酸 (ABA) 對植物蒸騰速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "比較組別 甲 和 乙 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>噴灑了脫落酸溶液的植物（組別 乙），其蒸騰失水量顯著低於噴灑蒸餾水的對照組（組別 甲）。<br><span class='keyword'>生物學結論 (1分)：</span>由此得出，脫落酸 (ABA) 能有效促使氣孔關閉 / 抑制氣孔開啟，從而降低植物的蒸騰速率。"
+            },
+            {
+                label: "(b)",
+                question: "為什麼組別 甲 必須噴灑「20 mL 蒸餾水」，而不是對葉片不作任何處理？ (1 分)",
+                answer: "模擬噴灑液體時在葉面上<span class='keyword'>增加的水分</span>，以證明蒸騰速率的下降純粹是由脫落酸本身的化學作用引起的，而非水分覆蓋氣孔所致。"
+            }
+        ]
+    },
+    {
+        title: "【第 3 題 】",
+        concept: "人體協調",
+        scenario: "科學家以健康大鼠為模型，研究甲狀腺素對腦垂體分泌促甲狀腺激素（TSH）的影響。將大鼠分為三組，進行不同的外科手術及注射處理。一週後量度其血液中的 TSH 濃度。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>血液中 TSH 濃度 (任意單位)</th></tr><tr><td style='padding: 5px;'>1</td><td style='padding: 5px;'>進行假手術（保留甲狀腺） + 每日注射生理鹽水</td><td style='padding: 5px;'>12</td></tr><tr><td style='padding: 5px;'>2</td><td style='padding: 5px;'>切除雙側甲狀腺 + 每日注射生理鹽水</td><td style='padding: 5px;'>95</td></tr><tr><td style='padding: 5px;'>3</td><td style='padding: 5px;'>切除雙側甲狀腺 + 每日注射高劑量甲狀腺素</td><td style='padding: 5px;'>3</td></tr></table>",
+        purpose: "探究血液中甲狀腺素濃度如何影響腦垂體分泌促甲狀腺激素（TSH）。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較組別 1 和 2 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>組別 2（切除甲狀腺）的 TSH 濃度大幅高於組別 1（對照組）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示當缺乏甲狀腺素時，腦垂體會增加分泌 TSH。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較組別 2 和 3 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>組別 3（注射高劑量甲狀腺素）的 TSH 濃度顯著低於組別 2。<br><span class='keyword'>生物學結論 (1分)：</span>顯示高濃度的甲狀腺素會抑制腦垂體分泌 TSH。"
+            },
+            {
+                label: "(b)",
+                question: "綜合以上所有數據，關於甲狀腺與腦垂體之間的互動，這項研究的綜合結論是什麼？ (1分)",
+                answer: "<span class='keyword'>綜合結論 (1分)：</span>血液中的甲狀腺素濃度對腦垂體分泌 TSH 具有負反饋控制機制。"
+            }
+        ]
+    },
+    {
+        title: "【第 4 題 】",
+        concept: "防禦與疾病",
+        scenario: "研究人員開發了一種針對某新型病毒的疫苗，並在小鼠身上測試不同的接種策略。所有小鼠在第 0 天開始實驗，並在第 50 天量度其血液中針對該病毒的特異性抗體濃度。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>第 50 天的抗體濃度 (任意單位)</th></tr><tr><td style='padding: 5px;'>W</td><td style='padding: 5px;'>第 0 天注射 1 劑生理鹽水</td><td style='padding: 5px;'>0</td></tr><tr><td style='padding: 5px;'>X</td><td style='padding: 5px;'>第 0 天注射 1 劑疫苗</td><td style='padding: 5px;'>15</td></tr><tr><td style='padding: 5px;'>Y</td><td style='padding: 5px;'>第 0 天及第 14 天各注射 1 劑相同的疫苗</td><td style='padding: 5px;'>120</td></tr><tr><td style='padding: 5px;'>Z</td><td style='padding: 5px;'>第 0 天及第 28 天各注射 1 劑相同的疫苗</td><td style='padding: 5px;'>350</td></tr></table>",
+        purpose: "探究疫苗接種次數及第二劑（加強劑）的接種時間間隔對小鼠體內抗體產量的影響。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較組別 W 和 X 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>組別 X（注射疫苗）的抗體濃度高於組別 W（對照組）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示注射該疫苗能誘發初次免疫反應，使小鼠產生特異性抗體。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較組別 X 和 Y 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>組別 Y（注射兩劑）的抗體濃度顯著高於組別 X（只注射一劑）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示注射第二劑疫苗能引發再次免疫反應（由記憶細胞主導），產生更大量的抗體。"
+            },
+            {
+                label: "(b)",
+                question: "比較組別 Y 和 Z 的結果，這項研究對於制訂加強劑接種策略的綜合結論是什麼？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>組別 Z（間隔 28 天）的最終抗體濃度顯著高於組別 Y（間隔 14 天）。<br><span class='keyword'>生物學結論 (1分)：</span>綜合得出，延長兩劑疫苗接種的時間間隔（如 28 天），能更有效地增強免疫記憶，從而在再次免疫反應中產生更高水平的抗體。"
+            }
+        ]
+    },
+    {
+        title: "【第 5 題 】",
+        concept: "生態學",
+        scenario: "某本地原生蝦類受到近期入侵的外來肉食性魚類捕食。科學家在大型水族箱中模擬自然棲息地，探究水溫變化與外來魚類存在與否，對本地蝦存活率的影響。實驗為期 30 天。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>裝置</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>30 天後本地蝦的存活率 (%)</th></tr><tr><td style='padding: 5px;'>I</td><td style='padding: 5px;'>水溫 20°C，沒有外來魚類</td><td style='padding: 5px;'>96%</td></tr><tr><td style='padding: 5px;'>II</td><td style='padding: 5px;'>水溫 25°C，沒有外來魚類</td><td style='padding: 5px;'>94%</td></tr><tr><td style='padding: 5px;'>III</td><td style='padding: 5px;'>水溫 20°C，放入 5 條外來魚類</td><td style='padding: 5px;'>62%</td></tr><tr><td style='padding: 5px;'>IV</td><td style='padding: 5px;'>水溫 25°C，放入 5 條外來魚類</td><td style='padding: 5px;'>18%</td></tr></table>",
+        purpose: "探究水溫升高是否會加劇外來魚類對本地蝦群族的威脅。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較裝置 I 和 III 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在 20°C 下，放入外來魚類後（裝置 III），本地蝦的存活率較無魚類的對照組（裝置 I）顯著下降。<br><span class='keyword'>生物學結論 (1分)：</span>顯示外來魚類會捕食本地蝦，對其生存構成直接威脅。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較裝置 III 和 IV 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在有外來魚類的情況下，水溫升至 25°C（裝置 IV）時本地蝦的存活率遠低於 20°C（裝置 III）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示較高的水溫會大幅提高外來魚類對本地蝦的捕食率 / 捕食效能。"
+            },
+            {
+                label: "(b)",
+                question: "綜合所有數據，全球暖化（水溫上升）對這條食物鏈的影響，你能得出什麼綜合結論？ (2 分)",
+                answer: "<span class='keyword'>推論過程 (1分)：</span>綜合比較裝置 I 與 II，水溫單獨升高並不會導致本地蝦大量死亡；<br><span class='keyword'>綜合結論 (1分)：</span>由此得出，全球暖化（水溫上升）會透過增加外來捕食者的活躍度/捕食壓力，間接對本地蝦群族造成嚴重打擊。"
+            }
+        ]
+    },
+    {
+        title: "【第 6 題 】",
+        concept: "酶的特性",
+        scenario: "學生從南極冰層下的嗜冷細菌中提取了一種蛋白酶。為了證明該「極地蛋白酶」比人體內的胃蛋白酶更適應低溫，學生設計了以下實驗並量度分解相同份量蛋白質所需的時間。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>試管</th><th style='background-color: #f1f5f9; padding: 5px;'>加入的酶種類</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (培育環境)</th><th style='background-color: #f1f5f9; padding: 5px;'>完全分解蛋白質所需時間 (分鐘)</th></tr><tr><td style='padding: 5px;'>A</td><td style='padding: 5px;'>人體胃蛋白酶</td><td style='padding: 5px;'>溫度 37°C，pH 2.0</td><td style='padding: 5px;'>15</td></tr><tr><td style='padding: 5px;'>B</td><td style='padding: 5px;'>極地蛋白酶</td><td style='padding: 5px;'>溫度 5°C，pH 7.0</td><td style='padding: 5px;'>18</td></tr></table><br>學生觀察數據後得出結論：「極地蛋白酶即使在 5°C 的低溫下，其催化效率仍與 37°C 下的人體胃蛋白酶相若。」",
+        purpose: "比較極地蛋白酶與人體胃蛋白酶在低溫下的催化效率。",
+        parts: [
+            {
+                label: " ",
+                question: "你同意該學生的結論有效嗎？試加以解釋。 (2 分)",
+                answer: "<span class='keyword'>不同意 / 無效 (1分)。</span><br>因為試管 A 和 B 之間存在多於一個自變量（除了溫度不同，pH 值以及酶的種類亦不同）。pH 值的差異本身會影響酶的活性，導致無法斷定分解時間的結果純粹是由低溫適應性引起，故無法得出有效結論 (1分)。"
+            }
+        ]
+    },
+{
+        title: "【第 7 題 】",
+        concept: "防禦與疾病",
+        scenario: "某化驗所同時研發了抗生素 X 和抗生素 Y。為了比較兩者對金黃葡萄球菌的抑制能力，化驗員在塗滿細菌的瓊脂培養皿上進行了以下測試，24 小時後量度抑菌圈的直徑。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>培養皿</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>抑菌圈直徑 (mm)</th></tr><tr><td style='padding: 5px;'>甲</td><td style='padding: 5px;'>放置直徑 5 mm 並浸有 5% 濃度抗生素 X 的濾紙圓片</td><td style='padding: 5px;'>14</td></tr><tr><td style='padding: 5px;'>乙</td><td style='padding: 5px;'>放置直徑 10 mm 並浸有 10% 濃度抗生素 Y 的濾紙圓片</td><td style='padding: 5px;'>25</td></tr></table><br>化驗員根據結果得出結論：「抗生素 Y 抑制金黃葡萄球菌生長的能力較抗生素 X 強。」",
+        purpose: "比較抗生素 X 和抗生素 Y 抑制金黃葡萄球菌生長的能力。",
+        parts: [
+            {
+                label: "(a)",
+                question: "根據考評邏輯，這個結論是否有效？試解釋你的答案。 (2 分)",
+                answer: "<span class='keyword'>無效 / 不同意。(1分)</span><br>由於兩個培養皿中存在多個自變量（濾紙圓片直徑大小不同、抗生素濃度不同）。直徑較大或濃度較高本身就會導致較多抗生素向外擴散，因此無法單憑抑菌圈較大就得出抗生素 Y 本身抑菌能力較強的結論。(1分)"
+            },
+            {
+                label: "(b)",
+                question: "試指出實驗設計中必須保持不變的兩項條件，並解釋應如何修改培養皿 乙 的設計以得出有效的比較結論。 (2 分)",
+                answer: "必須將培養皿 乙 中的濾紙圓片更換為「直徑 5 mm」，且浸入的抗生素 Y 濃度須調低至「5%」。(1分)<br>確保兩種抗生素向外擴散的接觸表面積（起點）和濃度完全一致，維持單一變量（只有抗生素種類不同），才能進行公平比較。(1分)"
+            }
+        ]
+    },
+    {
+        title: "【第 8 題 】",
+        concept: "酶的特性",
+        scenario: "學生在實驗室中探究化學物 X 對澱粉酶活性的影響。他們準備了兩支試管，加入相同濃度和體積的澱粉溶液及澱粉酶，並在試管 B 中加入化學物 X。兩支試管均放置在 37°C 的水浴中，並量度澱粉完全被分解（碘液測試不再呈藍黑色）所需的時間。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>試管</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>澱粉完全被分解所需的時間 (分鐘)</th></tr><tr><td style='padding: 5px;'>A</td><td style='padding: 5px;'>澱粉 + 澱粉酶 + 2 mL 蒸餾水</td><td style='padding: 5px;'>5</td></tr><tr><td style='padding: 5px;'>B</td><td style='padding: 5px;'>澱粉 + 澱粉酶 + 2 mL 化學物 X 溶液</td><td style='padding: 5px;'>35</td></tr></table>",
+        purpose: "探究化學物 X 對澱粉酶催化分解澱粉的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "比較試管 A 和 B 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>加入化學物 X 的試管 B，其分解澱粉所需的時間顯著長於對照組的試管 A。<br><span class='keyword'>生物學結論 (1分)：</span>由此得出，化學物 X 會大幅降低澱粉酶的催化活性（或：化學物 X 是澱粉酶的抑制劑）。"
+            },
+            {
+                label: "(b)",
+                question: "就這項實驗設計而言，試管 A 中加入「2 mL 蒸餾水」有什麼目的？ (1 分)",
+                answer: "作為<span class='keyword'>對照裝置</span>，確保兩支試管的總體積及反應物濃度相同，證明澱粉酶活性的下降純粹是由化學物 X 的存在所引起的。"
+            }
+        ]
+    },
+    {
+        title: "【第 9 題 】",
+        concept: "細胞與物質轉運",
+        scenario: "化驗人員將兩組體積相同的哺乳類動物紅血球樣本，分別置於兩種不同濃度的氯化鈉（NaCl）溶液中。觀察 30 分鐘後，利用顯微鏡測量紅血球的平均體積變化百分比。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>紅血球平均體積變化 (%)</th></tr><tr><td style='padding: 5px;'>P</td><td style='padding: 5px;'>浸泡於 0.9% NaCl 溶液</td><td style='padding: 5px;'>0%</td></tr><tr><td style='padding: 5px;'>Q</td><td style='padding: 5px;'>浸泡於 2.5% NaCl 溶液</td><td style='padding: 5px;'>-45% (細胞皺縮)</td></tr></table>",
+        purpose: "探究 2.5% 氯化鈉溶液對紅血球滲透失水的影響。",
+        parts: [
+            {
+                label: " ",
+                question: "比較組別 P 和 Q 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>浸泡在 2.5% NaCl 溶液的紅血球（組別 Q）體積大幅縮小，而浸泡在 0.9% NaCl 溶液的對照組（組別 P）體積沒有改變，即有更多細胞出現體積減少。<br><span class='keyword'>生物學結論 (1分)：</span>顯示 2.5% NaCl 溶液的水勢低於紅血球細胞質（屬於高滲溶液），導致水分子透過滲透作用淨流出細胞。"
+            }
+        ]
+    },
+    {
+        title: "【第 10 題 】",
+        concept: "植物生理學",
+        scenario: "科學家利用燕麥胚芽鞘進行單向光照射實驗，以探究植物向光彎曲生長的機制。胚芽鞘被分為四組進行不同處理，連續從右側給予單向光照射 3 天，然後測量其向光彎曲的角度。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>胚芽鞘向右彎曲的平均角度 (度)</th></tr><tr><td style='padding: 5px;'>1</td><td style='padding: 5px;'>完整無缺的胚芽鞘</td><td style='padding: 5px;'>45</td></tr><tr><td style='padding: 5px;'>2</td><td style='padding: 5px;'>切除胚芽鞘尖端</td><td style='padding: 5px;'>0 (停止生長)</td></tr><tr><td style='padding: 5px;'>3</td><td style='padding: 5px;'>用不透光錫紙套遮蓋胚芽鞘尖端</td><td style='padding: 5px;'>0 (直立生長)</td></tr><tr><td style='padding: 5px;'>4</td><td style='padding: 5px;'>用不透光錫紙套遮蓋胚芽鞘基部</td><td style='padding: 5px;'>43</td></tr></table>",
+        purpose: "探究胚芽鞘尖端在感光及引發向光性反應中的角色。",
+        parts: [
+            {
+                label: "(a)",
+                question: "寫出比較組別 1 和 2 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>只有完整胚芽鞘（組別 1）能向光彎曲，而切除尖端的胚芽鞘（組別 2）完全不生長及不彎曲。<br><span class='keyword'>生物學結論 (1分)：</span>顯示胚芽鞘的尖端是產生促進生長物質（生長素）及引發向光生長的必要部位。"
+            },
+            {
+                label: "(b)",
+                question: "寫出比較組別 1、3 和 4 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>遮蓋尖端（組別 3）會失去向光彎曲的能力，而只有遮蓋基部（組別 4）仍能像對照組（組別 1）一樣向光彎曲。<br><span class='keyword'>生物學結論 (1分)：</span>顯示胚芽鞘感知單向光刺激的部位只限於尖端，而非基部。"
+            }
+        ]
+    },
+    {
+        title: "【第 11 題 】",
+        concept: "人體協調",
+        scenario: "神經學家研究不同神經路徑的傳導效率。他們在小鼠體內選取了三條長度完全相同（均為 10 cm），但包含不同突觸（Synapse）數量的神經路徑。給予相同強度的電刺激後，量度神經衝動走畢全程所需的時間。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>路徑</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (路徑上的突觸數量)</th><th style='background-color: #f1f5f9; padding: 5px;'>神經衝動傳導所需時間 (微秒)</th></tr><tr><td style='padding: 5px;'>甲</td><td style='padding: 5px;'>0 個突觸 (單一條極長的神經纖維)</td><td style='padding: 5px;'>1.2</td></tr><tr><td style='padding: 5px;'>乙</td><td style='padding: 5px;'>1 個突觸 (由兩條神經纖維相連)</td><td style='padding: 5px;'>3.5</td></tr><tr><td style='padding: 5px;'>丙</td><td style='padding: 5px;'>2 個突觸 (由三條神經纖維相連)</td><td style='padding: 5px;'>5.8</td></tr></table>",
+        purpose: "探究突觸數量對神經衝動整體傳導速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "寫出比較路徑 甲 和 乙 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>包含 1 個突觸的路徑乙，其傳導所需時間顯著長於沒有突觸的路徑甲。<br><span class='keyword'>生物學結論 (1分)：</span>顯示神經衝動跨越突觸（依賴神經傳遞物擴散）會引起明顯的傳導延遲。"
+            },
+            {
+                label: "(b)",
+                question: "寫出比較路徑 乙 和 丙 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>包含 2 個突觸的路徑丙，其傳導所需時間進一步長於只有 1 個突觸的路徑乙。<br><span class='keyword'>生物學結論 (1分)：</span>顯示突觸引起的傳導延遲是可疊加的，突觸越多，整體傳導速率越慢。"
+            }
+        ]
+    },
+    {
+        title: "【第 12 題 】",
+        concept: "植物生理學",
+        scenario: "學生希望研究環境風速對植物蒸騰速率的影響。他選取了兩盆植物，並使用氣流計和重量計量度它們在 2 小時內的失水量。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>裝置</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (環境及植物條件)</th><th style='background-color: #f1f5f9; padding: 5px;'>2 小時內的總失水量 (g)</th></tr><tr><td style='padding: 5px;'>X</td><td style='padding: 5px;'>植物品種：大葉榕（葉面積大）<br>環境：放置在開啟的風扇前 (風速高)</td><td style='padding: 5px;'>45.0</td></tr><tr><td style='padding: 5px;'>Y</td><td style='padding: 5px;'>植物品種：仙人掌（葉退化成針狀）<br>環境：放置在無風的室內 (風速低)</td><td style='padding: 5px;'>2.5</td></tr></table><br>學生觀察數據後得出結論：「高風速會大幅增加植物的蒸騰失水速率。」",
+        purpose: "比較不同風速對植物蒸騰失水速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "根據考評邏輯，你同意該學生的結論有效嗎？試加以解釋。 (2 分)",
+                answer: "<span class='keyword'>不同意 / 無效。(1分)</span><br>因為裝置 X 和 Y 之間存在多於一個自變量（除了風速不同外，兩者的植物品種及葉表面積也完全不同）。葉面積的巨大差異本身就會極大地影響蒸騰速率，故無法確定失水量的差異純粹是由風速引起。(1分)"
+            },
+            {
+                label: "(b)",
+                question: "若要使實驗能得出有效的比較結論，請寫出應如何修飾裝置 Y 的實驗設計。 (2 分)",
+                answer: "應將裝置 Y 中的植物更換為與裝置 X 相同的「大葉榕」（或同一盆大葉榕在不同時段進行測試），(1分)<br>以確保葉面積及氣孔數量等植物內在條件完全一致，維持唯一的自變量是「風速」。(1分)"
+            }
+        ]
+    },
+    {
+        title: "【第 13 題 】",
+        concept: "防禦與疾病",
+        scenario: "某藥廠同時研發了兩款預防流感的疫苗（疫苗甲和疫苗乙）。為了證明「疫苗乙比疫苗甲更能誘發強烈的抗體反應」，藥廠對兩組健康小鼠進行了以下注射實驗，並在第 30 天量度血液中的抗體濃度。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法</th><th style='background-color: #f1f5f9; padding: 5px;'>第 30 天的血液抗體濃度 (任意單位)</th></tr><tr><td style='padding: 5px;'>A</td><td style='padding: 5px;'>注射 1 毫克 (mg) 的 疫苗甲</td><td style='padding: 5px;'>150</td></tr><tr><td style='padding: 5px;'>B</td><td style='padding: 5px;'>注射 5 毫克 (mg) 的 疫苗乙</td><td style='padding: 5px;'>480</td></tr></table><br>藥廠根據結果在發佈會上得出結論：「數據證明疫苗乙誘發抗體的能力遠勝於疫苗甲。」",
+        purpose: "比較疫苗甲和疫苗乙刺激小鼠產生抗體的能力。",
+        parts: [
+            {
+                label: "(a)",
+                question: "根據考評邏輯，這個結論是否有效？試解釋你的答案。 (2 分)",
+                answer: "<span class='keyword'>無效 / 不同意。(1分)</span><br>因為實驗中存在兩個自變量（除了疫苗的種類不同，注射的劑量亦不同）。組別 B 注射的劑量（5 mg）是組別 A 的 5 倍，劑量較高本身就能誘發更多抗體，因此無法判定抗體濃度的差異是因為「疫苗乙」本身品質較好還是純粹因為「劑量大」。(1分)"
+            },
+            {
+                label: "(b)",
+                question: "試指出一項實驗設計中必須保持不變的條件，並解釋應如何修飾組別 B 的設計以得出公平且有效的結論。 (2 分)",
+                answer: "必須保持兩組的「疫苗注射劑量」完全相同。(1分)<br>應將組別 B 的處理方法修改為「只注射 1 毫克 (mg) 的疫苗乙」，以確保單一變量（只比較疫苗種類的差異），才能進行公平的效能比較。(1分)"
+            }
+        ]
+    },
+{
+        title: "【第 14 題 】",
+        concept: "細胞與物質轉運",
+        scenario: "科學家將兩塊面積相同、存活的小腸絨毛組織，分別放入含有相同濃度葡萄糖的生理溶液中。兩組溶液的溫度均維持在 37°C，但通入的氣體不同。兩小時後，量度小腸組織內累積的葡萄糖濃度。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (通入的氣體)</th><th style='background-color: #f1f5f9; padding: 5px;'>小腸組織內的葡萄糖濃度 (任意單位)</th></tr><tr><td style='padding: 5px;'>A</td><td style='padding: 5px;'>持續通入氧氣 (O₂)</td><td style='padding: 5px;'>120</td></tr><tr><td style='padding: 5px;'>B</td><td style='padding: 5px;'>持續通入氮氣 (N₂)，確保無氧氣存在</td><td style='padding: 5px;'>15</td></tr></table>",
+        purpose: "探究小腸上皮細胞吸收葡萄糖的機制。",
+        parts: [
+            {
+                label: "(a)",
+                question: "比較組別 A 和 B 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在無氧環境下（組別 B），小腸組織內的葡萄糖濃度顯著低於有氧氣供應的對照組（組別 A）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示缺乏氧氣（無法進行有氧呼吸以產生 ATP / 能量）會大幅阻礙葡萄糖的吸收，由此得出小腸吸收葡萄糖是依賴需要消耗能量的「主動轉運」機制。"
+            },
+            {
+                label: "(b)",
+                question: "就這項實驗設計而言，組別 A 的設計有什麼重要目的？ (1 分)",
+                answer: "作為<span class='keyword'>對照裝置</span>，提供正常有氧呼吸產生能量的基準，以證明葡萄糖吸收量的下降純粹是由於缺乏氧氣供應（缺乏能量）所引起的。"
+            }
+        ]
+    },
+    {
+        title: "【第 15 題】",
+        concept: "人體協調",
+        scenario: "研究人員抽取了兩條長度和粗幼完全相同的青蛙坐骨神經纖維，放置在營養液中。他們改變營養液的溫度，並給予相同強度的電刺激，量度神經衝動傳導的平均速率。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>樣本</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (環境溫度)</th><th style='background-color: #f1f5f9; padding: 5px;'>神經衝動傳導速率 (m/s)</th></tr><tr><td style='padding: 5px;'>甲</td><td style='padding: 5px;'>25°C (模擬青蛙夏天的體溫)</td><td style='padding: 5px;'>30.5</td></tr><tr><td style='padding: 5px;'>乙</td><td style='padding: 5px;'>5°C (模擬青蛙冬眠的體溫)</td><td style='padding: 5px;'>6.2</td></tr></table>",
+        purpose: "探究環境溫度對兩棲類動物神經衝動傳導速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "比較樣本 甲 和 乙 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>處於 5°C 的神經纖維（樣本 乙），其傳導速率顯著低於處於 25°C 的對照組（樣本 甲）。<br><span class='keyword'>生物學結論 (1分)：</span>由此得出，低溫會大幅減慢神經衝動在神經纖維上的傳導速率（或：神經傳導速率會隨溫度下降而降低）。"
+            },
+            {
+                label: "(b)",
+                question: "為什麼實驗必須確保兩條神經纖維的「粗幼（直徑）」完全相同？ (1 分)",
+                answer: "因為神經纖維的直徑本身會影響傳導速率（越粗傳導越快），保持其不變能<span class='keyword'>確保「溫度」是實驗中唯一的自變量</span>，使比較公平有效。"
+            }
+        ]
+    },
+    {
+        title: "【第 16 題 】",
+        concept: "防禦與疾病",
+        scenario: "某藥廠測試針對某種細菌的新型疫苗。將健康小鼠分為四組，分別注射不同配方的疫苗（死菌疫苗 vs 減毒活菌疫苗），並在第 40 天量度其血液中的特異性抗體濃度。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (第 0 天)</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (第 20 天)</th><th style='background-color: #f1f5f9; padding: 5px;'>第 40 天的抗體濃度 (任意單位)</th></tr><tr><td style='padding: 5px;'>1</td><td style='padding: 5px;'>注射生理鹽水</td><td style='padding: 5px;'>無</td><td style='padding: 5px;'>0</td></tr><tr><td style='padding: 5px;'>2</td><td style='padding: 5px;'>注射 1 劑「死菌疫苗」</td><td style='padding: 5px;'>無</td><td style='padding: 5px;'>35</td></tr><tr><td style='padding: 5px;'>3</td><td style='padding: 5px;'>注射 1 劑「減毒活菌疫苗」</td><td style='padding: 5px;'>無</td><td style='padding: 5px;'>150</td></tr><tr><td style='padding: 5px;'>4</td><td style='padding: 5px;'>注射 1 劑「減毒活菌疫苗」</td><td style='padding: 5px;'>注射第 2 劑「減毒活菌疫苗」</td><td style='padding: 5px;'>890</td></tr></table>",
+        purpose: "探究不同疫苗配方（死菌 vs 活菌）及接種次數對誘發抗體產量的影響。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較組別 2 和 3 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>注射減毒活菌疫苗（組別 3）產生的抗體濃度顯著高於注射死菌疫苗（組別 2）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示減毒活菌疫苗(在誘發初次免疫反應產生抗體)的效能上遠強於死菌疫苗。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較組別 3 和 4 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>注射兩劑減毒活菌疫苗（組別 4）的抗體濃度大幅高於只注射一劑（組別 3）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示第二劑疫苗能(引發再次免疫反應，)迅速產生極大量的抗體。"
+            },
+            {
+                label: "(b)",
+                question: "綜合以上數據，若要為高危群組制訂最有效的疫苗接種策略，你能得出什麼綜合結論？ (2 分)",
+                answer: "<span class='keyword'>綜合結論 (2分)：</span>最有效的策略是使用「減毒活菌疫苗」而非死菌疫苗 (1)，並且必須實施「多劑（加強劑）接種策略」以達至最高水平的抗體保護 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 17 題 】",
+        concept: "酶的特性",
+        scenario: "科學家研究化學物 X 對某種消化酶活性的影響，並探討受質濃度如何改變這種影響。實驗在 37°C 及最佳 pH 值下進行，量度在不同條件下產物的生成速率。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>試管</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (受質濃度)</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (抑制劑)</th><th style='background-color: #f1f5f9; padding: 5px;'>產物生成速率 (任意單位/分鐘)</th></tr><tr><td style='padding: 5px;'>I</td><td style='padding: 5px;'>低濃度受質</td><td style='padding: 5px;'>無加入化學物 X</td><td style='padding: 5px;'>40</td></tr><tr><td style='padding: 5px;'>II</td><td style='padding: 5px;'>低濃度受質</td><td style='padding: 5px;'>加入 1 mL 化學物 X</td><td style='padding: 5px;'>12</td></tr><tr><td style='padding: 5px;'>III</td><td style='padding: 5px;'>高濃度受質</td><td style='padding: 5px;'>加入 1 mL 化學物 X</td><td style='padding: 5px;'>39</td></tr></table>",
+        purpose: "探究化學物 X 的抑制性質，以及提高受質濃度能否克服該抑制作用。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較試管 I 和 II 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>加入化學物 X 後（試管 II），產物的生成速率顯著低於沒有加入的對照組（試管 I）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示化學物 X 會降低該消化酶的活性，是一種酶抑制劑。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較試管 II 和 III 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在有化學物 X 存在的情況下，高濃度受質（試管 III）的反應速率大幅回升，甚至接近試管 I 的無抑制水平。<br><span class='keyword'>生物學結論 (1分)：</span>顯示大幅增加受質濃度能夠克服 / 抵消化學物 X 的抑制作用。"
+            },
+            {
+                label: "(b)",
+                question: "綜合上述數據，對於化學物 X 屬於哪一種類型的抑制劑，你有何綜合結論？ (2 分)",
+                answer: "<span class='keyword'>綜合結論 (2分)：</span>由於其抑制作用能被高濃度的受質克服 (1)，由此得出化學物 X 是一種「競爭性抑制劑」，它與受質競爭結合酶的活性部位 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 18 題 】",
+        concept: "生態學",
+        scenario: "生態學家研究外來植物 A 對本地植物 B 的生存威脅。他們在溫室內模擬不同的光照強度，將兩種植物單獨種植及混合種植，兩個月後量度植物的平均乾質量。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>裝置</th><th style='background-color: #f1f5f9; padding: 5px;'>光照環境</th><th style='background-color: #f1f5f9; padding: 5px;'>種植方式</th><th style='background-color: #f1f5f9; padding: 5px;'>植物 A 平均乾質量 (g)</th><th style='background-color: #f1f5f9; padding: 5px;'>植物 B 平均乾質量 (g)</th></tr><tr><td style='padding: 5px;'>1</td><td style='padding: 5px;'>強光 (100%)</td><td style='padding: 5px;'>單獨種植</td><td style='padding: 5px;'>450</td><td style='padding: 5px;'>420</td></tr><tr><td style='padding: 5px;'>2</td><td style='padding: 5px;'>強光 (100%)</td><td style='padding: 5px;'>A與B 混合種植</td><td style='padding: 5px;'>430</td><td style='padding: 5px;'>80</td></tr><tr><td style='padding: 5px;'>3</td><td style='padding: 5px;'>弱光 (20%)</td><td style='padding: 5px;'>單獨種植</td><td style='padding: 5px;'>180</td><td style='padding: 5px;'>200</td></tr><tr><td style='padding: 5px;'>4</td><td style='padding: 5px;'>弱光 (20%)</td><td style='padding: 5px;'>A與B 混合種植</td><td style='padding: 5px;'>120</td><td style='padding: 5px;'>180</td></tr></table>",
+        purpose: "探究環境光照強度如何影響外來植物 A 與本地植物 B 的種間競爭。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較裝置 1 和 2 中「植物 B」的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在強光下混合種植（裝置 2），本地植物 B 的乾質量大幅低於其單獨種植時（裝置 1）的數值。<br><span class='keyword'>生物學結論 (1分)：</span>顯示在強光環境中，外來植物 A 具有強大的競爭優勢，會嚴重抑制本地植物 B 的生長。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較裝置 2 和 4 中「植物 B」的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在弱光下混合種植（裝置 4），植物 B 的乾質量遠高於強光混合種植（裝置 2），且沒有受到植物 A 嚴重的抑制。<br><span class='keyword'>生物學結論 (1分)：</span>顯示光照強度減弱會令外來植物 A 喪失其競爭優勢，使其無法成功排斥植物 B。"
+            },
+            {
+                label: "(b)",
+                question: "綜合所有數據，關於外來植物 A 對本地植物 B 構成威脅的條件，你有什麼綜合結論？ (2 分)",
+                answer: "<span class='keyword'>綜合結論 (2分)：</span>外來植物 A 與本地植物 B 之間存在強烈的種間競爭 (1)，但外來植物 A 只會在「強光環境」下對本地物種構成嚴重的生存威脅（或：競爭排斥的結果高度依賴於環境因子） (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 19 題 】",
+        concept: "人體協調",
+        scenario: "某科研機構開發了一種名為「降糖素-Z」的新藥，聲稱能有效降低糖尿病患者的血糖。研究員進行了以下小鼠測試，並在給藥後 2 小時量度其血糖濃度的下降幅度。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (小鼠的飲食狀態)</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (藥物劑量)</th><th style='background-color: #f1f5f9; padding: 5px;'>血糖濃度下降幅度 (mmol/L)</th></tr><tr><td style='padding: 5px;'>甲</td><td style='padding: 5px;'>禁食 12 小時的空腹小鼠</td><td style='padding: 5px;'>注射 5 mg「降糖素-Z」</td><td style='padding: 5px;'>3.5</td></tr><tr><td style='padding: 5px;'>乙</td><td style='padding: 5px;'>剛餵食高糖份飼料的小鼠</td><td style='padding: 5px;'>注射 10 mg「降糖素-Z」</td><td style='padding: 5px;'>0.5</td></tr></table><br>研究員觀察數據後得出結論：「數據顯示，10 mg 劑量的藥效遠比 5 mg 差。」",
+        purpose: "比較不同劑量的「降糖素-Z」降低血糖的效能。",
+        parts: [
+            {
+                label: "(a)",
+                question: "根據考評邏輯，你同意該研究員的結論有效嗎？試加以解釋。 (2 分)",
+                answer: "<span class='keyword'>不同意 / 無效。(1分)</span><br>因為組別 甲 和 乙 之間存在兩個自變量（除了藥物劑量不同外，小鼠的飲食狀態也不同）。剛餵食高糖飼料（組別 乙）本身就會透過消化吸收導致血糖大幅飆升，這會抵消/掩蓋了藥物的降糖效果，故無法確定降幅差異是純粹由「藥物劑量」引起的。(1分)"
+            },
+            {
+                label: "(b)",
+                question: "若要使實驗能得出有效的比較結論，請寫出應如何修改組別 乙 的實驗設計。 (2 分)",
+                answer: "應將組別 乙 中的小鼠也更改為「禁食 12 小時的空腹小鼠」，(1分)<br>以確保飲食狀態完全一致（消除高糖飲食導致的血糖上升干擾），維持單一變量（只有藥物劑量不同）。(1分)"
+            }
+        ]
+    },
+    {
+        title: "【第 20 題 】",
+        concept: "植物生理學",
+        scenario: "學生利用蒸騰計探究環境因素對植物蒸騰速率的影響。他準備了兩套裝置，分別放在不同的環境中，並記錄氣泡在 1 小時內移動的距離。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>裝置</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (環境的光照與溫度)</th><th style='background-color: #f1f5f9; padding: 5px;'>1 小時內氣泡移動距離 (mm)</th></tr><tr><td style='padding: 5px;'>P</td><td style='padding: 5px;'>強光照射，環境溫度設定為 30°C</td><td style='padding: 5px;'>55</td></tr><tr><td style='padding: 5px;'>Q</td><td style='padding: 5px;'>完全黑暗，環境溫度設定為 15°C</td><td style='padding: 5px;'>4</td></tr></table><br>學生根據結果在報告中寫下結論：「強光照射會導致氣孔完全打開，從而大幅增加植物的蒸騰速率。」",
+        purpose: "探究光照強度對植物蒸騰速率的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "就實驗設計而言，這個結論是否具備有效性？試解釋你的答案。 (2 分)",
+                answer: "<span class='keyword'>無效 / 不同意。(1分)</span><br>由於兩個裝置中同時改變了兩個變量（光照強度 和 溫度）。較高的溫度（30°C）本身就會加快水分從葉肉細胞表面蒸發的速率，因此無法斷定蒸騰速率的巨大差異純粹是由光照改變（氣孔開關）所引起的。(1分)"
+            },
+            {
+                label: "(b)",
+                question: "試指出一項實驗設計中必須保持不變的環境條件，並解釋應如何修改裝置 Q 的設計以得出公平的結論。 (2 分)",
+                answer: "必須將兩個裝置的「環境溫度」保持不變。(1分)<br>應將裝置 Q 的環境溫度調高至與裝置 P 相同的「30°C」，確保實驗只有「光照強度（強光 vs 黑暗）」這一個單一自變量，才能有效地比較光照對蒸騰速率的影響。(1分)"
+            }
+        ]
+    },
+    {
+        title: "【第 21 題 】",
+        concept: "細胞與物質轉運",
+        scenario: "學生利用新鮮的白蘿蔔切出兩條長度、質量相同的圓柱體。將它們分別浸泡在兩個含有不同液體的燒杯中。兩小時後，取出蘿蔔條，用濾紙吸乾表面水分並量度其質量變化。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>燒杯</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (浸泡液體)</th><th style='background-color: #f1f5f9; padding: 5px;'>兩小時後蘿蔔條的質量變化 (%)</th></tr><tr><td style='padding: 5px;'>A</td><td style='padding: 5px;'>0.4 M 蔗糖溶液</td><td style='padding: 5px;'>0%</td></tr><tr><td style='padding: 5px;'>B</td><td style='padding: 5px;'>1.0 M 蔗糖溶液</td><td style='padding: 5px;'>-18%</td></tr></table>",
+        purpose: "探究高濃度（1.0 M）蔗糖溶液對植物細胞滲透失水的影響。",
+        parts: [
+            {
+                label: " ",
+                question: "比較燒杯 A 和 B 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>只有浸泡在 1.0 M 蔗糖溶液的蘿蔔條（燒杯 B）質量顯著下降，而浸泡在 0.4 M 蔗糖溶液的對照組（燒杯 A）質量沒有改變。<br><span class='keyword'>生物學結論 (1分)：</span>顯示 1.0 M 蔗糖溶液的水勢低於蘿蔔細胞質（屬於高滲溶液），導致水分子透過滲透作用淨流出細胞。"
+            }
+        ]
+    },
+    {
+        title: "【第 22 題 】",
+        concept: "酶的特性",
+        scenario: "科學家提取了新鮮的豬肝臟勻漿（含有過氧化氫酶），以探究鉛離子（一種重金屬）對酶活性的影響。兩支試管均加入等量的過氧化氫（H₂O₂）溶液，並放置在 37°C 水浴中。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>試管</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (加入的物質)</th><th style='background-color: #f1f5f9; padding: 5px;'>首 5 分鐘內收集到的氧氣體積 (cm³)</th></tr><tr><td style='padding: 5px;'>甲</td><td style='padding: 5px;'>5 mL 豬肝臟勻漿 + 2 mL 蒸餾水</td><td style='padding: 5px;'>45.0</td></tr><tr><td style='padding: 5px;'>乙</td><td style='padding: 5px;'>5 mL 豬肝臟勻漿 + 2 mL 鉛離子溶液</td><td style='padding: 5px;'>3.2</td></tr></table>",
+        purpose: "探究鉛離子對過氧化氫酶催化分解過氧化氫的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "比較試管 甲 和 乙 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>加入鉛離子溶液的試管 乙，其產生的氧氣體積顯著少於對照組的試管 甲。<br><span class='keyword'>生物學結論 (1分)：</span>由此得出，鉛離子會抑制過氧化氫酶的催化活性。"
+            },
+            {
+                label: "(b)",
+                question: "就這項實驗設計而言，為什麼試管 甲 必須加入「2 mL 蒸餾水」？ (1 分)",
+                answer: "確保兩支試管的總體積及反應物（酶與受質）濃度完全相同，<span class='keyword'>證明氧氣產量的下降純粹是由鉛離子的存在所引起的</span>，而非溶液被稀釋所致。"
+            }
+        ]
+    },
+    {
+        title: "【第 23 題 】",
+        concept: "防禦與疾病",
+        scenario: "醫學化驗所為一種具抗藥性的超級細菌（X 菌）尋找最佳的治療方案。研究員在培養液中加入相同數量的 X 菌，並分別加入不同種類的抗生素進行測試。24 小時後，利用分光光度計量度培養液的混濁度（混濁度愈高，代表細菌數量愈多）。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>培養瓶</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (加入的抗生素)</th><th style='background-color: #f1f5f9; padding: 5px;'>24 小時後的細菌混濁度 (任意單位)</th></tr><tr><td style='padding: 5px;'>1</td><td style='padding: 5px;'>不加任何抗生素 (加入等量無菌水)</td><td style='padding: 5px;'>100</td></tr><tr><td style='padding: 5px;'>2</td><td style='padding: 5px;'>只加入 抗生素 P (標準劑量)</td><td style='padding: 5px;'>75</td></tr><tr><td style='padding: 5px;'>3</td><td style='padding: 5px;'>只加入 抗生素 Q (標準劑量)</td><td style='padding: 5px;'>68</td></tr><tr><td style='padding: 5px;'>4</td><td style='padding: 5px;'>同時加入 抗生素 P 和 抗生素 Q (均為標準劑量)</td><td style='padding: 5px;'>5</td></tr></table>",
+        purpose: "探究單一使用及混合使用抗生素對抑制超級細菌 X 的效能。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較培養瓶 1 和 2 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>加入抗生素 P 的培養瓶 2，其混濁度比不加抗生素的對照組（培養瓶 1）略低。<br><span class='keyword'>生物學結論 (1分)：</span>顯示單獨使用抗生素 P 只能輕微抑制超級細菌 X 的生長（細菌具一定抗藥性）。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較培養瓶 2、3 和 4 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>同時加入兩種抗生素的培養瓶 4，其混濁度急劇下降，遠低於單獨使用的培養瓶 2 或 3。<br><span class='keyword'>生物學結論 (1分)：</span>顯示同時混合使用抗生素 P 和 Q 會產生強烈的協同效應，大幅增強殺菌能力。"
+            },
+            {
+                label: "(b)",
+                question: "綜合以上數據，對於治療感染超級細菌 X 的最佳用藥策略，你有什麼綜合結論？ (2 分)",
+                answer: "<span class='keyword'>綜合結論 (2分)：</span>由於單一抗生素無法有效控制具抗藥性的超級細菌 X (1)，必須採用「混合抗生素療法（P+Q）」才能徹底抑制其生長及繁殖 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 24 題 】",
+        concept: "植物生理學",
+        scenario: "學生利用帶葉枝條及蒸騰計，探究環境風速及葉片表面處理對蒸騰速率的影響。實驗在相同溫度及光照的房間內進行。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>裝置</th><th style='background-color: #f1f5f9; padding: 5px;'>葉片表面處理</th><th style='background-color: #f1f5f9; padding: 5px;'>環境風速</th><th style='background-color: #f1f5f9; padding: 5px;'>蒸騰速率 (mm/min)</th></tr><tr><td style='padding: 5px;'>I</td><td style='padding: 5px;'>不作處理</td><td style='padding: 5px;'>靜止空氣</td><td style='padding: 5px;'>12.0</td></tr><tr><td style='padding: 5px;'>II</td><td style='padding: 5px;'>不作處理</td><td style='padding: 5px;'>流動空氣 (開風扇)</td><td style='padding: 5px;'>38.5</td></tr><tr><td style='padding: 5px;'>III</td><td style='padding: 5px;'>葉片上下表面塗滿凡士林</td><td style='padding: 5px;'>靜止空氣</td><td style='padding: 5px;'>0.5</td></tr><tr><td style='padding: 5px;'>IV</td><td style='padding: 5px;'>葉片上下表面塗滿凡士林</td><td style='padding: 5px;'>流動空氣 (開風扇)</td><td style='padding: 5px;'>0.8</td></tr></table>",
+        purpose: "探究氣孔狀態及空氣流動如何影響植物的蒸騰作用。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較裝置 I 和 II 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在流動空氣中（裝置 II），蒸騰速率顯著高於靜止空氣的對照組（裝置 I）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示風（能吹走葉片表面的水氣，維持較陡峭的水勢梯度，）從而加快蒸騰作用。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較裝置 II 和 IV 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在相同的流動空氣下，塗滿凡士林的枝條（裝置 IV）蒸騰速率極低，遠低於不作處理的裝置 II。<br><span class='keyword'>生物學結論 (1分)：</span>顯示凡士林（物理性地阻塞了氣孔，）阻止了水氣散失。"
+            },
+            {
+                label: "(b)",
+                question: "綜合四組數據，關於氣孔在蒸騰作用中的角色，你能得出什麼綜合結論？ (2 分)",
+                answer: "<span class='keyword'>綜合結論 (2分)：</span>氣孔是植物水分散失的主要通道 (1)，若氣孔被完全阻塞，即使外界環境（如高風速）極度有利於水分蒸發，植物也幾乎無法進行蒸騰作用 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 25 題 】",
+        concept: "防禦與疾病",
+        scenario: "某藥廠為了嚴謹地測試新研發的「Z 型流感疫苗」是否有效，設計了以下動物實驗：<br>選取 100 隻品種、年齡、性別完全相同且健康的小鼠，隨機分為兩組，飼養在相同溫度、濕度及飲食條件的實驗室中。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (第 0 天注射)</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (第 30 天)</th><th style='background-color: #f1f5f9; padding: 5px;'>第 40 天感染 Z 型流感後的存活率</th></tr><tr><td style='padding: 5px;'>實驗組</td><td style='padding: 5px;'>肌肉注射 1 mL Z 型流感疫苗</td><td style='padding: 5px;'>讓小鼠暴露於等量 Z 型流感病毒中</td><td style='padding: 5px;'>96%</td></tr><tr><td style='padding: 5px;'>對照組</td><td style='padding: 5px;'>肌肉注射 1 mL 生理鹽水</td><td style='padding: 5px;'>讓小鼠暴露於等量 Z 型流感病毒中</td><td style='padding: 5px;'>12%</td></tr></table><br>研究員根據上述結果得出結論：「數據明確證明，注射 Z 型流感疫苗能有效提高小鼠對抗該病毒的存活率。」",
+        purpose: "測試 Z 型流感疫苗能否有效保護小鼠免受病毒感染。",
+        parts: [
+            {
+                label: " ",
+                question: "你同意該研究員的結論有效嗎？試加以解釋。 (2 分)",
+                answer: "<span class='keyword'>同意 / 結論有效。(1分)</span><br>因為實驗設計完全符合「單一變量原則」。除了是否含有疫苗成分這一個自變量外，所有其他變量（如小鼠年齡、性別、注射體積、環境、病毒暴露量）都被嚴格控制並保持不變，確保存活率的差異純粹由疫苗引起，是一項公平測試。(1分)"
+            }
+        ]
+    },
+    {
+        title: "【第 26 題 】",
+        concept: "生態與環境",
+        scenario: "學生利用「選擇室」探究潮蟲對環境濕度的偏好。為了確保實驗準確，學生進行了極其嚴謹的設定：<br><ul><li>選擇室的左半部放有濕潤濾紙，右半部放有乾燥濾紙。</li><li>選擇室上方全程覆蓋著一塊完全不透光的黑板，並放置在溫度維持於 25°C 的恆溫箱內。</li><li>將 30 隻潮蟲放在選擇室正中央，15 分鐘後點算兩邊的潮蟲數量。</li></ul><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>選擇室區域</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (濕度與光照條件)</th><th style='background-color: #f1f5f9; padding: 5px;'>15 分鐘後的潮蟲分佈數量</th></tr><tr><td style='padding: 5px;'>左半部</td><td style='padding: 5px;'>濕潤、完全黑暗</td><td style='padding: 5px;'>28 隻</td></tr><tr><td style='padding: 5px;'>右半部</td><td style='padding: 5px;'>乾燥、完全黑暗</td><td style='padding: 5px;'>2 隻</td></tr></table><br>學生觀察數據後得出結論：「潮蟲明顯偏好棲息在濕潤的環境中。」",
+        purpose: "探究濕度如何影響潮蟲的分佈行為。",
+        parts: [
+            {
+                label: "(a)",
+                question: "根據科學探究的邏輯，這個結論是否有效？試加以解釋。 (2 分)",
+                answer: "<span class='keyword'>有效 / 同意。(1分)</span><br>因為實驗中確保了只有「濕度（濕潤 vs 乾燥）」這一個獨立變量。其他可能影響潮蟲行為的環境因素（如光照強度為完全黑暗、溫度為恆溫 25°C）均保持一致，排除了其他干擾，因此結論完全有效。(1分)"
+            },
+            {
+                label: "(b)",
+                question: "在這個探究「濕度偏好」的實驗中，上方的遮光黑板是否需要作出一半透光、一半不透光的修改？試解釋原因。 (2 分)",
+                answer: "不需要作出修改。(1分)<br>因為本實驗的唯一探究目的是「濕度」。若將遮光板改為一半透光，實驗便會出現「光照」和「濕度」兩個自變量。維持全程覆蓋黑板（完全黑暗）能<span class='keyword'>確保光照不會成為干擾變量</span>，保證實驗的公平性。(1分)"
+            }
+        ]
+    },
+{
+        title: "【第 27 題 】",
+        concept: "酶的特性",
+        scenario: "學生在實驗室探究溫度對唾液澱粉酶活性的影響。他們準備了兩支試管，分別加入等量的澱粉溶液，並將其中一支試管的澱粉酶預先進行高溫煮沸處理。兩支試管均放置在 37°C 的水浴中，10 分鐘後加入本立德液測試還原糖（麥芽糖）的生成量。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>試管</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (加入的物質)</th><th style='background-color: #f1f5f9; padding: 5px;'>10 分鐘後本立德測試的結果</th></tr><tr><td style='padding: 5px;'>P</td><td style='padding: 5px;'>5 mL 澱粉溶液 + 2 mL 未經處理的新鮮澱粉酶</td><td style='padding: 5px;'>產生大量磚紅色沉澱物</td></tr><tr><td style='padding: 5px;'>Q</td><td style='padding: 5px;'>5 mL 澱粉溶液 + 2 mL 預先煮沸了 5 分鐘的澱粉酶</td><td style='padding: 5px;'>溶液維持藍色</td></tr></table>",
+        purpose: "探究極端高溫（煮沸）對澱粉酶催化能力的影響。",
+        parts: [
+            {
+                label: "(a)",
+                question: "比較試管 P 和 Q 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>加入新鮮澱粉酶的試管 P 能產生大量麥芽糖，比試管Q多。而加入曾被煮沸的澱粉酶的試管 Q 則完全沒有還原糖生成。<br><span class='keyword'>生物學結論 (1分)：</span>顯示極端高溫導致澱粉酶催化澱粉分解的能力減弱。"
+            },
+            {
+                label: "(b)",
+                question: "就這項實驗設計而言，試管 P 的設計有什麼目的？ (1 分)",
+                answer: "作為<span class='keyword'>對照裝置</span>，證明在正常情況下該批澱粉酶確實具有分解澱粉的活性，確保試管 Q 中無法分解澱粉的結果純粹是因為「高溫煮沸處理」所引起的。"
+            }
+        ]
+    },
+    {
+        title: "【第 28 題 】",
+        concept: "人體協調",
+        scenario: "科研人員利用兩組健康且已禁食 12 小時的小鼠，探究人造胰島素對血糖濃度的影響。小鼠被隨機分配接受不同的注射，並在注射後 30 分鐘量度其血液中的葡萄糖濃度變化。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (肌肉注射)</th><th style='background-color: #f1f5f9; padding: 5px;'>30 分鐘後血糖濃度的平均變化 (mmol/L)</th></tr><tr><td style='padding: 5px;'>A</td><td style='padding: 5px;'>注射 1 mL 生理鹽水</td><td style='padding: 5px;'>+ 0.1</td></tr><tr><td style='padding: 5px;'>B</td><td style='padding: 5px;'>注射 1 mL 人造胰島素溶液</td><td style='padding: 5px;'>- 3.8</td></tr></table>",
+        purpose: "探究人造胰島素能否有效降低空腹小鼠的血糖濃度。",
+        parts: [
+            {
+                label: "(a)",
+                question: "比較組別 A 和 B 的結果，你能得出什麼結論？ (2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>注射了人造胰島素的組別 B 小鼠，其血糖濃度出現了大幅下降，而注射生理鹽水的對照組（組別 A）血糖濃度幾乎沒有改變。<br><span class='keyword'>生物學結論 (1分)：</span>由此得出，人造胰島素能有效促進小鼠體內血糖的吸收或轉化，從而降低血液中的葡萄糖濃度。"
+            },
+            {
+                label: "(b)",
+                question: "在這項活體動物實驗中，為什麼組別 A 必須注射「1 mL 生理鹽水」而非不作任何處理？ (1 分)",
+                answer: "模擬肌肉注射時的物理創傷、痛楚壓力及注入體內的液體體積，以證明組別 B 血糖的大幅下降<span class='keyword'>純粹是由「胰島素的化學作用」引起</span>，排除了注射操作本身對血糖變化的干擾。"
+            }
+        ]
+    },
+    {
+        title: "【第 29 題】",
+        concept: "生態與環境",
+        scenario: "一處荒地受到工業銅（Copper）污染。生態學家將本地植物 A 與一種近期入侵的外來植物 B 分別種植在無污染及高濃度銅污染的泥土中，兩個月後量度它們的平均乾質量。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>測試植物</th><th style='background-color: #f1f5f9; padding: 5px;'>泥土處理 (銅污染濃度)</th><th style='background-color: #f1f5f9; padding: 5px;'>兩個月後的平均乾質量 (g)</th></tr><tr><td style='padding: 5px;'>1</td><td style='padding: 5px;'>本地植物 A</td><td style='padding: 5px;'>0 mg/kg (無污染)</td><td style='padding: 5px;'>125</td></tr><tr><td style='padding: 5px;'>2</td><td style='padding: 5px;'>本地植物 A</td><td style='padding: 5px;'>100 mg/kg (高污染)</td><td style='padding: 5px;'>15</td></tr><tr><td style='padding: 5px;'>3</td><td style='padding: 5px;'>外來植物 B</td><td style='padding: 5px;'>0 mg/kg (無污染)</td><td style='padding: 5px;'>130</td></tr><tr><td style='padding: 5px;'>4</td><td style='padding: 5px;'>外來植物 B</td><td style='padding: 5px;'>100 mg/kg (高污染)</td><td style='padding: 5px;'>118</td></tr></table>",
+        purpose: "探究重金屬（銅）污染對本地與外來植物生長的影響。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較組別 1 和 2 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在高濃度銅污染的泥土中（組別 2），本地植物 A 的乾質量大幅低於無污染泥土的對照組（組別 1）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示高濃度的重金屬（銅）對本地植物 A 具有強烈的毒性，嚴重抑制其生長。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較組別 3 和 4 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在高濃度銅污染的泥土中（組別 4），外來植物 B 的乾質量只比無污染泥土（組別 3）輕微下降。<br><span class='keyword'>生物學結論 (1分)：</span>顯示外來植物 B 對重金屬銅具有極高的耐受性/抵抗力，其生長幾乎不受污染影響。"
+            },
+            {
+                label: "(b)",
+                question: "綜合上述數據，為何該外來植物 B 能夠輕易在工業污染區取代本地植物 A？試寫出一項綜合結論。 (2 分)",
+                answer: "<span class='keyword'>綜合結論 (2分)：</span>外來植物 B 擁有遠高於本地植物 A 的重金屬耐受能力 (1)，這使得外來植物 B 在受污染的惡劣環境中具備絕對的生存與競爭優勢，從而輕易淘汰本地物種 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 30 題】",
+        concept: "細胞與物質轉運",
+        scenario: "科學家利用四組存活的海藻組織，探究它們吸收某種礦物質離子 X 的機制。實驗改變了海藻細胞外的離子 X 濃度，並在其中兩組加入了呼吸作用抑制劑。兩小時後量度離子 X 的吸收速率。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>組別</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (細胞外離子 X 濃度)</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (是否加入抑制劑)</th><th style='background-color: #f1f5f9; padding: 5px;'>離子 X 的吸收速率 (任意單位)</th></tr><tr><td style='padding: 5px;'>甲</td><td style='padding: 5px;'>高濃度 (高於細胞內部)</td><td style='padding: 5px;'>無加入</td><td style='padding: 5px;'>65</td></tr><tr><td style='padding: 5px;'>乙</td><td style='padding: 5px;'>高濃度 (高於細胞內部)</td><td style='padding: 5px;'>加入呼吸作用抑制劑</td><td style='padding: 5px;'>25</td></tr><tr><td style='padding: 5px;'>丙</td><td style='padding: 5px;'>低濃度 (低於細胞內部)</td><td style='padding: 5px;'>無加入</td><td style='padding: 5px;'>40</td></tr><tr><td style='padding: 5px;'>丁</td><td style='padding: 5px;'>低濃度 (低於細胞內部)</td><td style='padding: 5px;'>加入呼吸作用抑制劑</td><td style='padding: 5px;'>0</td></tr></table>",
+        purpose: "探究濃度梯度及能量供應對細胞吸收礦物質離子 X 的影響。",
+        parts: [
+            {
+                label: "(a)(i)",
+                question: "寫出比較組別 丙 和 丁 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在低濃度環境中，正常海藻（組別 丙）能吸收離子，但加入抑制劑後（組別 丁）吸收速率跌至零。<br><span class='keyword'>生物學結論 (1分)：</span>顯示逆濃度梯度的吸收完全依賴呼吸作用提供能量。"
+            },
+            {
+                label: "(a)(ii)",
+                question: "寫出比較組別 甲 和 乙 的結果而得到的結論。(2 分)",
+                answer: "<span class='keyword'>比較結果 (1分)：</span>在高濃度環境中，加入了呼吸作用抑制劑（組別 乙）的吸收速率較低，但海藻依然能保持一定的離子吸收速率（25）。<br><span class='keyword'>生物學結論 (1分)：</span>顯示高濃度的情況下，離子 X 能夠不消耗能量進入細胞。"
+            },
+            {
+                label: "(b)",
+                question: "綜合四組數據，海藻細胞究竟透過什麼機制吸收離子 X？試寫出一項綜合結論。 (2 分)",
+                answer: "<span class='keyword'>綜合結論 (2分)：</span>海藻細胞同時利用「主動轉運」和「擴散作用」來吸收離子 X (1)；在正常情況下（或逆濃度梯度時），消耗能量的主動轉運是吸收離子 X 的主要機制 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 31 題 】",
+        concept: "防禦與疾病",
+        scenario: "醫學化驗所為了嚴謹比較「抗生素 M」與「抗生素 N」對大腸桿菌的抑制能力，設計了以下極度精確的實驗：<br>在塗滿等量大腸桿菌的瓊脂培養皿上，放置兩塊直徑完全相同（6 mm）、材質相同的濾紙圓片。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>濾紙圓片</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (浸泡的抗生素溶液)</th><th style='background-color: #f1f5f9; padding: 5px;'>在 37°C 培育 24 小時後的抑菌圈直徑 (mm)</th></tr><tr><td style='padding: 5px;'>1</td><td style='padding: 5px;'>浸有 15 mg/mL 濃度的 抗生素 M</td><td style='padding: 5px;'>24.5</td></tr><tr><td style='padding: 5px;'>2</td><td style='padding: 5px;'>浸有 15 mg/mL 濃度的 抗生素 N</td><td style='padding: 5px;'>8.0</td></tr></table><br>化驗員根據上述結果得出結論：「數據證明抗生素 M 抑制大腸桿菌生長的能力遠強於抗生素 N。」",
+        purpose: "比較相同濃度下，抗生素 M 和抗生素 N 對大腸桿菌的抑制效能。",
+        parts: [
+            {
+                label: " ",
+                question: "你同意該化驗員的結論有效嗎？試加以解釋。 (2 分)",
+                answer: "<span class='keyword'>同意 / 結論有效。(1分)</span><br>因為實驗設計完美符合了「單一變量原則」。實驗只改變了「抗生素的種類」這一個獨立變量，而其他所有可能影響抑菌圈大小的因素（如濾紙圓片大小、抗生素濃度 15 mg/mL、細菌種類、培育溫度與時間）均被嚴格保持不變，排除了其他干擾因素，因此結論完全有效。(1分)"
+            }
+        ]
+    },
+    {
+        title: "【第 32 題 】",
+        concept: "酶的特性",
+        scenario: "學生為了找出胃蛋白酶的最佳 pH 值設計了實驗。所有試管均放置在恆溫的 37°C 水浴中進行。<br><br><table border='1' style='border-collapse: collapse; width: 100%; text-align: center; background-color: white;'><tr><th style='background-color: #f1f5f9; padding: 5px;'>試管</th><th style='background-color: #f1f5f9; padding: 5px;'>處理方法 (加入的物質與體積)</th><th style='background-color: #f1f5f9; padding: 5px;'>蛋白質完全被分解所需的時間 (分鐘)</th></tr><tr><td style='padding: 5px;'>A</td><td style='padding: 5px;'>5 mL 蛋白質溶液 + 1 mL 胃蛋白酶 + 2 mL pH 2 緩衝液</td><td style='padding: 5px;'>8</td></tr><tr><td style='padding: 5px;'>B</td><td style='padding: 5px;'>5 mL 蛋白質溶液 + 1 mL 胃蛋白酶 + 2 mL pH 7 緩衝液</td><td style='padding: 5px;'>> 60 (未完全分解)</td></tr><tr><td style='padding: 5px;'>C</td><td style='padding: 5px;'>5 mL 蛋白質溶液 + 1 mL 胃蛋白酶 + 2 mL pH 10 緩衝液</td><td style='padding: 5px;'>> 60 (未完全分解)</td></tr></table><br>學生觀察數據後在報告中寫下結論：「胃蛋白酶在強酸性（pH 2）環境下的催化活性最高，而中性及鹼性環境會使其失去活性。」",
+        purpose: "探究環境 pH 值對胃蛋白酶催化速率的影響。",
+        parts: [
+            {
+                label: " ",
+                question: "這個結論是否有效？試加以解釋。 (2 分)",
+                answer: "<span class='keyword'>有效 / 同意。(1分)</span><br>因為實驗中確保了只有「緩衝液的 pH 值」這一個獨立變量。其他所有可能影響酶活性的變量，包括反應物與酶的濃度（由固定體積控制）以及環境溫度（恆溫 37°C），均在各試管中保持完全一致。這排除了其他變量的干擾，使結論具備有效性。(1分)"
+            }
+        ]
+    },
+
+    ];
+
+    let currentQuestionIndex = 0;
+
+    // 保留你聰明的 renderQuestion 函數 (隱藏空貼士)，並加入清空 AI 對話框的功能
+    function renderQuestion() {
+        const q = questionsDatabase[currentQuestionIndex];
+        let htmlContent = `
+            <div class="scenario-box">
+                <h3 style="margin-top:0; color: #334155;">${q.title}</h3>
+                <p><strong>情境：</strong> ${q.scenario}</p>
+            </div>
+        `;
+
+        q.parts.forEach(part => {
+            // 你的完美邏輯：如果這個 part 的 hint 不是空的，才生成貼士按鈕
+            let hintHTML = ""; 
+            if (part.hint && part.hint.trim() !== "") {
+                const formattedHint = part.hint.replace(/\n/g, '<br>');
+                hintHTML = `
+                    <details>
+                        <summary>💡 俾個貼士我 <span>▼</span></summary>
+                        <div class="content">${formattedHint}</div>
+                    </details>
+                `;
+            }
+            
+            htmlContent += `
+                <div class="question-part">
+                    <div class="question-text">${part.label} ${part.question}</div>
+                    ${hintHTML}
+                    <details>
+                        <summary>👀 睇參考答案 <span>▼</span></summary>
+                        <div class="content">${part.answer}</div>
+                    </details>
+                </div>
+            `;
+        });
+
+        document.getElementById('quiz-container').innerHTML = htmlContent;
+        document.getElementById('question-counter').innerText = `${currentQuestionIndex + 1} / ${questionsDatabase.length}`;
+        
+        document.getElementById('prev-btn').disabled = currentQuestionIndex === 0;
+        document.getElementById('next-btn').disabled = currentQuestionIndex === questionsDatabase.length - 1;
+
+        // 【新增】：切換題目時，自動清空舊的 AI 對話紀錄
+        document.getElementById('student-input').value = "";
+        document.getElementById('ai-response-box').style.display = "none";
+    }
+
+    function changeQuestion(step) {
+        currentQuestionIndex += step;
+        renderQuestion();
+    }
+
+    // 【新增】：將資料打包並送給 AI 伺服器的非同步函數
+    async function submitToAI() {
+        const studentInput = document.getElementById('student-input').value;
+        if (!studentInput.trim()) {
+            alert("同學，請先輸入你的答案或者問題！");
+            return;
+        }
+
+        const btn = document.getElementById('submit-btn');
+        const responseBox = document.getElementById('ai-response-box');
+        const responseText = document.getElementById('ai-response-text');
+
+        // 改變按鈕狀態，顯示正在思考
+        btn.disabled = true;
+        btn.innerText = "⏳ AI 正在批改中，請稍候...";
+        responseBox.style.display = "block";
+        responseText.innerHTML = "<span style='color:#64748b;'><em>思考中... (通常需要 3-5 秒)</em></span>";
+
+        // 自動打包目前的題目情境與標準答案給 AI
+        const q = questionsDatabase[currentQuestionIndex];
+        let contextData = "【情境】：\n" + q.scenario.replace(/<br>/g, "\n") + "\n\n";
+        let answerData = "";
+        q.parts.forEach(p => {
+            contextData += p.label + " " + p.question + "\n";
+            answerData += p.label + " " + p.answer.replace(/<[^>]*>?/gm, '') + "\n"; // 移除 HTML 標籤
+        });
+
+        try {
+            // 呼叫你的 Google Apps Script
+            const response = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    studentAnswer: studentInput,
+                    questionContext: contextData,
+                    standardAnswer: answerData
+                })
+            });
+
+            const data = await response.json();
+            
+            // 顯示 AI 的回覆（將 \n 換成 <br> 以利排版）
+            responseText.innerHTML = data.reply.replace(/\n/g, '<br>');
+
+        } catch (error) {
+            responseText.innerHTML = "<span style='color:red;'>❌ 連線失敗。請檢查你的網絡，或確保 GAS 網址已正確貼上。</span>";
+            console.error(error);
+        } finally {
+            // 恢復按鈕
+            btn.disabled = false;
+            btn.innerText = "📤 再次送出 / 追問";
+        }
+    }
+
+    window.onload = renderQuestion;
+</script>
+<script src="tracking.js"></script>
+</body>
+</html>

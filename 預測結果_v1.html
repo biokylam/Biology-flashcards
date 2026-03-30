@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>預測結果</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; font-size: 1.5em; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .scenario-box { background-color: #f8fafc; padding: 15px; border-left: 5px solid #64748b; margin-bottom: 20px; font-size: 0.95em; }
+        .question-part { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
+        .question-text { font-weight: bold; color: #1e40af; margin-bottom: 10px; }
+        
+        details { margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+        summary { background-color: #f1f5f9; padding: 12px 15px; font-weight: bold; cursor: pointer; list-style: none; display: flex; justify-content: space-between; font-size: 0.9em; }
+        summary::-webkit-details-marker { display: none; }
+        details[open] summary { background-color: #e2e8f0; border-bottom: 1px solid #cbd5e1; }
+        .content { padding: 15px; background-color: #fff; font-size: 0.95em; }
+        .keyword { color: #d97706; font-weight: bold; }
+        
+        /* 導航按鈕區域 */
+        .navigation { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 15px; }
+        .nav-btn { background-color: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .nav-btn:hover { background-color: #475569; }
+        .nav-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+        
+        /* AI 對話框區域 (新增) */
+        .ai-container { margin-top: 30px; padding: 25px 20px; border-radius: 12px; background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%); border: 1px solid #c7d2fe; }
+        .ai-title { color: #4338ca; font-size: 1.2em; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
+        textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #a5b4fc; border-radius: 8px; font-size: 1em; font-family: inherit; box-sizing: border-box; resize: vertical; margin-bottom: 10px; }
+        textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .submit-btn { background-color: #4f46e5; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background 0.3s; }
+        .submit-btn:hover { background-color: #4338ca; }
+        .submit-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        
+        /* AI 回覆顯示區 (新增) */
+        #ai-response-box { margin-top: 15px; padding: 15px; background-color: white; border-radius: 8px; border-left: 4px solid #8b5cf6; display: none; font-size: 0.95em; line-height: 1.5; color: #334155;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+<a href="index.html#scientificMenu" class="back-btn">← 返回目錄</a>
+    <h1>🧬 DSE 生物：預測結果特訓</h1>
+    <div id="quiz-container"></div>
+
+    <div class="navigation">
+        <button id="prev-btn" class="nav-btn" onclick="changeQuestion(-1)" disabled>⬅️ 上一題</button>
+        <span id="question-counter" style="line-height: 40px; font-weight: bold; color: #64748b;"></span>
+        <button id="next-btn" class="nav-btn" onclick="changeQuestion(1)">下一題 ➡️</button>
+    </div>
+
+    <div class="ai-container">
+        <div class="ai-title">🤖 AI 星級改卷員</div>
+        <p style="font-size: 0.9em; color: #475569; margin-top: 0;">覺得自己嘅答案都啱？打出嚟等 AI 幫你批改！<br>(你可以指明答緊 a 還是 b，或者就咁問 Concept)</p>
+        
+        <textarea id="student-input" placeholder="例如：因為尿素進入後，所以細胞漲大..."></textarea>
+        <button id="submit-btn" class="submit-btn" onclick="submitToAI()">📤 送出答案</button>
+        
+        <div id="ai-response-box">
+            <strong>🤖 AI 導師：</strong>
+            <div id="ai-response-text" style="margin-top: 8px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 🔗 請在這裡貼上你剛才拿到的 Google Apps Script 網址！
+    // ==========================================
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHgAw0JSs_vr9PqrvkGZnNNUieLERFwDExthnUSDw8KeKq15c6xfz_C5WPu8JzfWluMA/exec";
+
+    // 保留你完整無缺的 23 題題庫
+const questionsDatabase = [
+    {
+        title: "【第 1 題】",
+        concept: "表面積與體積比對酶促反應速率的影響",
+        scenario: "學生參考了文獻，利用海藻酸鹽將酵母菌（內含蔗糖酶）固定化，製成海藻酸鹽顆珠。學生將這些顆珠填滿一支圓形玻璃柱，並讓 100 mL 的 10% 蔗糖溶液以固定的流速連續通過玻璃柱。收集流出的液體後，學生利用本生氏測試量度其中的還原糖（葡萄糖和果糖）濃度。<br><br><b>【突發變動 / 假說】</b>：若學生重複此實驗，但改為使用直徑較大的海藻酸鹽顆珠來填滿玻璃柱（玻璃柱的體積及所用顆珠的總體積保持不變，溶液流速亦相同）。",
+        parts: [
+            {
+                label: " ",
+                question: "預測所收集到的液體中，還原糖的最終濃度與原先實驗相比會發生什麼變化？試解釋原因。（3分）",
+                answer: "<span class='keyword'>預測結果 (1分)：</span>還原糖的濃度會較低。(1)<br><span class='keyword'>原理解釋 (2分)：</span>使用直徑較大的顆珠會導致整體顆珠的<span class='keyword'>表面積與體積比</span>（Surface area to volume ratio）下降。(1)<br>這減少了蔗糖分子與顆珠內的酵母菌（蔗糖酶）接觸的<span class='keyword'>總表面積</span>，導致在相同的通過時間內，蔗糖被分解的速率減慢。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 2 題】",
+        concept: "溫度/pH 對酶活性的影響與蛋白質變性",
+        scenario: "研究人員在實驗室設定了一個體外（in vitro）消化模型，試管內含有 5 mL 胃蛋白酶及 10 g 蛋白質固體，並將其置於 pH 2 及 37°C 的水浴中。研究人員實時監測並繪製了一幅「產物（多肽）累積量對時間」的標準上升曲線，該曲線在第 15 分鐘後逐漸趨向平穩。<br><br><b>【突發變動 / 假說】</b>：在另一次完全相同的實驗中，研究人員在第 5 分鐘（反應速率最高時），突然向試管內加入大量高濃度的氫氧化鈉（NaOH）溶液。",
+        parts: [
+            {
+                label: " ",
+                question: "預測在第 5 分鐘後，該曲線的走向會發生什麼變化？請解釋原因。（3分）",
+                answer: "<span class='keyword'>預測結果 (1分)：</span>曲線會在第 5 分鐘後立刻變得平坦（呈水平線） / 產物量<span class='keyword'>不再增加</span>，並維持在一個低於原曲線最終水平的數值。(1)<br><span class='keyword'>原理解釋 (2分)：</span>氫氧化鈉是強鹼，會令溶液的 pH 值急劇上升，遠超胃蛋白酶的最佳 pH 值。(1)<br>極端的 pH 變化會破壞胃蛋白酶（蛋白質）的立體結構 / 改變其活性部位的形狀（即酶發生<span class='keyword'>變性</span> denaturation），使其永久失去催化活性，反應立刻停止。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 3 題】",
+        concept: "神經衝動的傳遞與突觸功能",
+        scenario: "科學家從一種劇毒的海洋芋螺中提取了一種新型神經毒素（Toxin-X）。為探究其毒性機制，研究人員建立了一個大鼠神經—肌肉接點（Neuromuscular junction）的體外活體模型。研究人員利用微電極刺激運動神經元，並用儀器記錄肌肉纖維的收縮力度。在正常生理鹽水下，每次電刺激均能引起強烈的肌肉收縮。<br><br><b>【突發變動 / 假說】</b>：科學家提出假說：「Toxin-X 會與肌肉纖維膜上的神經傳遞物受體產生不可逆轉的結合。」研究人員隨後將 Toxin-X 注入該模型的浸浴液中，並等待 10 分鐘，然後再次以相同強度的電流刺激該運動神經元。",
+        parts: [
+            {
+                label: " ",
+                question: "倘若上述假說正確，預測電刺激後肌肉收縮力度的結果。試從突觸傳遞的角度解釋此現象。（3分）",
+                answer: "<span class='keyword'>預測結果 (1分)：</span>肌肉將<span class='keyword'>不會收縮</span> / 收縮力度降至零。(1)<br><span class='keyword'>原理解釋 (2分)：</span>雖然神經元末梢仍能釋放神經傳遞物進入突觸間隙。(1)<br>但由於肌肉纖維膜上的受體已被 Toxin-X 永久<span class='keyword'>佔據及阻斷</span>，神經傳遞物無法與受體結合，不能在肌肉纖維引發電脈衝，因此無法引發肌肉收縮。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 4 題】",
+        concept: "光合作用的限制因素",
+        scenario: "為了提升溫室番茄的產量，農業科學家研究了二氧化碳濃度對番茄植株光合作用速率的影響。研究人員在環境二氧化碳濃度（0.04%）下，量度了番茄植株在不同光強度（從極低到極高）下的光合作用速率，並繪製成一條關係曲線。結果顯示，曲線在達到某個高光強度後開始平穩。<br><br><b>【突發變動 / 假說】</b>：研究人員隨後將溫室內的二氧化碳濃度人工提升至 0.15%，並保持溫度不變，再次量度並繪製一條新的曲線。",
+        parts: [
+            {
+                label: " ",
+                question: "預測這條新曲線在「低光強度」及「高光強度」區域的走向與原曲線有何不同？解釋背後的生物學原理。（4分）",
+                answer: "<span class='keyword'>預測結果 (2分)：</span>在低光強度下，新曲線與原曲線重疊（無顯著差異）。(1)<br>在高光強度下，新曲線會<span class='keyword'>高於原曲線</span>，並在一個較高的速率水平才趨向平穩。(1)<br><span class='keyword'>原理解釋 (2分)：</span>在低光強度下，光強度是光合作用的<span class='keyword'>限制因素</span>，因此額外提供二氧化碳不會加快反應速率。(1)<br>在高光強度下，原本的限制因素是二氧化碳濃度。當二氧化碳濃度提升（限制解除），碳固定的速率增加，整體光合作用速率隨之上升，直至其他因素成為限制。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 5 題】",
+        concept: "蒸騰作用與氣孔控制",
+        scenario: "植物學家在極端乾旱的沙漠觀察到一種特有灌木。科學家提出假說：「當根部感測到土壤水分嚴重不足時，會合成一種名為脫落酸（ABA）的化學信號，經由木質部輸送到葉片，直接誘發氣孔完全關閉以減少水分流失。」為了驗證假說，研究人員利用了該種灌木的基因突變株（其根部缺乏合成 ABA 的能力）進行受控的溫室實驗。這些突變株被種植在水分充足的土壤中，並使用泡狀蒸騰計（Potometer）持續量度其穩定的蒸騰速率。<br><br><b>【突發變動 / 假說】</b>：在正午時分，研究人員利用微型注射器，直接向突變株莖部的木質部注入人工合成的 ABA 溶液（土壤水分維持充足）。",
+        parts: [
+            {
+                label: " ",
+                question: "倘若上述假說正確，預測在注入 ABA 後的短時間內，泡狀蒸騰計量度到的蒸騰速率會發生什麼變化？解釋其機制。（3分）",
+                answer: "<span class='keyword'>預測結果 (1分)：</span>蒸騰速率會<span class='keyword'>急劇下降</span> / 降至接近零。(1)<br><span class='keyword'>原理解釋 (2分)：</span>注射入木質部的 ABA 隨水分被運輸至葉片，直接引發保衛細胞的反應，導致<span class='keyword'>氣孔關閉</span>。(1)<br>氣孔是水氣擴散離開葉片的主要通道，氣孔關閉切斷了水分散失的途徑，從而令蒸騰速率大幅下降。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 6 題】",
+        concept: "滲透調節與抗利尿激素（ADH）的作用",
+        scenario: "研究團隊正在開發一種名為 \"Diuret-X\" 的新型降血壓藥物。科學家在實驗室利用健康的大鼠模型進行測試。對照組大鼠被注射生理鹽水，而實驗組大鼠被注射等量的 \"Diuret-X\"。<br><br><b>【突發變動 / 假說】</b>：科學家提出假說：\"Diuret-X\" 的降血壓機制是透過抑制腦下垂體釋放抗利尿激素（ADH）。研究人員收集了兩組大鼠在注射後 24 小時內的尿液。",
+        parts: [
+            {
+                label: " ",
+                question: "倘若科學家的假說正確，預測實驗組大鼠的「尿液總體積」及「尿液濃度」與對照組相比會有什麼差異？試根據腎臟的運作原理解釋你的預測。（4分）",
+                answer: "<span class='keyword'>預測結果 (2分)：</span>實驗組大鼠的尿液總體積會<span class='keyword'>較大（多）</span>。(1)<br>實驗組大鼠的尿液濃度會<span class='keyword'>較低（較稀釋）</span>。(1)<br><span class='keyword'>原理解釋 (2分)：</span>血液中抗利尿激素（ADH）水平下降，會導致腎臟集尿管（及遠曲小管）的<span class='keyword'>透水性降低</span>。(1)<br>因此，較少水分能從濾液中被重吸收回血液內，導致大量多餘水分留在尿液中排出體外。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 7 題】",
+        concept: "細胞水勢、滲透作用與質壁分離",
+        scenario: "為應對海水倒灌導致的農地鹽鹼化問題，農業科學家培育了一種基因改造水稻（品種 T）。該品種的根部細胞能夠在液泡中積累極高濃度的無害可溶性醣類。野生型水稻（品種 W）則缺乏此能力。科學家將兩種水稻種植在標準的水耕營養液中，兩者均生長良好，細胞處於膨脹狀態。<br><br><b>【突發變動 / 假說】</b>：研究人員突然將水耕系統中的標準營養液，全部替換為模擬海水的高鹽度溶液。",
+        parts: [
+            {
+                label: " ",
+                question: "預測 24 小時後，品種 W 和品種 T 的葉片外觀會分別發生什麼變化？試從細胞水勢的角度解釋此預測。（4分）",
+                answer: "<span class='keyword'>預測結果 (2分)：</span>品種 W 的葉片會萎蔫 / 枯萎。(1)<br>品種 T 的葉片將<span class='keyword'>保持硬挺</span> / 正常外觀。(1)<br><span class='keyword'>原理解釋 (2分)：</span>高鹽度溶液的水勢顯著低於品種 W 根部細胞的水勢，導致水分經滲透作用流失，細胞失去膨壓（<span class='keyword'>質壁分離</span>）而萎蔫。(1)<br>品種 T 因為細胞內積累了大量可溶性醣類，大幅<span class='keyword'>降低了其細胞液的水勢</span>，使其水勢能保持在低於或等於高鹽度溶液的水平，從而防止水分流失（或繼續吸水），保持細胞膨脹。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 8 題】",
+        concept: "光合作用的限制因素",
+        scenario: "學生利用水蘊草（一種水生植物）放置於含有 0.1% 碳酸氫鈉（提供二氧化碳）的燒杯中，並在固定光源距離下量度每分鐘釋放的氧氣氣泡數量。數據顯示，當光強度增加至某一水平後，氣泡產生的速率便維持在一個最高值，形成平穩的平台期。<br><br><b>【突發變動 / 假說】</b>：在氣泡產生速率處於平台期時，學生突然將燒杯中的碳酸氫鈉溶液濃度提高至 0.5%，而光強度保持不變。",
+        parts: [
+            {
+                label: " ",
+                question: "預測提高碳酸氫鈉溶液濃度後，氧氣氣泡的產生速率會有何變化，並解釋你的答案。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>氣泡產生速率會<span class='keyword'>增加 / 上升</span>。(1)<br><span class='keyword'>解釋 (2分)：</span>在平台期時，光強度不再是限制因素，而<span class='keyword'>二氧化碳濃度</span>是限制因素。(1)<br>加入碳酸氫鈉增加了二氧化碳供應，從而加快了光合作用的速率。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 9 題】",
+        concept: "極端 pH 值對酶活性的影響",
+        scenario: "研究人員在試管中加入胃蛋白酶及蛋白懸浮液，並將環境設定為 pH 2 及 37°C。隨着時間過去，原本混濁的蛋白懸浮液逐漸變得清澈，反映蛋白質正被消化。<br><br><b>【突發變動 / 假說】</b>：在反應進行到一半（懸浮液呈半混濁狀態）時，研究人員突然向試管中加入大量強鹼溶液，使試管內的 pH 值驟升至 pH 10。",
+        parts: [
+            {
+                label: " ",
+                question: "預測加入強鹼溶液後，試管內溶液的混濁度變化。試解釋其生物學原理。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>溶液的混濁度將<span class='keyword'>保持不變</span>（不再變得更清澈）/ 消化作用停止。(1)<br><span class='keyword'>解釋 (2分)：</span>極端的鹼性環境（pH 10）破壞了胃蛋白酶的活性部位（Active site）的特定形狀，導致酶<span class='keyword'>變性（Denaturation）</span>。(1)<br>酶的活性部位無法再與蛋白質底物結合（無法形成酶-底物複合物），失去催化功能。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 10 題】",
+        concept: "突觸傳遞與受體競爭",
+        scenario: "研究人員在實驗室分離出一段運動神經元及其支配的骨骼肌纖維進行體外培養。在對照組中，當給予突觸前神經元電刺激時，能成功誘發骨骼肌纖維收縮。<br><br><b>【突發變動 / 假說】</b>：科學家從某種植物提取出一種名為箭毒（Curare）的化學物質，並提出假說：「箭毒分子的形狀與神經遞質極為相似，能與突觸後膜上的受體結合，但不會引發動作電位。」研究人員將箭毒加入實驗組的神經突觸間隙中，再次刺激突觸前神經元。",
+        parts: [
+            {
+                label: " ",
+                question: "倘若上述假說正確，預測實驗組的骨骼肌纖維會有什麼反應？請根據突觸傳遞的機制解釋原因。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>骨骼肌纖維<span class='keyword'>不會收縮</span> / 沒有反應。(1)<br><span class='keyword'>解釋 (2分)：</span>箭毒佔據了突觸後膜（肌肉細胞膜）上的神經遞質受體，<span class='keyword'>阻止了真正的神經遞質與之結合</span>。(1)<br>突觸後膜無法產生神經衝動（動作電位），因此無法引發肌肉收縮。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 11 題】",
+        concept: "蒸騰作用與氣孔調控",
+        scenario: "為提高農作物的抗旱能力，農業科學家研發了一種植物激素類似物噴劑。研究人員將溫室內的番茄植株分為兩組：實驗組噴灑該激素類似物，對照組噴灑等量蒸餾水。兩組植株隨後均被放置於高溫、強風及低濕度的環境模擬旱災。<br><br><b>【突發變動 / 假說】</b>：科學家提出假說：「該激素類似物能促使保衛細胞（Guard cells）流失水分。」",
+        parts: [
+            {
+                label: " ",
+                question: "若假說成立，預測在旱災模擬環境下，實驗組植株的失水速率與對照組相比會有何差異？試解釋該機制如何幫助植物抗旱。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>實驗組植株的失水速率將<span class='keyword'>顯著低於</span>對照組。(1)<br><span class='keyword'>解釋 (2分)：</span>保衛細胞流失水分後會變得柔軟（失去膨脹度），導致<span class='keyword'>氣孔關閉</span>。(1)<br>氣孔關閉大幅減少了水分以水蒸氣形式透過蒸騰作用散失到大氣中。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 12 題】",
+        concept: "自然選擇與適者生存",
+        scenario: "生態學家在一個樹幹主要呈淺灰色的原始森林中，對某種蛾類進行長達十年的種群監測。該蛾類體色由一對等位基因控制，具有淺灰色（佔種群 85%）和深黑色（佔 15%）兩種表現型。當地棲息着大量以視覺捕獵蛾類的鳥類。<br><br><b>【突發變動 / 假說】</b>：森林附近新建了一座重工業燃煤發電廠，排放的大量煤灰在兩年內將森林中大部分樹幹染成深黑色。",
+        parts: [
+            {
+                label: " ",
+                question: "預測十年後該蛾類種群中，淺灰色與深黑色蛾的比例變化趨勢。試從演化機制解釋此現象。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>深黑色蛾的比例會<span class='keyword'>大幅上升</span>（成為多數），淺灰色蛾的比例會大幅下降。(1)<br><span class='keyword'>解釋 (2分)：</span>在深色樹幹背景下，深色蛾具有較佳的偽裝，較不易被鳥類捕食（<span class='keyword'>存活率較高</span>）。(1)<br>存活下來的深色蛾能繁殖並將控制深色的等位基因遺傳給下一代，使該基因在種群中的<span class='keyword'>頻率增加</span>。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 13 題】",
+        concept: "抗利尿激素（ADH）對集尿管透水性的影響",
+        scenario: "醫學研究人員正在利用小鼠模型測試一種新型利尿藥物。小鼠被分為對照組及實驗組，兩組均被餵飼相同體積的清水以維持基礎水分平衡。<br><br><b>【突發變動 / 假說】</b>：實驗組小鼠被注射了新型利尿藥物。研究假說認為：「該藥物會阻斷腎臟集尿管細胞上的抗利尿激素（ADH）受體，使其無法接收 ADH 信號。」",
+        parts: [
+            {
+                label: " ",
+                question: "倘若假說正確，預測實驗組小鼠在注射藥物後，其尿液體積及濃度與對照組相比的變化。並解釋背後的生理機制。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>實驗組小鼠會排出<span class='keyword'>較大體積</span>且濃度較低（較稀釋）的尿液。(1)<br><span class='keyword'>解釋 (2分)：</span>受體被阻斷後，ADH 無法發揮作用，導致集尿管壁的<span class='keyword'>透水性降低</span>。(1)<br>較少水分能藉滲透作用被重新吸收回血液中，因此大量水分留在尿液中排出。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 14 題】",
+        concept: "有氧呼吸與主動轉運",
+        scenario: "農業科學家利用水耕栽培法種植生菜，根部完全浸泡在含有硝酸鹽的營養液中。系統設有氣泵，持續向營養液中打入空氣，確保高濃度的溶解氧。實驗記錄顯示，生菜根部吸收硝酸鹽的速率一直維持在高水平。<br><br><b>【突發變動 / 假說】</b>：在實驗進行中，氣泵突然發生故障並停頓了 48 小時，導致營養液中的溶解氧濃度急劇下降至接近零（缺氧狀態）。",
+        parts: [
+            {
+                label: " ",
+                question: "預測在這缺氧的 48 小時內，根部吸收硝酸鹽速率的變化。試從細胞代謝的角度解釋你的預測。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>根部吸收硝酸鹽的速率會<span class='keyword'>顯著下降</span>。(1)<br><span class='keyword'>解釋 (2分)：</span>在缺氧環境下，根毛細胞無法進行有氧呼吸，只能進行無氧呼吸，釋放出的能量（ATP）<span class='keyword'>大幅減少</span>。(1)<br>植物吸收礦物質（如硝酸鹽）主要依賴<span class='keyword'>主動轉運</span>，這過程需要消耗大量 ATP，能量不足導致吸收速率下降。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 15 題】",
+        concept: "酶的變性與溫度對酶活性的影響",
+        scenario: "學生在實驗室設定了一個水浴裝置，將澱粉酶溶液與澱粉溶液混合，並維持在人體體溫（37°C）。學生每隔一分鐘利用碘液測試及還原糖測試記錄反應進度。圖表顯示，在首 10 分鐘內，麥芽糖的濃度呈直線上升。<br><br><b>【突發變動 / 假說】</b>：在反應進行到第 10 分鐘時，學生突然將反應混合物轉移到高達 80°C 的沸水浴中，並持續觀察至第 20 分鐘。",
+        parts: [
+            {
+                label: " ",
+                question: "預測第 10 分鐘至第 20 分鐘期間，混合物中麥芽糖濃度的變化趨勢，並解釋你的答案。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>麥芽糖的濃度將<span class='keyword'>維持不變</span>（或：圖表曲線將變為水平線）。(1)<br><span class='keyword'>原理解釋 (2分)：</span>高溫（80°C）破壞了澱粉酶的分子結構 / 活性部位（Active site）的特定形狀，導致酶<span class='keyword'>變性（Denaturation）</span>。(1)<br>澱粉酶失去催化功能，無法再與澱粉（底物）結合形成酶-底物複合物，因此沒有新的麥芽糖產生。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 16 題】",
+        concept: "滲透作用與水勢及實驗誤差分析",
+        scenario: "研究人員將數條長度及直徑相同的馬鈴薯條，分別放入不同濃度的蔗糖溶液中浸泡 45 分鐘，以找出馬鈴薯組織的水勢。正常程序下，取出馬鈴薯條後需用濾紙抹乾表面水分再進行稱重，並繪製「質量百分比變化對蔗糖濃度」的圖表。<br><br><b>【突發變動 / 假說】</b>：一名學生在處理「浸泡於蒸餾水」的一組馬鈴薯條時，忘記用濾紙抹乾其表面水分便直接稱重。",
+        parts: [
+            {
+                label: " ",
+                question: "預測這個操作失誤會如何影響該組馬鈴薯條「質量百分比變化」的計算結果。試解釋原因。（2 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>計算出的質量百分比變化（增加幅度）會比實際值<span class='keyword'>更高 / 更大</span>。(1)<br><span class='keyword'>原理解釋 (1分)：</span>未被抹去的水分會增加馬鈴薯條的最終質量（Final mass），令計算出的質量增加值<span class='keyword'>被高估</span>。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 17 題】",
+        concept: "植物向光性與生長素的運輸",
+        scenario: "為研究植物生長規律以優化溫室種植，農業科學家切去燕麥胚芽鞘（Coleoptile）的尖端，以排除自身生長素的影響。他們將一個含有高濃度生長素的瓊脂塊（Agar block）完全對稱地放置在切面上。<br><br><b>【突發變動 / 假說】</b>：在放置瓊脂塊前，研究人員在胚芽鞘切面正下方 2 毫米處，水平橫向插入了一片完全不透水、不透化學物質的薄雲母片（Mica sheet），該雲母片完全阻斷了整個橫切面。隨後從左側給予單向光照射。",
+        parts: [
+            {
+                label: " ",
+                question: "預測該燕麥胚芽鞘在單向光照射數天後的生長方向（或生長情況）。試解釋背後的科學原理。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>胚芽鞘會<span class='keyword'>停止生長 / 不會生長</span>，亦不會發生彎曲。(1)<br><span class='keyword'>原理解釋 (2分)：</span>雲母片完全<span class='keyword'>阻斷了生長素向下運輸</span>的路徑。(1)<br>生長素無法到達下方的延長區（Zone of elongation），細胞無法受刺激而延長；由於沒有向下運輸，單向光亦無法造成生長素分佈不均。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 18 題】",
+        concept: "自然選擇與適應能力",
+        scenario: "生態學家在一個擁有廣闊淺色沙地環境的荒野中，對一種地棲鼠類進行長期種群監測。該鼠類的毛色由一對等位基因控制，具有淺沙色和深黑色兩種表型。長期數據顯示，淺沙色鼠佔種群的 90%，深黑色鼠佔 10%。當地有大量以視覺捕獵的猛禽。<br><br><b>【突發變動 / 假說】</b>：兩年前，該地區發生了一次罕見的大型火山爆發，厚厚的黑色火山灰永久覆蓋了原本的淺色沙地。生態學家提出假說：「環境的劇變改變了猛禽的捕食選擇壓力。」",
+        parts: [
+            {
+                label: " ",
+                question: "根據生態學家的假說，預測未來 20 個世代後，該地棲鼠種群中深黑色毛色等位基因頻率的變化。試以演化機制解釋此預測。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>深黑色毛色等位基因的頻率將會<span class='keyword'>顯著增加 / 上升</span>。(1)<br><span class='keyword'>原理解釋 (2分)：</span>在黑色火山灰背景下，深黑色鼠具有較佳的<span class='keyword'>偽裝（Camouflage）</span>，較不容易被猛禽發現及捕食，存活率因而提高。(1)<br>存活下來的深黑色鼠能繁衍後代，並將控制深黑色毛色的等位基因遺傳給下一代（<span class='keyword'>自然選擇</span>）。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 19 題】",
+        concept: "水勢與質壁分離",
+        scenario: "科學家為了培育抗鹽害（Salinity tolerance）的新品種水稻，在溫室中利用水耕栽培法（Hydroponics）種植普通水稻。正常情況下，水耕營養液的水勢高於根毛細胞（Root hair cells）的細胞液水勢，根部能正常吸水。<br><br><b>【突發變動 / 假說】</b>：為了模擬嚴重的海水倒灌（鹽害），研究人員突然向營養液中加入大量的礦物鹽，使其濃度瞬間提高了 5 倍。",
+        parts: [
+            {
+                label: " ",
+                question: "預測在此突發變動後，研究人員在顯微鏡下觀察普通水稻根毛細胞時會見到的物理變化。試從水勢角度解釋該現象的發生機制。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>根毛細胞會發生<span class='keyword'>質壁分離（Plasmolysis）</span> / 細胞膜從細胞壁退縮。(1)<br><span class='keyword'>原理解釋 (2分)：</span>加入大量礦物鹽後，營養液的水勢變得<span class='keyword'>低於</span>根毛細胞的細胞液水勢。(1)<br>細胞內的水分藉滲透作用（Osmosis）淨流出細胞外，導致細胞質及液泡萎縮。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 20 題】",
+        concept: "蒸騰作用與氣孔調控",
+        scenario: "科學家利用泡罩計（Potometer）測量一枝帶葉木本植物枝條在實驗室強光照射下的吸水速率（以此估算蒸騰速率）。氣泡在毛細管中穩定地向左移動。<br><br><b>【突發變動 / 假說】</b>：在實驗中途，科學家將整個裝置移入一個完全黑暗的房間中，並保持其他環境因素（如溫度、相對濕度）不變。",
+        parts: [
+            {
+                label: " ",
+                question: "預測移入黑暗環境後，毛細管中氣泡移動速率的變化。試從葉片結構及水分流失的機制解釋原因。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>氣泡移動速率會<span class='keyword'>顯著下降 / 減慢</span>。(1)<br><span class='keyword'>原理解釋 (2分)：</span>在黑暗環境中，葉片上的保衛細胞（Guard cells）失去膨脹度，導致<span class='keyword'>氣孔（Stomata）關閉</span>。(1)<br>氣孔關閉大幅減少了水分以水蒸氣形式擴散到大氣中，蒸騰拉力減弱，導致植物的吸水速率下降。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 21 題】",
+        concept: "無氧呼吸與乳酸積聚",
+        scenario: "研究人員正在利用小鼠模型研究肌肉代謝。小鼠在跑步機上進行中等強度的持續運動，研究人員持續監測其血液中的乳酸（Lactic acid）濃度。在正常情況下，小鼠血液中的乳酸濃度維持在極低的基礎水平。<br><br><b>【突發變動 / 假說】</b>：研究人員向實驗組小鼠注射了一種特定的代謝抑制劑。假說提出：「該抑制劑會完全阻斷骨骼肌細胞內線粒體（Mitochondria）的運作，使其無法進行需氧呼吸（Aerobic respiration）。」",
+        parts: [
+            {
+                label: " ",
+                question: "倘若假說正確，預測小鼠在注射抑制劑並繼續跑步後，其血液中乳酸濃度的變化趨勢。試從細胞能量代謝的角度解釋原因。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>血液中的乳酸濃度會<span class='keyword'>急劇上升</span>。(1)<br><span class='keyword'>原理解釋 (2分)：</span>線粒體被阻斷後，骨骼肌細胞無法透過需氧呼吸產生能量（ATP）。(1)<br>為了應付跑步所需的能量，肌肉細胞必須依賴<span class='keyword'>缺氧呼吸（Anaerobic respiration）</span>分解葡萄糖，過程中會產生大量乳酸並擴散至血液中。(1)"
+            }
+        ]
+    },
+    {
+        title: "【第 22 題】",
+        concept: "光合作用的限制因素",
+        scenario: "農業科學家在一個設有嚴格環境控制的溫室內種植番茄。溫室內的溫度維持在最佳水平（25°C），並提供極強的人工光源。科學家持續量度番茄植株的氧氣釋放率（代表光合作用速率），發現其速率維持在一個穩定的平台期，沒有再隨光照時間延長而上升。<br><br><b>【突發變動 / 假說】</b>：科學家提出假說：「在此環境下，二氧化碳濃度是光合作用的限制因素。」為了驗證假說，研究人員將溫室內的二氧化碳濃度從正常的 0.04% 瞬間提升至 0.15%。",
+        parts: [
+            {
+                label: " ",
+                question: "若科學家的假說正確，預測提升二氧化碳濃度後，番茄植株的氧氣釋放率會出現什麼變化？試解釋背後的生物學原理。（3 分）",
+                answer: "<span class='keyword'>預測 (1分)：</span>氧氣釋放率會<span class='keyword'>上升 / 增加</span>（然後可能達到一個新的平台期）。(1)<br><span class='keyword'>原理解釋 (2分)：</span>在強光及適宜溫度下，這兩個因素已不是限制因素。提高二氧化碳濃度能提供<span class='keyword'>更多原料</span>供光合作用（碳固定）使用。(1)<br>光合作用速率加快，導致光反應中水分分解產生的氧氣量隨之增加。(1)"
+            }
+        ]
+    }
+];
+    let currentQuestionIndex = 0;
+
+    // 保留你聰明的 renderQuestion 函數 (隱藏空貼士)，並加入清空 AI 對話框的功能
+    function renderQuestion() {
+        const q = questionsDatabase[currentQuestionIndex];
+        let htmlContent = `
+            <div class="scenario-box">
+                <h3 style="margin-top:0; color: #334155;">${q.title}</h3>
+                <p><strong>情境：</strong> ${q.scenario}</p>
+            </div>
+        `;
+
+        q.parts.forEach(part => {
+            // 你的完美邏輯：如果這個 part 的 hint 不是空的，才生成貼士按鈕
+            let hintHTML = ""; 
+            if (part.hint && part.hint.trim() !== "") {
+                const formattedHint = part.hint.replace(/\n/g, '<br>');
+                hintHTML = `
+                    <details>
+                        <summary>💡 俾個貼士我 <span>▼</span></summary>
+                        <div class="content">${formattedHint}</div>
+                    </details>
+                `;
+            }
+            
+            htmlContent += `
+                <div class="question-part">
+                    <div class="question-text">${part.label} ${part.question}</div>
+                    ${hintHTML}
+                    <details>
+                        <summary>👀 睇參考答案 <span>▼</span></summary>
+                        <div class="content">${part.answer}</div>
+                    </details>
+                </div>
+            `;
+        });
+
+        document.getElementById('quiz-container').innerHTML = htmlContent;
+        document.getElementById('question-counter').innerText = `${currentQuestionIndex + 1} / ${questionsDatabase.length}`;
+        
+        document.getElementById('prev-btn').disabled = currentQuestionIndex === 0;
+        document.getElementById('next-btn').disabled = currentQuestionIndex === questionsDatabase.length - 1;
+
+        // 【新增】：切換題目時，自動清空舊的 AI 對話紀錄
+        document.getElementById('student-input').value = "";
+        document.getElementById('ai-response-box').style.display = "none";
+    }
+
+    function changeQuestion(step) {
+        currentQuestionIndex += step;
+        renderQuestion();
+    }
+
+    // 【新增】：將資料打包並送給 AI 伺服器的非同步函數
+    async function submitToAI() {
+        const studentInput = document.getElementById('student-input').value;
+        if (!studentInput.trim()) {
+            alert("同學，請先輸入你的答案或者問題！");
+            return;
+        }
+
+        const btn = document.getElementById('submit-btn');
+        const responseBox = document.getElementById('ai-response-box');
+        const responseText = document.getElementById('ai-response-text');
+
+        // 改變按鈕狀態，顯示正在思考
+        btn.disabled = true;
+        btn.innerText = "⏳ AI 正在批改中，請稍候...";
+        responseBox.style.display = "block";
+        responseText.innerHTML = "<span style='color:#64748b;'><em>思考中... (通常需要 3-5 秒)</em></span>";
+
+        // 自動打包目前的題目情境與標準答案給 AI
+        const q = questionsDatabase[currentQuestionIndex];
+        let contextData = "【情境】：\n" + q.scenario.replace(/<br>/g, "\n") + "\n\n";
+        let answerData = "";
+        q.parts.forEach(p => {
+            contextData += p.label + " " + p.question + "\n";
+            answerData += p.label + " " + p.answer.replace(/<[^>]*>?/gm, '') + "\n"; // 移除 HTML 標籤
+        });
+
+        try {
+            // 呼叫你的 Google Apps Script
+            const response = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    studentAnswer: studentInput,
+                    questionContext: contextData,
+                    standardAnswer: answerData
+                })
+            });
+
+            const data = await response.json();
+            
+            // 顯示 AI 的回覆（將 \n 換成 <br> 以利排版）
+            responseText.innerHTML = data.reply.replace(/\n/g, '<br>');
+
+        } catch (error) {
+            responseText.innerHTML = "<span style='color:red;'>❌ 連線失敗。請檢查你的網絡，或確保 GAS 網址已正確貼上。</span>";
+            console.error(error);
+        } finally {
+            // 恢復按鈕
+            btn.disabled = false;
+            btn.innerText = "📤 再次送出 / 追問";
+        }
+    }
+
+    window.onload = renderQuestion;
+</script>
+<script src="tracking.js"></script>
+</body>
+</html>

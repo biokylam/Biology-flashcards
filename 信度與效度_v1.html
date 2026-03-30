@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信度與效度</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; font-size: 1.5em; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .scenario-box { background-color: #f8fafc; padding: 15px; border-left: 5px solid #64748b; margin-bottom: 20px; font-size: 0.95em; }
+        .question-part { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
+        .question-text { font-weight: bold; color: #1e40af; margin-bottom: 10px; }
+        
+        details { margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+        summary { background-color: #f1f5f9; padding: 12px 15px; font-weight: bold; cursor: pointer; list-style: none; display: flex; justify-content: space-between; font-size: 0.9em; }
+        summary::-webkit-details-marker { display: none; }
+        details[open] summary { background-color: #e2e8f0; border-bottom: 1px solid #cbd5e1; }
+        .content { padding: 15px; background-color: #fff; font-size: 0.95em; }
+        .keyword { color: #d97706; font-weight: bold; }
+        
+        /* 導航按鈕區域 */
+        .navigation { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 15px; }
+        .nav-btn { background-color: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .nav-btn:hover { background-color: #475569; }
+        .nav-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+        
+        /* AI 對話框區域 (新增) */
+        .ai-container { margin-top: 30px; padding: 25px 20px; border-radius: 12px; background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%); border: 1px solid #c7d2fe; }
+        .ai-title { color: #4338ca; font-size: 1.2em; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
+        textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #a5b4fc; border-radius: 8px; font-size: 1em; font-family: inherit; box-sizing: border-box; resize: vertical; margin-bottom: 10px; }
+        textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .submit-btn { background-color: #4f46e5; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: background 0.3s; }
+        .submit-btn:hover { background-color: #4338ca; }
+        .submit-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        
+        /* AI 回覆顯示區 (新增) */
+        #ai-response-box { margin-top: 15px; padding: 15px; background-color: white; border-radius: 8px; border-left: 4px solid #8b5cf6; display: none; font-size: 0.95em; line-height: 1.5; color: #334155;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+<a href="index.html#scientificMenu" class="back-btn">← 返回目錄</a>
+    <h1>🧬 DSE 生物：信度與效度特訓</h1>
+    
+    <div id="quiz-container"></div>
+
+    <div class="navigation">
+        <button id="prev-btn" class="nav-btn" onclick="changeQuestion(-1)" disabled>⬅️ 上一題</button>
+        <span id="question-counter" style="line-height: 40px; font-weight: bold; color: #64748b;"></span>
+        <button id="next-btn" class="nav-btn" onclick="changeQuestion(1)">下一題 ➡️</button>
+    </div>
+
+    <div class="ai-container">
+        <div class="ai-title">🤖 AI 星級改卷員</div>
+        <p style="font-size: 0.9em; color: #475569; margin-top: 0;">覺得自己嘅答案都啱？打出嚟等 AI 幫你批改！<br>(你可以指明答緊 a 還是 b，或者就咁問 Concept)</p>
+        
+        <textarea id="student-input" placeholder="例如：因為尿素進入後，所以細胞漲大..."></textarea>
+        <button id="submit-btn" class="submit-btn" onclick="submitToAI()">📤 送出答案</button>
+        
+        <div id="ai-response-box">
+            <strong>🤖 AI 導師：</strong>
+            <div id="ai-response-text" style="margin-top: 8px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 🔗 請在這裡貼上你剛才拿到的 Google Apps Script 網址！
+    // ==========================================
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHgAw0JSs_vr9PqrvkGZnNNUieLERFwDExthnUSDw8KeKq15c6xfz_C5WPu8JzfWluMA/exec";
+
+    // 保留你完整無缺的 23 題題庫
+const questionsDatabase = [
+    {
+
+        title: "【第 1 題】",
+        concept: "滲透作用、個體差異與信度",
+        scenario: "某學生探究不同濃度的氯化鈉溶液對馬鈴薯細胞體積的影響。 他在每個濃度的溶液中只放入「一條」長度為 50 mm 的馬鈴薯柱體，靜置兩小時後用直尺量度其最終長度，並計算長度的百分比變化。",
+        parts: [
+            {
+                label: "(a)",
+                question: "該學生只在每個濃度使用一條馬鈴薯柱體，這對評估實驗數據的整體趨勢有何不利影響？ (1分)",
+                answer: "未能偵察出單一數據是否為<span class='keyword'>異常值</span> / 缺乏足夠數據點以確保結果並非偶然 (1)"
+            },
+            {
+                label: "(b)",
+                question: "建議一項改善方法。 (1分)",
+                answer: "在每個濃度的氯化鈉溶液中，放置多條（例如最少三條）長度相同的馬鈴薯柱體 / <span class='keyword'>重複實驗</span>數次 (1)"
+            },
+            {
+                label: "(c)",
+                question: "解釋你在 (b) 答案。 (2分)",
+                answer: "由於同一個馬鈴薯的不同部位（或不同馬鈴薯）的水勢可能有所不同，存在<span class='keyword'>個體差異</span> (1)；增加每組樣本的數量並計算<span class='keyword'>平均值</span>，可以減少這些個體差異對整體數據的影響，從而增加實驗結果的信度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 2 題】",
+        concept: "酶的活性、主觀測量誤差與信度",
+        scenario: "科學家從兩種不同品種的木瓜提取木瓜蛋白酶（品種A和品種B），以比較它們分解明膠（一種蛋白質固體）的速率。 實驗在恆溫水浴的試管中進行，科學家透過肉眼觀察並按停秒錶，記錄明膠「完全分解」所需的時間。實驗對每個品種進行了一次測量，結果顯示品種A需時 5 分鐘，品種B需時 7 分鐘。",
+        parts: [
+            {
+                label: "(a)",
+                question: "實驗依賴肉眼判斷「完全分解」，這對實驗數據的收集帶來什麼問題？ (1分)",
+                answer: "肉眼判斷帶有<span class='keyword'>主觀性</span>，難以準確且一致地界定「完全液化」的確切時刻，容易產生人為的<span class='keyword'>隨機誤差</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "為了確認「品種A的酶活性較高」這個結論的信度，科學家在操作上應該怎樣做？ (1分)",
+                answer: "使用相同批次的提取物和明膠，在相同條件下<span class='keyword'>重複實驗</span>數次 (1)"
+            },
+            {
+                label: "(c)",
+                question: "說明 (b) 的做法如何改善由 (a) 所引致的問題，從而確保結論是可靠的。 (2分)",
+                answer: "<span class='keyword'>重複實驗</span>可以獲取多個數據並計算<span class='keyword'>平均值</span> (1)；這有助於減低因單次肉眼觀察帶來的隨機誤差，確保品種A分解明膠較快的趨勢是穩定且可信的 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 3 題】",
+        concept: "激素與代謝調節、活體與體外實驗的效度比較",
+        scenario: "科研團隊正在研發一種能抑制腸道脂肪酶活性的新型減肥藥物。 團隊評估了兩個測試方案：<br>方案 I：在試管中加入人體腸道脂肪酶、乳化脂質、緩衝液及該藥物，量度脂肪酸的生成率。<br>方案 II：以高脂飲食餵飼實驗室小鼠，並在食物中混入該藥物，隨後收集並分析小鼠糞便中的未消化脂肪含量。",
+        parts: [
+            {
+                label: "(a)",
+                question: "若要評估該藥物應用於人體的真實減肥成效，哪一個方案（I 或 II）具有較高的實驗效度？試提出一個支持該方案的科學理由。 (2分)",
+                answer: "<span class='keyword'>方案 II</span> (1)；因為動物體內環境複雜（例如有消化道蠕動、膽汁分泌及其他激素的相互作用），試管實驗未能完全模擬真實體內的生理情況，<span class='keyword'>活體動物實驗</span>較能反映藥物在生物體內發揮的整體效應 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 4 題】",
+        concept: "植物蒸騰作用、消除個體差異的對照設計",
+        scenario: "某農用化學品公司研發了一種名為「抗旱保水劑」的化學噴劑，聲稱能促使氣孔關閉以減少水分流失。 研究員最初的設計是：選取兩株同品種但生長在不同花盆的植物，植物 A 噴灑保水劑，植物 B 噴灑等量清水，然後比較兩者的重量流失速率。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項設計在確保實驗效度上的一個主要先天缺陷。 (1分)",
+                answer: "兩株不同植物之間存在先天<span class='keyword'>個體差異</span>（例如氣孔密度、葉片總面積、根系吸水能力等），這些因素會干擾水分流失的數據 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "高級研究員建議不應使用兩株不同的植物，而是應該在「同一株植物的同一片大葉子」上進行測試（例如左半邊葉面塗抹保水劑，右半邊塗抹清水），然後利用顯微鏡觀察兩邊的氣孔開合狀態。解釋這個修改如何大幅提升實驗的效度。 (2分)",
+                answer: "在同一片葉子上分別進行實驗及對照處理，可以完全消除不同植株或不同葉片之間因先天特徵（如氣孔分佈密度）所造成的<span class='keyword'>個體差異</span> (1)；這設計確保了觀察到的氣孔狀態差異（因變量）僅是由塗抹抗旱保水劑（自變量）引起，排除了其他植物內部因素的干擾，從而大幅提高<span class='keyword'>實驗效度</span> (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 5 題】",
+        concept: "生態調查、隨機抽樣與數據代表性",
+        scenario: "學生小明想調查學校大草坪（面積約 1000 平方米）上車前草的種群密度。 他為了貪圖方便，選擇了草坪上靠近水源且車前草生長得最密集的一個角落，連續投擲了 10 個 0.5m x 0.5m 的樣方，並計算其平均密度。",
+        parts: [
+            {
+                label: "(a)",
+                question: "儘管小明投擲了 10 個樣方（有進行重複測量），但他的指導老師指出其數據的效度仍然極低。解釋原因。 (1分)",
+                answer: "取樣位置只集中在靠近水源且植物密集的單一角落，未能涵蓋草坪的其他微生境（如乾燥處或邊緣），樣本<span class='keyword'>不能代表</span>整個草坪的真實分佈情況 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "提出一項具體的抽樣方法修改，以確保收集到的數據能有效地代表整個草坪的真實情況。 (1分)",
+                answer: "在整個大草坪範圍內進行<span class='keyword'>隨機抽樣</span>（例如利用網格劃分草坪，並使用隨機數字表來決定投放樣方的坐標）(1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 6 題】",
+        concept: "免疫與抗體測試、半量化數據陷阱、實驗局限",
+        scenario: "一種新型呼吸道病毒爆發，藥廠正在測試一種實驗性口服抗病毒膠囊。他們招募了 10 名志願者服用該膠囊，並在隨後 12 星期內，每四週使用「快速抗原試紙」檢測志願者唾液中的游離病毒抗原量。 試紙的顏色深淺代表抗原濃度，分為 4 個等級：「- (無色)」、「+ (淺色)」、「++ (中等)」、「+++ (深色)」。<br>結果如下： 第0週：+++ 第4週：++ 第8週：+ 第12週：+<br>藥廠發言人宣稱：「數據顯示膠囊極具成效，第 12 週的病毒抗原濃度已經精確地下降至第 0 週的三分之一以下。」",
+        parts: [
+            {
+                label: "(a)",
+                question: "參考數據的性質，你是否同意藥廠發言人「精確下降至三分之一以下」的結論？試解釋。 (2分)",
+                answer: "<span class='keyword'>不同意</span> (1)；因為快速測試紙只能提供<span class='keyword'>半量化</span>的數據（顏色的深淺只代表某個粗略的濃度範圍），不能提供確切的濃度數值，因此無法作準確的數學運算以得出「精確下降至三分之一」的倍數結論 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "識別這項探究方法的兩項科學局限。 (2分)",
+                answer: "以下任何兩項：<br>測試工具靈敏度不足/只能作粗略估計，無法顯示微小的抗原量變化 (1)<br>缺乏沒有服用膠囊/服用安慰劑的<span class='keyword'>對照組</span>，無法確定抗原下降是人體的自然免疫反應（如自行產生抗體）還是藥物的真實效用 (1)<br>樣本數量（10名志願者）太少，<span class='keyword'>代表性不足</span>，容易受極端數據影響 (1)"
+            },
+            {
+                label: "(c)",
+                question: "提出兩項具體的實驗修改方案：一項針對提升結果的信度，另一項針對提升實驗設計的效度。 (2分)",
+                answer: "提升<span class='keyword'>信度</span>：大幅增加志願者的樣本數量（例如招募數百名志願者），並計算平均趨勢，以減低個體差異（如不同人的免疫力強弱）對實驗結果的影響 (1)。<br>提升<span class='keyword'>效度</span>：設立<span class='keyword'>對照組</span>（一組服用藥物，另一組服用外觀相同的安慰劑），以確保抗原量的變化（因變量）純粹由藥物（自變量）引起 (1)。（註：或建議改用能提供精確數值的量化血液測試取代試紙）"
+            }
+        ]
+    },
+    {
+        title: "【第 7 題】",
+        concept: "植物蒸騰作用、環境波動與控制變量",
+        scenario: "小志在學校實驗室靠窗的桌子上，使用氣泡計時器探究不同風速對植物枝條蒸騰速率的影響。 他利用電風扇設定三種風速（低、中、高），並分別在上午9時測量低檔、中午12時測量中檔、及下午3時測量高檔風速。他記錄氣泡在 5 分鐘內移動的距離，每檔風速只測量了一次。結果顯示下午3時（高檔風速）氣泡移動最快。",
+        parts: [
+            {
+                label: "(a)",
+                question: "小志得出結論：「風速越高，植物的蒸騰速率必然越高。」基於他在測量時間上的安排，這結論的效度受到嚴重質疑。請解釋原因。 (2分)",
+                answer: "實驗在靠窗的位置於一天內的不同時間進行，期間環境的光強度、環境溫度或相對濕度等均會發生劇烈變化 (1)；這些未能受控的環境因素（應為<span class='keyword'>控制變量</span>）都會直接影響蒸騰速率（因變量），因此無法確定觀察到的氣泡移動速率變化僅是由風速（自變量）引起 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "為小志的實驗提出兩項具體的修改建議，以確保實驗結果純粹是由自變量所引致，同時提高數據的效度和信度。 (2分)",
+                answer: "提升<span class='keyword'>效度</span>：在受控環境（如關閉窗戶的暗室並使用恆定的人工光源，及開啟空調恆溫）中連續進行測試，確保光強度和溫度等控制變量保持不變 (1)。<br>提升<span class='keyword'>信度</span>：在每一檔風速下，應讓氣泡歸零並<span class='keyword'>重複測量</span>氣泡移動距離數次，以獲取平均值並減低人為讀數的隨機誤差 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 8 題】",
+        concept: "酶的活性、個體差異與信度",
+        scenario: "某學生欲探究溫度對過氧化氫酶（從新鮮馬鈴薯提取）活性的影響。 他將 5 個裝有等量過氧化氫溶液的試管分別放置於 10°C、20°C、30°C、40°C 及 50°C 的水浴中。隨後，他在每個試管中加入「一粒」體積相同的馬鈴薯碎塊，並記錄 1 分鐘內收集到的氧氣體積。",
+        parts: [
+            {
+                label: "(a)",
+                question: "該學生在每個溫度下僅使用一粒馬鈴薯塊，這對判斷「溫度與酶活性關係」的整體趨勢有何不利影響？ (1分)",
+                answer: "缺乏足夠數據點，未能偵察出單次測量是否為偶然的<span class='keyword'>異常值</span>，無法確保數據趨勢並非隨機發生 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "提出一項具體的實驗步驟修改，以確認上述實驗結果的可信度。 (1分)",
+                answer: "在每個溫度設定下，使用相同來源的馬鈴薯塊<span class='keyword'>重複進行實驗</span>最少三次 (1)。"
+            },
+            {
+                label: "(c)",
+                question: "解釋你在 (b) 提出的修改如何能在科學上提高結果的可信度。 (2分)",
+                answer: "不同馬鈴薯塊（或同一馬鈴薯的不同部位）的過氧化氫酶濃度可能存在先天<span class='keyword'>個體差異</span> (1)；重複實驗並計算<span class='keyword'>平均值</span>，能有效減少這些個體差異及隨機誤差對整體數據的影響，從而提高實驗結果的可信度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 9 題】",
+        concept: "滲透作用、生物材料與人造材料的信度比較",
+        scenario: "學生甲和學生乙分別進行探究濃度梯度對滲透作用速率影響的實驗。學生甲使用「新鮮蘋果切片」，學生乙則使用「透析管」。<br>兩人都在不同濃度的蔗糖溶液中進行了 3 次重複實驗，並計算質量的平均百分比變化。結果顯示，學生甲的 3 次重複數據之間差異極大（波動大），而學生乙的 3 次數據則高度一致。",
+        parts: [
+            {
+                label: " ",
+                question: "試從生物學角度解釋，為何即使兩人同樣重複實驗 3 次，學生甲的數據可信度似乎仍低於學生乙？ (2分)",
+                answer: "蘋果切片屬於生物活體組織，不同切片之間的細胞水勢、細胞膜透性及組織密度均存在<span class='keyword'>個體差異</span> (1)；而透析管是人造材料，其孔徑大小和質地完全均一，沒有個體差異，因此產生的<span class='keyword'>隨機誤差</span>較小，數據更一致 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 10 題】",
+        concept: "免疫與抗體測試、體外與活體實驗的效度比較",
+        scenario: "科研人員研發了一種能中和某呼吸道病毒的新型單株抗體。 為了評估其治療潛力，團隊進行了兩項測試：<br>方案 X：在實驗室的培養皿中混合病毒、人體呼吸道上皮細胞及該抗體，48 小時後量度被感染的細胞數量。<br>方案 Y：將病毒感染實驗室雪貂，隨後為牠們注射該抗體，並持續監測其肺部病變情況及存活率。",
+        parts: [
+            {
+                label: "(a)",
+                question: "若要評估該抗體作為人類臨床藥物的真實效用，哪一個方案（X 或 Y）具備較高的效度？試提出一個支持該方案的科學理由。 (2分)",
+                answer: "<span class='keyword'>方案 Y</span> (1)；培養皿（體外）實驗未能模擬動物體內複雜的免疫系統反應（如吞噬細胞的協同作用或抗體在血液中的降解速率），<span class='keyword'>活體動物模型</span>較能模擬真實生理環境，因此更能有效反映抗體在生物體內的真實療效 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "在方案 X 中，必須確保所有培養皿放置在 37°C 的恆溫培養箱中。解釋這步驟對維持實驗效度的重要性。 (2分)",
+                answer: "溫度會影響細胞活性及病毒入侵的速率，必須將其設為嚴格的<span class='keyword'>控制變量</span> (1)；這能確保細胞感染數量（因變量）的變化純粹是由是否加入單株抗體（自變量）所引致，排除了溫度波動的干擾，從而確保實驗效度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 11 題】",
+        concept: "激素調節、消除個體差異的對照設計",
+        scenario: "科學家欲探究「激素甲」對青蛙皮膚黑色素細胞擴張的影響。初步實驗設計是：將 10 隻青蛙分為兩組，A 組注射激素甲，B 組注射等量生理鹽水，然後比較兩組青蛙皮膚顏色的變黑程度。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項設計在確保實驗效度上的一個主要缺陷。 (1分)",
+                answer: "兩組不同青蛙之間存在先天<span class='keyword'>個體差異</span>（例如皮膚黑色素細胞的原始密度或對激素的敏感度不同），會干擾實驗結果 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "為了大幅提升實驗效度，資深科學家建議不應將青蛙分組，而是應該在「同一隻青蛙」上進行對照。描述這項改良的具體操作（如何比較），並解釋此設計如何消除干擾因素以確保效度。 (3分)",
+                answer: "具體操作：記錄同一隻青蛙在注射激素甲「之前」的皮膚顏色，再與其注射「之後」的皮膚顏色進行對比（或在同一隻青蛙的左腿注射激素甲，右腿注射生理鹽水進行對比）(1)。<br>解釋：這設計完全消除了不同青蛙之間因遺傳或生理特徵造成的<span class='keyword'>個體差異</span> (1)；確保了皮膚變黑程度的改變（因變量）僅是由激素甲的介入（自變量）所引起，排除了個體因素干擾，大幅提升效度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 12 題】",
+        concept: "植物蒸騰作用、實驗對照的科學目的",
+        scenario: "農學家測試一種號稱能「封閉氣孔」的葉面噴霧。他選取了一片寬大的雙子葉植物葉片，在葉片的「左半部」噴灑該噴霧，而「右半部」則保持原狀沒有噴灑任何液體。 隨後，他在左右兩半部的下表皮均貼上乾燥的氯化鈷試紙，比較試紙由藍轉粉紅所需的時間。",
+        parts: [
+            {
+                label: "(a)",
+                question: "雖然他在同一片葉子上進行測試能消除葉片間的個體差異，但他未有在右半部噴灑任何液體，這嚴重損害了實驗的效度。解釋原因。 (1分)",
+                answer: "噴霧本身含有水分或溶劑，這些液體可能會直接影響氯化鈷試紙的變色時間，而右半部沒有接受等量的液體處理，未能排除<span class='keyword'>噴霧溶劑</span>本身的干擾 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "針對 (a) 的缺陷，提出具體的改良步驟，並利用變量的概念解釋其科學目的。 (2分)",
+                answer: "應在葉片的右半部噴灑與噴霧等量且相同成分的<span class='keyword'>溶劑</span>（但不含封閉氣孔的活性成分）(1)；此舉是為了設立嚴格的<span class='keyword'>控制變量</span>，確保試紙變色時間的差異（因變量）純粹是由「封閉氣孔的活性成分」（自變量）引起，而非由噴霧的溶劑水分造成，確保效度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 13 題】",
+        concept: "酶的活性、半量化數據限制、實驗局限",
+        scenario: "某化驗所檢測重金屬鉛離子對人體唾液澱粉酶活性的抑制作用。將澱粉、澱粉酶及鉛離子溶液混合後置於 37°C。每隔 3 分鐘抽取樣本，加入碘液測試。 化驗員以肉眼觀察碘液的顏色，並將深淺記錄為：「++++ (深藍黑)」、「+++ (藍)」、「++ (淺藍)」、「- (黃褐)」。<br>實驗結果：<br>沒有鉛離子（對照組）：0分鐘 (++++)；3分鐘 (++)；6分鐘 (-)；9分鐘 (-)<br>加入鉛離子（實驗組）：0分鐘 (++++)；3分鐘 (+++)；6分鐘 (++)；9分鐘 (-)<br>化驗所主管宣稱：「數據確切證明，加入鉛離子會導致澱粉酶在第 3 分鐘時的催化效率精確下降了 50%。」",
+        parts: [
+            {
+                label: "(a)",
+                question: "參考數據的性質，你是否同意主管「精確下降了 50%」的結論？試解釋。 (2分)",
+                answer: "<span class='keyword'>不同意</span> (1)；因為碘液測試只能提供<span class='keyword'>半量化數據</span>，顏色的深淺只代表剩餘澱粉的粗略相對含量，無法提供準確的澱粉濃度數值，因此無法進行精確的數學運算以得出「下降 50%」的結論 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "識別這項探究方法的兩項科學局限。 (2分)",
+                answer: "以下任何兩項：<br>依靠肉眼判斷顏色深淺帶有極大的<span class='keyword'>主觀性</span>，容易產生人為測量誤差 (1)<br>測試時間間隔（3分鐘）過長，無法準確得知澱粉完全被分解（變成黃褐色）的確切時刻 (1)<br>缺乏定量的測量工具，無法偵測微小的澱粉濃度變化 (1)"
+            },
+            {
+                label: "(c)",
+                question: "提出兩項具體的實驗修改方案：一項針對提升數據的信度，另一項針對提升測量方法的效度。 (2分)",
+                answer: "提升<span class='keyword'>信度</span>：使用相同批次的澱粉酶和溶液，在相同條件下<span class='keyword'>重複上述實驗數次</span>，並找出變色的平均時間，以減少觀察帶來的隨機誤差 (1)。<br>提升<span class='keyword'>效度</span>：利用<span class='keyword'>色度計（Colorimeter）</span>取代肉眼觀察，量化地測量混合物的透光度/吸光度，從而精確得出剩餘澱粉的實際濃度（因變量），確保結果客觀有效 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 14 題】",
+        concept: "生態調查、樣方分析局限、數據代表性",
+        scenario: "某環保團體調查一個受到輕微污染的沙灘上，不同距離海岸線對微小底棲生物（如沙蚤）分佈密度的影響。 調查員從海水邊緣開始，垂直向內陸拉了一條長 50 米的樣線。他每隔 10 米放置「一個」 0.25 平方米的樣方，粗略挖掘表層 2 厘米的沙子，計算見到的沙蚤數量。<br>數據顯示：0米 (0隻)；10米 (15隻)；20米 (5隻)；30米 (20隻)；40米 (2隻)；50米 (0隻)。<br>調查員結論：「沙蚤的分佈密度隨著遠離海岸線呈現極度不規律的隨機波動，與海水距離無關。」",
+        parts: [
+            {
+                label: "(a)",
+                question: "基於調查員的取樣設計，解釋為何此「不規律波動」的結論效度成疑。 (2分)",
+                answer: "調查員在每個距離點只放置了「一個」樣方，完全沒有<span class='keyword'>重複測量</span> (1)；沙蚤在沙灘上的分佈可能是不均勻或呈群集狀態（存在微生境的空間差異），單一數據極容易受偶然的群集或空缺影響，未能真實反映該距離的整體分佈規律，導致結論無效 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "除了取樣數量的問題外，指出該「挖掘與點算」方法在評估真實種群密度上的兩項科學局限。 (2分)",
+                answer: "以下任何兩項：<br>只挖掘表層 2 厘米，無法點算隱藏在較深沙層中的沙蚤，低估了真實密度 (1)<br>沙蚤是活動生物，在放置樣方或挖掘時可能會逃跑，導致肉眼點算的數據不準確 (1)"
+            },
+            {
+                label: "(c)",
+                question: "提出兩項具體的實驗修改方案，以分別提升該生態調查的信度與效度。 (2分)",
+                answer: "提升<span class='keyword'>信度</span>：在每一個距離（如 10 米處），沿著平行海岸線的方向隨機放置<span class='keyword'>多個樣方</span>（如 5 個），並計算平均沙蚤密度，以減少空間分佈差異帶來的隨機誤差 (1)。<br>提升<span class='keyword'>效度</span>：使用統一深度的沉積物採樣器提取固定體積的沙柱，然後在實驗室利用篩網和顯微鏡仔細分離及點算，確保所有深度的個體（因變量）都被準確測量，從而提高探究方法的效度 (1)。"
+            }
+        ]
+    },
+{
+        title: "【第 15 題】",
+        concept: "滲透作用、質壁分離、個體差異與信度",
+        scenario: "某學生欲探究高濃度蔗糖溶液對洋蔥表皮細胞質壁分離速率的影響。 他撕下一小片紅洋蔥表皮放在載玻片上，加入 1.0 M 的蔗糖溶液。在顯微鏡下，他隨機挑選了「一個」洋蔥表皮細胞進行觀察，並利用秒錶記錄該細胞從接觸溶液到完全發生質壁分離所需的時間。",
+        parts: [
+            {
+                label: "(a)",
+                question: "該學生只觀察並記錄「一個」洋蔥細胞的質壁分離時間，這對評估該植物組織對高滲溶液的整體反應有何不利影響？ (1分)",
+                answer: "缺乏足夠數據點，未能偵察出該單一細胞的反應時間是否為偶然的<span class='keyword'>異常值</span>，無法確保數據能代表整個表皮組織的平均反應 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "提出一項具體的觀察步驟修改，以確認上述實驗結果的可信度。 (1分)",
+                answer: "在同一個表皮樣本（或多個樣本）中，同時觀察並記錄多個（例如<span class='keyword'>最少 10 個</span>）洋蔥細胞發生質壁分離所需的時間 (1)。"
+            },
+            {
+                label: "(c)",
+                question: "解釋你在 (b) 提出的修改如何能在科學上提高結果的可信度。 (2分)",
+                answer: "同一塊洋蔥表皮上，不同細胞的液泡大小或初始細胞液水勢可能存在先天<span class='keyword'>個體差異</span> (1)；觀察多個細胞並計算<span class='keyword'>平均</span>質壁分離時間，能有效減少這些個體差異造成的偏差，從而增加實驗結果的可信度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 16 題】",
+        concept: "酶的活性、隨機誤差與信度",
+        scenario: "科學家探究 pH 值對取自豬小腸的澱粉酶活性的影響。<br>在 5 個不同 pH 值（pH 5 至 9）的緩衝溶液中，加入等量澱粉溶液及澱粉酶提取液。科學家利用滴色板及碘液測試，記錄每個 pH 值下澱粉完全消失（碘液保持黃褐色）所需的時間。實驗對每個 pH 值設定僅進行了一次測量。",
+        parts: [
+            {
+                label: "(a)",
+                question: "實驗過程中，每次滴加碘液的體積或混合的均勻度可能會有微小差異。這種情況會對單次測量數據帶來什麼問題？ (1分)",
+                answer: "這些操作上難以完全避免的微小差異會產生<span class='keyword'>隨機誤差</span>，導致單次測量的時間數據不準確 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "為了確認「該澱粉酶的最活耀 pH 值」這個結論的可信度，科學家在操作上應該怎樣做？ (1分)",
+                answer: "使用相同批次的豬小腸澱粉酶和澱粉溶液，在每個 pH 值設定下<span class='keyword'>重複實驗</span>最少三次 (1)。"
+            },
+            {
+                label: "(c)",
+                question: "說明 (b) 的做法如何改善由 (a) 引致的問題，從而確保結論是可靠的。 (2分)",
+                answer: "重複實驗可以獲取多個時間數據並<span class='keyword'>計算平均值</span> (1)；這有助於互相抵消單次操作（如滴加碘液或混合不均）所帶來的隨機誤差，確保判斷最活耀 pH 值的數據趨勢是穩定且可信的 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 17 題】",
+        concept: "免疫系統、體外與活體實驗的效度比較",
+        scenario: "某藥廠研發了一種名為「腸衛盾」的新型口服疫苗，旨在預防一種會引起嚴重腹瀉的腸道致病菌。 藥廠設計了兩個方案來測試疫苗是否能成功刺激抗體產生：<br>方案 A：在試管中，將「腸衛盾」疫苗的抗原成分直接與人體血液提取的白血球（包含淋巴細胞）混合培養，一週後量度培養液中的抗體濃度。<br>方案 B：將「腸衛盾」疫苗混入飼料中餵飼健康小鼠，四週後抽取小鼠的血液及腸道黏液，量度其中的抗體濃度。",
+        parts: [
+            {
+                label: "(a)",
+                question: "若要評估該口服疫苗應用於真實生物體的效用，哪一個方案（A 或 B）具有較高的實驗效度？試提出一個支持該方案的科學理由。 (2分)",
+                answer: "<span class='keyword'>方案 B</span> (1)；因為口服疫苗必須經過消化道的極端環境（如胃酸及消化酶的破壞），且需要透過腸道黏膜的巨噬細胞進行抗原呈現才能有效激發免疫反應。試管實驗（方案 A）未能模擬這些真實的生理及消化道環境，<span class='keyword'>活體動物實驗</span>較能反映疫苗在體內發揮的真實效應 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "在方案 B 中，必須確保所有小鼠在實驗期間進食「相同分量及營養成分的飼料」。解釋這步驟對於維持該動物實驗效度的重要性。 (2分)",
+                answer: "飼料的營養成分會直接影響小鼠的整體健康狀況及免疫系統的製造抗體能力，必須將其設為<span class='keyword'>控制變量</span> (1)；這確保了小鼠血液及腸道黏液中抗體濃度（因變量）的變化純粹是由是否服用「腸衛盾」疫苗（自變量）所引致，排除了營養差異的干擾，從而確保效度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 18 題】",
+        concept: "激素調節、消除個體差異的對照設計",
+        scenario: "研究團隊正在測試一種能透過皮膚吸收的「合成胰島素貼片」，以代替傳統的皮下注射。 最初的設計是：選取 20 隻患有糖尿病的白老鼠，隨機分為兩組。實驗組貼上合成胰島素貼片，對照組不作任何處理，兩小時後比較兩組的平均血糖濃度。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項分組設計在確保實驗效度上可能遇到的一個主要生物學干擾因素。 (1分)",
+                answer: "兩組患病白老鼠之間存在先天的<span class='keyword'>個體差異</span>（例如本身的胰島素抗性嚴重程度或基礎代謝率不同），會干擾血糖下降的數據 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "高級研究員建議放棄分組對比，改為在「同一隻白老鼠」身上進行前後對照實驗。描述這項改良的具體數據收集流程，並利用變量概念解釋此設計如何大幅提升實驗效度。 (3分)",
+                answer: "具體流程：先量度並記錄每一隻白老鼠在使用貼片「之前」的基礎血糖濃度，貼上貼片兩小時後，再次量度「同一隻」白老鼠的血糖濃度，計算其自身的血糖下降幅度 (1)。<br>解釋：這設計完全消除了不同老鼠之間因生理特徵（如原本的患病嚴重程度）造成的<span class='keyword'>個體差異</span> (1)；確保了觀察到的血糖濃度下降（因變量）僅是由貼上胰島素貼片（自變量）引起，排除了老鼠本身體質因素的干擾，大幅提升實驗效度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 19 題】",
+        concept: "植物蒸騰作用、實驗對照的科學目的",
+        scenario: "學生小華想證明「植物葉片的氣孔主要分佈在下表皮」。 他剪下一段帶有許多葉片的植物枝條，插入裝有水的量筒中，並在水面滴加生油。他先將所有葉片的「上表皮」塗滿凡士林，將裝置放在通風處 4 小時並記錄水分流失量。隨後，他使用「另一段」大小相若的枝條，將所有葉片的「下表皮」塗滿凡士林，同樣放置 4 小時並記錄水分流失量。",
+        parts: [
+            {
+                label: "(a)",
+                question: "小華使用了兩段不同的枝條來分別測試上、下表皮的蒸騰速率。指出這做法如何損害了實驗的效度。 (1分)",
+                answer: "兩段不同的枝條即使大小相若，仍存在葉片總表面積、氣孔總數或枝條木質部吸水能力的先天<span class='keyword'>個體差異</span>，這會干擾水分流失量的比較 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "針對 (a) 的缺陷，提出一個只使用「同一段枝條」來完成整個探究的具體實驗步驟修改，以確保結果有效。 (2分)",
+                answer: "應使用<span class='keyword'>同一段枝條</span>進行連續測試：先將所有葉片的上表皮塗滿凡士林，測量其 4 小時內的水分流失量；隨後，在「同一段枝條」的葉片下表皮也塗滿凡士林（即上下表皮均被封閉），再測量其後 4 小時的水分流失量，然後比較兩次的數據 (2)。"
+            }
+        ]
+    },
+    {
+        title: "【第 20 題】",
+        concept: "酶的活性、半量化數據陷阱、控制變量局限",
+        scenario: "某化學公司研發了一種含有新型蛋白酶的洗衣粉。為了找出該蛋白酶分解牛奶污漬（蛋白質懸浮液）的最適溫度，研究員在 20°C、40°C 及 60°C 的環境下，分別將該酶加入混濁的牛奶懸浮液中。 他在試管背後放置一張印有黑色十字的白紙，並記錄從加入酶到「肉眼剛好能清晰看見黑色十字」所需的時間。每個溫度僅測試了一次。<br>結果：20°C (12分鐘)；40°C (3分鐘)；60°C (9分鐘)。<br>研究員宣稱：「數據確切證明該蛋白酶的最適溫度恰好是 40°C，且其催化效率是 60°C 時的 3 倍。」",
+        parts: [
+            {
+                label: "(a)",
+                question: "參考數據的性質及實驗設計，提出兩個理由解釋為何不應同意研究員「最適溫度恰好是 40°C 及效率是精確 3 倍」的結論。 (2分)",
+                answer: "理由一：實驗只測試了三個相距甚遠的溫度（20、40、60°C），真正的最適溫度可能在 40°C 的附近（例如 35°C 或 45°C），數據點太少無法確立「恰好」的峰值 (1)。<br>理由二：依賴肉眼判斷十字的清晰度帶有<span class='keyword'>主觀性</span>，且時間測量只反映粗略的速率，無法作為嚴格的定量指標進行「3 倍」的數學推論 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "依靠肉眼判斷「剛好能清晰看見十字」是此實驗的一大局限。這對評估實驗效度有何負面影響？ (1分)",
+                answer: "肉眼判斷帶有極大的主觀性，不同人或同一個人在不同次數對「清晰」的定義可能不一致，導致無法準確且客觀地反映蛋白質被完全分解的真實時刻（因變量），降低了測量的<span class='keyword'>效度</span> (1)。"
+            },
+            {
+                label: "(c)",
+                question: "提出一項具體的實驗修改方案以找尋最適溫度。(1分)",
+                answer: "在 20°C 至 60°C 之間設置<span class='keyword'>更密集的溫度梯度</span>（例如 30°C, 35°C, 40°C, 45°C, 50°C），以更精確地鎖定最高活性的溫度區間 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 21 題】",
+        concept: "植物蒸騰作用、個體差異與信度",
+        scenario: "某學生欲探究光強度對植物蒸騰速率的影響。 他設置了一個氣泡計時器（potometer），在五個不同的光強度環境下，每次只剪取「一枝」新的同品種植物枝條進行測試，並記錄氣泡在 10 分鐘內移動的距離。",
+        parts: [
+            {
+                label: "(a)",
+                question: "該學生在每個光強度下僅使用一枝植物枝條，這對評估數據的整體趨勢有何不利影響？ (1分)",
+                answer: "缺乏足夠數據點，未能偵察出單次測量的數據是否為偶然的<span class='keyword'>異常值</span>，無法確保數據趨勢並非隨機發生 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "提出一項具體的實驗步驟修改，以確認上述實驗結果的可信度。 (1分)",
+                answer: "在每一個光強度下，使用多枝（例如最少三枝）大小及葉片數量相若的同品種植物枝條<span class='keyword'>重複進行實驗</span> (1)。"
+            },
+            {
+                label: "(c)",
+                question: "說明你在 (b) 提出的修改如何能在科學上提高結果的可信度。 (2分)",
+                answer: "不同枝條之間（如葉片總表面積、氣孔密度）可能存在先天<span class='keyword'>個體差異</span> (1)；增加每組樣本數量並計算氣泡移動距離的<span class='keyword'>平均值</span>，能有效減少這些個體差異對整體數據的影響，從而增加實驗結果的可信度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 22 題】",
+        concept: "激素調節、消除個體差異的對照設計",
+        scenario: "科學家欲探究腎上腺素對水蚤心搏率的影響。 初步設計是：選取 20 隻大小相若的水蚤，隨機分為兩組。實驗組滴加 0.1% 腎上腺素溶液，對照組滴加池水，然後分別在顯微鏡下點算並比較兩組水蚤每分鐘的心跳次數。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出這項分組設計在確保實驗效度上的一個主要先天缺陷。 (1分)",
+                answer: "兩組不同水蚤之間存在先天<span class='keyword'>個體差異</span>（例如本身的基礎心搏率、年齡或生理狀態不同），這會干擾心搏率改變的數據 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "為了大幅提升實驗效度，資深研究員建議不應分組對比，而應在「同一隻水蚤」上進行實驗。描述這項改良的具體操作流程，並解釋此設計如何消除干擾因素以確保效度。 (3分)",
+                answer: "具體操作：先將同一隻水蚤放在池水中，量度並記錄其滴加腎上腺素「之前」的基礎心搏率；隨後在「同一隻」水蚤身上滴加 0.1% 腎上腺素溶液，再次量度其滴加「之後」的心搏率，然後比較兩者差異 (1)。<br>解釋：這設計完全消除了不同水蚤之間因生理特徵所造成的<span class='keyword'>個體差異</span> (1)；確保了觀察到的心搏率變化（因變量）僅是由腎上腺素的介入（自變量）引起，排除了水蚤本身體質因素的干擾，大幅提升實驗效度 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 23 題】",
+        concept: "生態調查、抽樣代表性與控制變量",
+        scenario: "某學生想調查校園草地中，陽光充足區域與樹蔭區域的蒲公英種群密度差異。 他在陽光充足的草地中央放置了 5 個 0.5m x 0.5m 的樣方並點算數量；然後走到樹蔭區域的邊緣（靠近行人徑），同樣放置 5 個樣方點算數量。",
+        parts: [
+            {
+                label: "(a)",
+                question: "該學生雖然在兩個區域都放置了 5 個樣方，但他在樹蔭區域的選址（靠近行人徑）嚴重損害了比較兩種光照環境的效度。解釋原因。 (2分)",
+                answer: "行人徑的踐踏程度、土壤壓實度或水分等環境因素可能與草地中央不同，這使踐踏程度未能成為<span class='keyword'>控制變量</span> (1)；這導致蒲公英密度的差異（因變量）可能受到人為干擾而非純粹由光照強度（自變量）引起，降低了結論的效度 (1)。"
+            },
+            {
+                label: "(b)",
+                question: "提出一項具體的抽樣改良方法，以確保收集到的數據能有效地代表這兩個區域的真實情況。 (1分)",
+                answer: "應在兩個區域（陽光充足及樹蔭區）的整體範圍內分別進行<span class='keyword'>隨機抽樣</span>（例如利用網格及隨機數字表決定樣方坐標），而非主觀選擇邊緣或中央 (1)。"
+            }
+        ]
+    },
+    {
+        title: "【第 24 題】",
+        concept: "滲透作用、個體差異、因變量與控制變量",
+        scenario: "學生探究不同濃度蔗糖溶液對馬鈴薯細胞的水勢影響。他在 5 支試管中分別放入 0.2M 至 1.0M 的蔗糖溶液，然後在每支試管中僅放入一條長度為 5.0 cm 的新鮮馬鈴薯柱體。靜置 2 小時後，他取出馬鈴薯柱體並量度其最終長度。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出此探究實驗中的「因變量」及一項「控制變量」。（2分）",
+                answer: "因變量：馬鈴薯柱體的<span class='keyword'>水勢變化</span> (1)<br>控制變量：馬鈴薯柱體浸泡的時間 / 馬鈴薯柱體的初始長度 / 蔗糖溶液的體積（任何一項） (1)"
+            },
+            {
+                label: "(b)",
+                question: "試建議並解釋如何修改步驟以確認實驗結果的「可信度」。（3分）",
+                answer: "修改步驟：在每個濃度的蔗糖溶液中放置多條（例如 3 條或以上）馬鈴薯柱體，然後計算長度變化的<span class='keyword'>平均值</span>。 (1)<br>解釋：不同馬鈴薯柱體即使來自同一個馬鈴薯，其細胞的初始組織密度或水勢亦可能存在<span class='keyword'>個體差異</span>。 (1)<br>重複實驗並計算平均值，能減低這些個體差異（或偶然誤差）對整體數據的影響，從而增加實驗結果的可信度。 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 25 題】",
+        concept: "植物蒸騰作用、環境波動、偶然誤差",
+        scenario: "學生利用氣泡計時器探究風速對植物枝條蒸騰速率的影響。他利用風扇以三個不同風速（低、中、高）吹向植物枝條，每次改變風速後，他立刻觀察並記錄 1 分鐘內毛細管中氣泡移動的距離。每個風速均只作一次記錄。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出此實驗的「自變量」及「因變量」。（2分）",
+                answer: "自變量：<span class='keyword'>風速</span> (1)<br>因變量：<span class='keyword'>蒸騰速率</span> (1)"
+            },
+            {
+                label: "(b)",
+                question: "解釋為何每次改變風速後只記錄 1 分鐘的數據且沒有進行重複實驗，會嚴重降低結果的可信度。（2分）",
+                answer: "1 分鐘的測量時間太短，容易受到周圍環境短暫波動（例如實驗室內溫度或光強度的微小瞬間變化）的干擾，產生極大的<span class='keyword'>偶然誤差</span>。 (1)<br>由於沒有進行重複實驗，無法識別或消除這些偶然誤差，導致單一數據的可信度極低。 (1)"
+            },
+            {
+                label: "(c)",
+                question: "建議兩項具體的實驗步驟修改方案，以提升收集數據的可信度。（2分）",
+                answer: "修改 1：延長每次記錄氣泡移動的<span class='keyword'>時間</span>（例如增至 5 分鐘或以上）。 (1)<br>修改 2：在每個風速下進行多次（例如 3 次）<span class='keyword'>重複量度</span>，並計算氣泡移動距離的平均值。 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 26 題】",
+        concept: "激素調節、體外與體內實驗的效度比較",
+        scenario: "科研團隊正在研發新型口服降血糖藥物「GlucaX」。他們進行了兩組測試以評估其效用：<br>【實驗 I】 將 GlucaX 加入含有離體人體肝臟細胞的培養皿中，30 分鐘後量度培養液中葡萄糖濃度的下降幅度。<br>【實驗 II】 將 GlucaX 餵飼給患有糖尿病的活體小鼠，30 分鐘後量度其血液中葡萄糖濃度的變化。",
+        parts: [
+            {
+                label: "(a)",
+                question: "若要評估「GlucaX 作為人類口服藥物」的臨床潛力，哪一個實驗（I 或 II）更能提供具效度的結果？試從生物學角度解釋你的答案。（3分）",
+                answer: "<span class='keyword'>實驗 II</span> 具有較高的效度。 (1)<br>解釋 1：活體小鼠（體內實驗）能模擬真實生理環境，包括藥物經過消化系統的分解、吸收及血液循環的運送過程，而實驗 I（體外實驗）未能模擬。 (1)<br>解釋 2：血糖調節涉及多個器官（如胰臟）及激素的複雜互動，<span class='keyword'>活體動物模型</span>能反映此整體的複雜代謝反應，培養皿的單一肝臟細胞則不能。 (1)"
+            },
+            {
+                label: "(b)",
+                question: "在實驗 II 中，研究員如何能透過在同一個體上進行實驗及對照處理，以消除個體天生差異的干擾，確保結果純粹由「自變量」引起？（2分）",
+                answer: "在餵飼 GlucaX 之前，先量度並記錄同一隻小鼠的<span class='keyword'>空腹血糖濃度</span>作為基線數據（對照處理）。 (1)<br>然後將服藥後的血糖濃度與其自身的基線數據進行比較。這能消除不同小鼠間原有病情嚴重程度或體重的天生<span class='keyword'>個體差異</span>，確保血糖變化純粹由自變量（服用藥物）引起。 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 27 題】",
+        concept: "酶的活性、控制變量、模擬真實環境",
+        scenario: "某生物科技公司研發了一種宣稱能「在人體胃部極速幫助消化蛋白質」的超級蛋白酶補充劑。研究員將等量的蛋白質粉末與超級蛋白酶放入試管中，加入室溫的蒸餾水並維持於 pH 7，然後記錄蛋白質完全被分解所需的時間。",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出該實驗設計中兩個未能模擬人體胃部真實環境的致命缺陷，並解釋這如何破壞實驗測試其假說的效度。（4分）",
+                answer: "缺陷一：實驗在室溫下進行，未能模擬人體核心<span class='keyword'>體溫</span>（約 37°C）。 (1)<br>缺陷二：實驗環境為中性（pH 7），未能模擬人體胃部的強<span class='keyword'>酸性環境</span>（約 pH 2）。 (1)<br>解釋：酶的活性受溫度及 pH 值強烈影響。若未能模擬真實胃部環境的關鍵因素，實驗得出的分解時間便不能反映該酶在人體胃內的真實活性，導致測試該產品宣稱效用的效度極低。 (2)"
+            },
+            {
+                label: "(b)",
+                question: "指出一項控制變量。（1分）",
+                answer: "控制變量：超級蛋白酶溶液的<span class='keyword'>濃度 / 體積</span>，或加入的蛋白質粉末質量。 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 28 題】",
+        concept: "生態調查、隨機抽樣對信度的影響、數據波動",
+        scenario: "學生利用 0.5m x 0.5m 的樣方（quadrat）估算一片面積為 1000 平方米的草地上蒲公英的種群數量。他沿著草地邊緣的一條小徑，每隔 2 米放置一個樣方，共放置了 5 個樣方。記錄到的蒲公英數量如下：<br>樣方 1: 12 棵 ； 樣方 2: 45 棵 ； 樣方 3: 0 棵 ； 樣方 4: 5 棵 ； 樣方 5: 38 棵<br>學生計算出平均每個樣方有 20 棵蒲公英，並按比例得出結論：「該草地的蒲公英總數量準確為 80,000 棵。」",
+        parts: [
+            {
+                label: "(a)",
+                question: "判斷該學生得出的整體數量結論是否可信，並加以解釋。（2分）",
+                answer: "<span class='keyword'>結論不可信</span>。 (1)<br>解釋：各樣方錄得的蒲公英數量波動極大（由 0 至 45 棵），顯示數據存在極大的偶然誤差或植物分佈極不平均。單憑 5 個樣本的平均值無法可靠地推算龐大整體的數量。 (1)"
+            },
+            {
+                label: "(b)",
+                question: "識別該學生在放置樣方時，其探究方法存在的 2 項科學局限。（2分）",
+                answer: "局限一：沿著邊緣小徑取樣屬於<span class='keyword'>非隨機抽樣</span>，容易出現人為選擇偏差，未能真實代表草地中心區域的生長情況。 (1)<br>局限二：樣本數量（只有 5 個樣方）太少，不足以代表面積達 1000 平方米的廣闊草地，<span class='keyword'>代表性不足</span>。 (1)"
+            },
+            {
+                label: "(c)",
+                question: "提出一項修改取樣位置的方法以提升效度，一項增加數據收集的方法以提升信度，並指出一項「控制變量」。（3分）",
+                answer: "提升效度：使用網格及隨機數字表進行<span class='keyword'>隨機抽樣</span>，避免人為選擇偏差。 (1)<br>提升信度：大幅<span class='keyword'>增加樣方的放置數量</span>（例如增至 30 個以上）並計算平均值，以減少偶然誤差。 (1)<br>控制變量：每個樣方的<span class='keyword'>面積大小</span>必須絕對保持一致。 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 29 題】",
+        concept: "生態調查（捕捉-標誌-重捕法）、隨機抽樣",
+        scenario: "學生在野外利用「捕捉-標誌-重捕法」估計某草地上的蚱蜢種群數量。他們第一天捕捉了 50 隻蚱蜢，並用鮮紅色的指甲油在牠們的背部畫上顯眼的標記，然後釋放。三天後，他們在同一地點再次捕捉了 50 隻蚱蜢，發現當中有 25 隻帶有標記。",
+        parts: [
+            {
+                label: "(a)",
+                question: "解釋使用「鮮紅色指甲油」進行標記如何嚴重破壞了估算結果的效度。（2分）",
+                answer: "鮮紅色的標記使蚱蜢在草地環境中變得極為顯眼，大大增加了被捕食者（如鳥類）捕食的風險（降低了<span class='keyword'>存活率</span>）。 (1)<br>這違反了「標誌不會影響動物存活率」的前提，導致重捕時有標記的個體比例人為地偏低，最終高估了種群的實際數量，失去測量真實數值的<span class='keyword'>效度</span>。 (1)"
+            }
+        ]
+    },
+    {
+        title: "【第 30 題】",
+        concept: "酶的活性與環境因素、波動性數據分析",
+        scenario: "學生利用水生植物（金魚藻）探究溫度對光合作用速率的影響。他將水溫從 15°C 逐漸加熱至 45°C，每升高 5°C 記錄一次「1 分鐘內釋放的氧氣氣泡數量」。收集到的氣泡數據如下：<br>15°C: 12 粒<br>20°C: 25 粒<br>25°C: 40 粒<br>30°C: 38 粒 (植物受到輕微碰撞)<br>35°C: 65 粒<br>40°C: 15 粒<br>45°C: 0 粒<br>學生根據 35°C 時錄得最高氣泡數量，結論：「該植物光合作用酶的絕對最適溫度為 35°C。」",
+        parts: [
+            {
+                label: "(a)",
+                question: "指出數據中的異常之處。（2分）",
+                answer: "數據存在<span class='keyword'>異常/波動</span>（如 30°C 時氣泡數量反而下降，可能是由於碰撞導致氣泡意外釋放或未適應溫度），且缺乏重複實驗驗證 65 粒是否為可靠的高峰值。 (1)"
+            },
+            {
+                label: "(b)",
+                question: "指出以「計算氣泡數量」作為光合作用速率指標的 2 項科學局限。（2分）",
+                answer: "局限 1：每個氣泡的體積大小並不一致，單純計算數量無法準確反映產生氧氣的實際<span class='keyword'>總體積</span>。 (1)<br>局限 2：植物產生的氧氣部分會溶解在水中，或者被植物自身的呼吸作用消耗，因此釋放出的氣泡不能代表光合作用的<span class='keyword'>總產氧量</span>。 (1)"
+            },
+            {
+                label: "(c)",
+                question: "提出一項具體的實驗裝置修改方案，以客觀量化的方式取代計算氣泡，從而大幅提升實驗的可信度與效度。（1分）",
+                answer: "修改方案：使用<span class='keyword'>氧氣探測器</span>/ 或微量注射器直接量度水中溶解氧的濃度變化或收集氣體的精確體積。 (1)"
+            }
+        ]
+    }
+    ];
+
+    let currentQuestionIndex = 0;
+
+    // 保留你聰明的 renderQuestion 函數 (隱藏空貼士)，並加入清空 AI 對話框的功能
+    function renderQuestion() {
+        const q = questionsDatabase[currentQuestionIndex];
+        let htmlContent = `
+            <div class="scenario-box">
+                <h3 style="margin-top:0; color: #334155;">${q.title}</h3>
+                <p><strong>情境：</strong> ${q.scenario}</p>
+            </div>
+        `;
+
+        q.parts.forEach(part => {
+            // 你的完美邏輯：如果這個 part 的 hint 不是空的，才生成貼士按鈕
+            let hintHTML = ""; 
+            if (part.hint && part.hint.trim() !== "") {
+                const formattedHint = part.hint.replace(/\n/g, '<br>');
+                hintHTML = `
+                    <details>
+                        <summary>💡 俾個貼士我 <span>▼</span></summary>
+                        <div class="content">${formattedHint}</div>
+                    </details>
+                `;
+            }
+            
+            htmlContent += `
+                <div class="question-part">
+                    <div class="question-text">${part.label} ${part.question}</div>
+                    ${hintHTML}
+                    <details>
+                        <summary>👀 睇參考答案 <span>▼</span></summary>
+                        <div class="content">${part.answer}</div>
+                    </details>
+                </div>
+            `;
+        });
+
+        document.getElementById('quiz-container').innerHTML = htmlContent;
+        document.getElementById('question-counter').innerText = `${currentQuestionIndex + 1} / ${questionsDatabase.length}`;
+        
+        document.getElementById('prev-btn').disabled = currentQuestionIndex === 0;
+        document.getElementById('next-btn').disabled = currentQuestionIndex === questionsDatabase.length - 1;
+
+        // 【新增】：切換題目時，自動清空舊的 AI 對話紀錄
+        document.getElementById('student-input').value = "";
+        document.getElementById('ai-response-box').style.display = "none";
+    }
+
+    function changeQuestion(step) {
+        currentQuestionIndex += step;
+        renderQuestion();
+    }
+
+    // 【新增】：將資料打包並送給 AI 伺服器的非同步函數
+    async function submitToAI() {
+        const studentInput = document.getElementById('student-input').value;
+        if (!studentInput.trim()) {
+            alert("同學，請先輸入你的答案或者問題！");
+            return;
+        }
+
+        const btn = document.getElementById('submit-btn');
+        const responseBox = document.getElementById('ai-response-box');
+        const responseText = document.getElementById('ai-response-text');
+
+        // 改變按鈕狀態，顯示正在思考
+        btn.disabled = true;
+        btn.innerText = "⏳ AI 正在批改中，請稍候...";
+        responseBox.style.display = "block";
+        responseText.innerHTML = "<span style='color:#64748b;'><em>思考中... (通常需要 3-5 秒)</em></span>";
+
+        // 自動打包目前的題目情境與標準答案給 AI
+        const q = questionsDatabase[currentQuestionIndex];
+        let contextData = "【情境】：\n" + q.scenario.replace(/<br>/g, "\n") + "\n\n";
+        let answerData = "";
+        q.parts.forEach(p => {
+            contextData += p.label + " " + p.question + "\n";
+            answerData += p.label + " " + p.answer.replace(/<[^>]*>?/gm, '') + "\n"; // 移除 HTML 標籤
+        });
+
+        try {
+            // 呼叫你的 Google Apps Script
+            const response = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    studentAnswer: studentInput,
+                    questionContext: contextData,
+                    standardAnswer: answerData
+                })
+            });
+
+            const data = await response.json();
+            
+            // 顯示 AI 的回覆（將 \n 換成 <br> 以利排版）
+            responseText.innerHTML = data.reply.replace(/\n/g, '<br>');
+
+        } catch (error) {
+            responseText.innerHTML = "<span style='color:red;'>❌ 連線失敗。請檢查你的網絡，或確保 GAS 網址已正確貼上。</span>";
+            console.error(error);
+        } finally {
+            // 恢復按鈕
+            btn.disabled = false;
+            btn.innerText = "📤 再次送出 / 追問";
+        }
+    }
+
+    window.onload = renderQuestion;
+</script>
+<script src="tracking.js"></script>
+</body>
+</html>
