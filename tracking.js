@@ -12,7 +12,9 @@
     localStorage.setItem("bio_user_id", userId);
   }
 
-  const pageName = window.location.pathname.split("/").pop() || "首頁";
+  const rawPageName = window.location.pathname.split("/").pop() || "首頁";
+// 將 URL 編碼解碼回原本的中文
+const pageName = decodeURIComponent(rawPageName);
 
   // --- 發送數據函式 (已升級) ---
   function sendToSheet(data) {
